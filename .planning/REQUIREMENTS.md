@@ -96,46 +96,46 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WALLET-01 | TBD | Pending |
-| WALLET-02 | TBD | Pending |
-| WALLET-03 | TBD | Pending |
-| WALLET-04 | TBD | Pending |
-| WORLD-01 | TBD | Pending |
-| WORLD-02 | TBD | Pending |
-| WORLD-03 | TBD | Pending |
-| WORLD-04 | TBD | Pending |
-| WORLD-05 | TBD | Pending |
-| WORLD-06 | TBD | Pending |
-| AGENT-01 | TBD | Pending |
-| AGENT-02 | TBD | Pending |
-| AGENT-03 | TBD | Pending |
-| AGENT-04 | TBD | Pending |
-| AGENT-05 | TBD | Pending |
-| ECON-01 | TBD | Pending |
-| ECON-02 | TBD | Pending |
-| ECON-03 | TBD | Pending |
-| ECON-04 | TBD | Pending |
-| ECON-05 | TBD | Pending |
-| CONTRACT-01 | TBD | Pending |
-| CONTRACT-02 | TBD | Pending |
-| CONTRACT-03 | TBD | Pending |
-| BACKEND-01 | TBD | Pending |
-| BACKEND-02 | TBD | Pending |
-| BACKEND-03 | TBD | Pending |
-| BACKEND-04 | TBD | Pending |
-| ADMIN-01 | TBD | Pending |
-| ADMIN-02 | TBD | Pending |
-| ADMIN-03 | TBD | Pending |
-| ADMIN-04 | TBD | Pending |
-| PERF-01 | TBD | Pending |
-| PERF-02 | TBD | Pending |
-| PERF-03 | TBD | Pending |
+| WALLET-01 | Phase 4 | Pending |
+| WALLET-02 | Phase 4 | Pending |
+| WALLET-03 | Phase 4 | Pending |
+| WALLET-04 | Phase 4 | Pending |
+| WORLD-01 | Phase 2 | Pending |
+| WORLD-02 | Phase 2 | Pending |
+| WORLD-03 | Phase 5 | Pending |
+| WORLD-04 | Phase 5 | Pending |
+| WORLD-05 | Phase 6 | Pending |
+| WORLD-06 | Phase 4 | Pending |
+| AGENT-01 | Phase 5 | Pending |
+| AGENT-02 | Phase 5 | Pending |
+| AGENT-03 | Phase 3 | Pending |
+| AGENT-04 | Phase 3 | Pending |
+| AGENT-05 | Phase 5 | Pending |
+| ECON-01 | Phase 6 | Pending |
+| ECON-02 | Phase 6 | Pending |
+| ECON-03 | Phase 6 | Pending |
+| ECON-04 | Phase 6 | Pending |
+| ECON-05 | Phase 6 | Pending |
+| CONTRACT-01 | Phase 5 | Pending |
+| CONTRACT-02 | Phase 6 | Pending |
+| CONTRACT-03 | Phase 7 | Pending |
+| BACKEND-01 | Phase 3 | Pending |
+| BACKEND-02 | Phase 3 | Pending |
+| BACKEND-03 | Phase 1 | Pending |
+| BACKEND-04 | Phase 1 | Pending |
+| ADMIN-01 | Phase 7 | Pending |
+| ADMIN-02 | Phase 7 | Pending |
+| ADMIN-03 | Phase 7 | Pending |
+| ADMIN-04 | Phase 7 | Pending |
+| PERF-01 | Phase 7 | Pending |
+| PERF-02 | Phase 7 | Pending |
+| PERF-03 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 34 total
-- Mapped to phases: 0
-- Unmapped: 34
+- Mapped to phases: 34
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after initial definition*
+*Last updated: 2026-01-19 after roadmap creation*
