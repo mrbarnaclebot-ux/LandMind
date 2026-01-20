@@ -7,6 +7,9 @@ skip-lint = false
 [programs.localnet]
 landmind = "D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ"
 
+[programs.devnet]
+landmind = "D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ"
+
 [registry]
 url = "https://api.apr.dev"
 
