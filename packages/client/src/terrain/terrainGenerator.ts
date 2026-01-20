@@ -39,9 +39,11 @@ const DEFAULT_SEED: TerrainSeed = {
 
 /**
  * Noise configuration
+ * Scale determines feature size - higher values = smaller features
+ * With grid radius 15, world coords range ~(-23, 23), need scale ~0.1-0.2 for visible variation
  */
-const ELEVATION_SCALE = 0.02; // Large features
-const MOISTURE_SCALE = 0.015; // Slightly larger regions
+const ELEVATION_SCALE = 0.15; // Scale for ~2-3 visible terrain regions across grid
+const MOISTURE_SCALE = 0.1; // Slightly larger regions for biome zones
 
 /**
  * Elevation thresholds for quantizing continuous noise to tiers

@@ -30,7 +30,7 @@ const DEFAULT_OPTIONS: Required<BeveledHexOptions> = {
   size: 1.0,
   height: 0.3,
   bevelSize: 0.02, // Very subtle bevel - hexes should look like solid terrain, not rings
-  skirtDepth: 2.0, // Deep enough to cover max elevation difference
+  skirtDepth: 0.6, // Just enough to cover one elevation step (0.5) plus small margin
 };
 
 /**
