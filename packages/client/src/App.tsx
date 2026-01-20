@@ -1,4 +1,40 @@
 import { ThreeScene } from './scene/ThreeScene';
+import { ConnectButton } from './components/wallet/ConnectButton';
+
+/**
+ * Header with wallet connection
+ */
+const headerStyle: React.CSSProperties = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  height: '60px',
+  backgroundColor: 'rgba(10, 10, 20, 0.8)',
+  backdropFilter: 'blur(8px)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 20px',
+  zIndex: 100,
+  borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+};
+
+const logoStyle: React.CSSProperties = {
+  color: 'white',
+  fontSize: '20px',
+  fontWeight: 'bold',
+  fontFamily: 'system-ui, -apple-system, sans-serif'
+};
+
+function Header() {
+  return (
+    <header style={headerStyle}>
+      <div style={logoStyle}>LandMind</div>
+      <ConnectButton />
+    </header>
+  );
+}
 
 /**
  * Controls overlay styles - positioned in bottom-left corner
@@ -14,7 +50,7 @@ const controlsOverlayStyle: React.CSSProperties = {
   fontFamily: 'system-ui, -apple-system, sans-serif',
   fontSize: '13px',
   lineHeight: '1.5',
-  pointerEvents: 'none', // Don't interfere with canvas events
+  pointerEvents: 'none',
   zIndex: 100,
 };
 
@@ -62,6 +98,7 @@ function ControlsOverlay() {
 function App() {
   return (
     <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}>
+      <Header />
       <ThreeScene />
       <ControlsOverlay />
     </div>
