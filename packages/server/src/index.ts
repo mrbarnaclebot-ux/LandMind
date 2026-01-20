@@ -11,8 +11,10 @@ import express from 'express';
 import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import healthRouter from './routes/health.js';
 import devRouter from './routes/dev.js';
+import authRouter from './routes/auth.js';
 import { setupSocket } from './lib/socket.js';
 import { startTickLoop, stopTickLoop } from './simulation/tickLoop.js';
 import { flushToPostgres } from './cache/persistence.js';
@@ -27,11 +29,16 @@ const io = setupSocket(httpServer);
 
 // Middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true  // Required for cookies
+}));
+app.use(cookieParser());
 app.use(express.json());
 
 // Routes
 app.use('/health', healthRouter);
+app.use('/auth', authRouter);
 
 // Dev routes (development only)
 app.use('/dev', devRouter);
