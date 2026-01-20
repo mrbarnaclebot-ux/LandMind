@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Database schema, server skeleton, Babylon.js setup, Anchor scaffold
 - [x] **Phase 2: 3D World Core** - Hex grid rendering with thin instances, camera navigation (Three.js)
 - [x] **Phase 3: Real-Time Simulation** - Mining tick loop, WebSocket broadcast, Redis hot state
-- [ ] **Phase 4: Wallet Integration** - Phantom connection, session management, balance display
+- [x] **Phase 4: Wallet Integration** - Phantom connection, session management, balance display
 - [ ] **Phase 5: Agent Deployment** - cNFT minting, agent creation on-chain, ownership display
 - [ ] **Phase 6: Economy & Distribution** - Fee vault, reward tracking, claims, PumpFun integration
 - [ ] **Phase 7: Scale & Launch** - Performance optimization, admin dashboard, audit, mobile responsive
@@ -90,11 +90,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Solana Provider setup and wallet packages
-- [ ] 04-02-PLAN.md — Server auth endpoints (nonce/verify/session)
-- [ ] 04-03-PLAN.md — Wallet session store and hooks
-- [ ] 04-04-PLAN.md — Connect UI and balance display
-- [ ] 04-05-PLAN.md — Transaction history side panel
+- [x] 04-01-PLAN.md — Solana Provider setup and wallet packages
+- [x] 04-02-PLAN.md — Server auth endpoints (nonce/verify/session)
+- [x] 04-03-PLAN.md — Wallet session store and hooks
+- [x] 04-04-PLAN.md — Connect UI and balance display
+- [x] 04-05-PLAN.md — Transaction history side panel
 
 ### Phase 5: Agent Deployment
 **Goal**: Users can deploy agents as compressed NFTs that appear on the hex grid and mine
@@ -158,7 +158,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Foundation | 4/4 | ✓ Complete | 2026-01-20 |
 | 2. 3D World Core | 5/5 | ✓ Complete | 2026-01-20 |
 | 3. Real-Time Simulation | 4/4 | ✓ Complete | 2026-01-20 |
-| 4. Wallet Integration | 0/5 | Planned | - |
+| 4. Wallet Integration | 5/5 | ✓ Complete | 2026-01-20 |
 | 5. Agent Deployment | 0/TBD | Not started | - |
 | 6. Economy & Distribution | 0/TBD | Not started | - |
 | 7. Scale & Launch | 0/TBD | Not started | - |
@@ -189,4 +189,4 @@ All 34 v1 requirements mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-20 (Phase 4 planned)*
+*Last updated: 2026-01-20 (Phase 4 complete)*

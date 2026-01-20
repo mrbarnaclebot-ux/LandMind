@@ -9,10 +9,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Wallet & Authentication
 
-- [ ] **WALLET-01**: User can connect Solana wallet (Phantom, Solflare)
-- [ ] **WALLET-02**: User sees real-time SOL balance after connecting
-- [ ] **WALLET-03**: User can view transaction history of their on-chain activity
-- [ ] **WALLET-04**: User session persists via wallet signature verification
+- [x] **WALLET-01**: User can connect Solana wallet (Phantom, Solflare)
+- [x] **WALLET-02**: User sees real-time SOL balance after connecting
+- [x] **WALLET-03**: User can view transaction history of their on-chain activity
+- [x] **WALLET-04**: User session persists via wallet signature verification
 
 ### 3D World & Visualization
 
@@ -21,7 +21,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **WORLD-03**: User sees their deployed agents on the hex grid
 - [ ] **WORLD-04**: User sees agents visually relocate when hexes deplete
 - [ ] **WORLD-05**: User sees resource concentration heat map overlay
-- [ ] **WORLD-06**: User receives loading states and feedback during blockchain operations
+- [x] **WORLD-06**: User receives loading states and feedback during blockchain operations
 
 ### Agent System
 
@@ -96,16 +96,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| WALLET-01 | Phase 4 | Pending |
-| WALLET-02 | Phase 4 | Pending |
-| WALLET-03 | Phase 4 | Pending |
-| WALLET-04 | Phase 4 | Pending |
+| WALLET-01 | Phase 4 | Complete |
+| WALLET-02 | Phase 4 | Complete |
+| WALLET-03 | Phase 4 | Complete |
+| WALLET-04 | Phase 4 | Complete |
 | WORLD-01 | Phase 2 | Complete |
 | WORLD-02 | Phase 2 | Complete |
 | WORLD-03 | Phase 5 | Pending |
 | WORLD-04 | Phase 5 | Pending |
 | WORLD-05 | Phase 6 | Pending |
-| WORLD-06 | Phase 4 | Pending |
+| WORLD-06 | Phase 4 | Complete |
 | AGENT-01 | Phase 5 | Pending |
 | AGENT-02 | Phase 5 | Pending |
 | AGENT-03 | Phase 3 | Complete |
@@ -138,4 +138,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-20 (Phase 3 complete)*
+*Last updated: 2026-01-20 (Phase 4 complete)*
