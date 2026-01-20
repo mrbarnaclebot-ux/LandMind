@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 3 - Real-Time Simulation (next)
+**Current focus:** Phase 3 - Real-Time Simulation
 
 ## Current Position
 
-Phase: 2 of 7 (3D World Core) - COMPLETE
-Plan: 5 of 5 in current phase
-Status: Phase complete
-Last activity: 2026-01-20 — Completed 02-05-PLAN.md (Visual Polish - switched to Three.js)
+Phase: 3 of 7 (Real-Time Simulation)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-20 — Completed 03-01-PLAN.md (Socket.io WebSocket Server)
 
-Progress: [██████░░░░] ~27% (9/~34 plans estimated)
+Progress: [███████░░░] ~29% (10/~34 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: ~15 min
-- Total execution time: ~135 min
+- Total plans completed: 10
+- Average duration: ~14 min
+- Total execution time: ~143 min
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [██████░░░░] ~27% (9/~34 plans estimated)
 |-------|-------|-------|----------|
 | 01-foundation | 4 | 45 min | 11 min |
 | 02-3d-world-core | 5 | 90 min | 18 min |
+| 03-real-time-simulation | 1 | 8 min | 8 min |
 
 **Recent Trend:**
-- Phase 2 took longer due to visual iteration (Babylon.js → Three.js switch)
-- Multiple checkpoint iterations for visual quality
+- Phase 3 starting strong with straightforward Socket.io setup
+- Redis adapter ready for multi-instance scaling
 
 *Updated after each plan completion*
 
@@ -63,6 +64,9 @@ Recent decisions affecting current work:
 - 6 biomes with Minecraft-style vibrant colors
 - OrbitControls for camera navigation (pan, zoom, rotate)
 - InstancedMesh for efficient hex rendering (one per biome)
+- **Socket.io with typed events** — full TypeScript safety for real-time communication
+- **Redis adapter for Socket.io** — enables multi-instance scaling without sticky sessions
+- **User rooms via user:{walletPubkey}** — isolated updates per wallet
 
 ### Pending Todos
 
@@ -76,6 +80,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed Phase 2 (3D World Core) - All 5 plans executed, phase verified
+Stopped at: Completed 03-01-PLAN.md (Socket.io WebSocket Server)
 Resume file: None
-Next: Phase 3 planning (Real-Time Simulation)
+Next: 03-02-PLAN.md (Simulation Engine)
