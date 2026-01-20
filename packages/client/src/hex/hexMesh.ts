@@ -87,10 +87,12 @@ export function createHexGeometry(
     topRing.push(addVertex(corners[i][0], height, corners[i][1], 0, 1, 0));
   }
 
-  // Top face triangles (CCW winding for Three.js)
+  // Top face triangles (CCW winding when viewed from above)
+  // Looking down +Y axis: need counterclockwise order for face normal to point UP
+  // corners go CCW around hex (0, 60, 120...), so center -> next -> i is CCW from above
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
-    indices.push(topCenter, topRing[i], topRing[next]);
+    indices.push(topCenter, topRing[next], topRing[i]);
   }
 
   // === SIDE FACES (flat normals pointing outward) ===
@@ -121,10 +123,11 @@ export function createHexGeometry(
     const v3 = addVertex(corners[i][0], sideBottom, corners[i][1], nx, 0, nz);
 
     // Two triangles for the quad (CCW winding when viewed from outside)
-    // Looking from outside: need CCW order, which is v0 -> v3 -> v2 and v0 -> v2 -> v1
-    // But simpler: v0 -> v2 -> v1 for top triangle, v0 -> v3 -> v2 for bottom triangle
-    indices.push(v0, v2, v1);
-    indices.push(v0, v3, v2);
+    // Looking from outside toward hex center:
+    // v0=top-left, v1=top-right, v2=bottom-right, v3=bottom-left
+    // CCW order: v0 -> v1 -> v2 (upper) and v0 -> v2 -> v3 (lower)
+    indices.push(v0, v1, v2);
+    indices.push(v0, v2, v3);
   }
 
   // === BOTTOM FACE (flat normal pointing down) ===
@@ -136,10 +139,12 @@ export function createHexGeometry(
     );
   }
 
-  // Bottom face triangles (reverse winding for correct facing)
+  // Bottom face triangles (opposite winding from top for downward normal)
+  // Top face uses center -> next -> i for UP normal
+  // Bottom face uses center -> i -> next for DOWN normal
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
-    indices.push(bottomCenter, bottomRing[next], bottomRing[i]);
+    indices.push(bottomCenter, bottomRing[i], bottomRing[next]);
   }
 
   // Create BufferGeometry and apply attributes
