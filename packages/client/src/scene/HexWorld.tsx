@@ -12,7 +12,7 @@
  * - Frustum culling enabled
  */
 
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { createHexGeometry } from '../hex/hexMesh';
 import { hexToPixel, ELEVATION_STEP } from '../hex/hexMath';
@@ -36,40 +36,49 @@ interface BiomeMeshProps {
 }
 
 function BiomeMesh({ biome, hexes, geometry }: BiomeMeshProps) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
   const biomeColor = getBiomeColor(biome);
-  const color = new THREE.Color(biomeColor.r, biomeColor.g, biomeColor.b);
+  const color = useMemo(
+    () => new THREE.Color(biomeColor.r, biomeColor.g, biomeColor.b),
+    [biomeColor]
+  );
 
   // Create instance matrices for all hexes of this biome
-  const instanceData = useMemo(() => {
+  const matrices = useMemo(() => {
     const count = hexes.length;
-    const matrices = new Float32Array(count * 16);
+    const result = new Float32Array(count * 16);
     const tempMatrix = new THREE.Matrix4();
 
     hexes.forEach((hex, i) => {
       const { x, z } = hexToPixel(hex.q, hex.r);
       const y = hex.elevation * ELEVATION_STEP;
       tempMatrix.makeTranslation(x, y, z);
-      tempMatrix.toArray(matrices, i * 16);
+      tempMatrix.toArray(result, i * 16);
     });
 
-    return { count, matrices };
+    return result;
   }, [hexes]);
+
+  // Apply matrices when ref is available or matrices change
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    const tempMatrix = new THREE.Matrix4();
+    for (let i = 0; i < hexes.length; i++) {
+      tempMatrix.fromArray(matrices, i * 16);
+      mesh.setMatrixAt(i, tempMatrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [matrices, hexes.length]);
+
+  if (hexes.length === 0) return null;
 
   return (
     <instancedMesh
-      args={[geometry, undefined, instanceData.count]}
+      ref={meshRef}
+      args={[geometry, undefined, hexes.length]}
       frustumCulled={true}
-      ref={(mesh) => {
-        if (mesh) {
-          // Set all instance matrices
-          const tempMatrix = new THREE.Matrix4();
-          for (let i = 0; i < instanceData.count; i++) {
-            tempMatrix.fromArray(instanceData.matrices, i * 16);
-            mesh.setMatrixAt(i, tempMatrix);
-          }
-          mesh.instanceMatrix.needsUpdate = true;
-        }
-      }}
     >
       <meshStandardMaterial
         color={color}

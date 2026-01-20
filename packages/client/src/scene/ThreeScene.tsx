@@ -10,6 +10,7 @@
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky } from '@react-three/drei';
+import * as THREE from 'three';
 import { HexWorld } from './HexWorld';
 
 /**
@@ -60,9 +61,9 @@ function CameraControls() {
       screenSpacePanning={true}
       // Mouse buttons: left=rotate, right=pan, middle=zoom
       mouseButtons={{
-        LEFT: 0, // ROTATE
-        MIDDLE: 1, // DOLLY
-        RIGHT: 2, // PAN
+        LEFT: THREE.MOUSE.ROTATE,
+        MIDDLE: THREE.MOUSE.DOLLY,
+        RIGHT: THREE.MOUSE.PAN,
       }}
     />
   );
@@ -82,7 +83,12 @@ export function ThreeScene() {
         near: 0.1,
         far: 1000,
       }}
-      style={{ background: '#1a2533' }}
+      style={{
+        width: '100%',
+        height: '100%',
+        background: '#1a2533',
+        display: 'block',
+      }}
       gl={{ antialias: true }}
     >
       {/* Sky backdrop */}
