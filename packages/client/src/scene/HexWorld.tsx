@@ -26,7 +26,7 @@ import { getBiomeColor, type Biome } from '../terrain/biomes';
 import { createHexMaterial } from '../shaders/hexMaterial';
 
 export interface HexWorldProps {
-  /** Grid radius in hex units (default: 30, ~2700 hexes) */
+  /** Grid radius in hex units (default: 15, ~721 hexes) */
   gridRadius?: number;
   /** Optional seeds for deterministic terrain generation */
   seed?: TerrainSeed;
@@ -42,7 +42,7 @@ export interface HexWorldProps {
  * Wrapped with React.memo to prevent unnecessary re-renders when
  * parent components re-render (e.g., during camera movement).
  */
-function HexWorldInner({ gridRadius = 30, seed }: HexWorldProps) {
+function HexWorldInner({ gridRadius = 15, seed }: HexWorldProps) {
   const scene = useScene();
   const meshRef = useRef<Mesh | null>(null);
 
@@ -75,11 +75,11 @@ function HexWorldInner({ gridRadius = 30, seed }: HexWorldProps) {
     const materials: StandardMaterial[] = [];
 
     hexesByBiome.forEach((biomeHexes, biome) => {
-      // Create a mesh for each biome (use default bevelSize for smooth bevels)
+      // Create a mesh for each biome with subtle bevel for solid terrain look
       const biomeMesh = createBeveledHexMesh(scene, {
         size: 1.0,
         height: 0.3,
-        // bevelSize uses default (0.18) for pleasing visible bevels
+        bevelSize: 0.02, // Very subtle - hexes blend into cohesive terrain
       });
       biomeMesh.name = `hexInstances_${biome}`;
       biomeMesh.isVisible = true;

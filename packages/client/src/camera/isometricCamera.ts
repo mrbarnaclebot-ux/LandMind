@@ -11,13 +11,15 @@ import {
 // Camera configuration constants
 const DEFAULT_ALPHA = Math.PI / 4; // 45 degrees horizontal rotation
 const DEFAULT_BETA = Math.PI / 3; // ~60 degrees vertical (isometric feel)
-const DEFAULT_ORTHO_SIZE = 40; // Initial zoom level (shows ~80 unit diameter)
-const MIN_ORTHO_SIZE = 5; // Maximum zoom in (increased to prevent clipping)
-const MAX_ORTHO_SIZE = 100; // Maximum zoom out (can view entire grid)
-const ZOOM_SPEED = 3; // Ortho units per wheel tick (faster zoom)
+const DEFAULT_ORTHO_SIZE = 20; // Initial zoom level for smaller grid (radius 15)
+const MIN_ORTHO_SIZE = 3; // Maximum zoom in (closer view)
+const MAX_ORTHO_SIZE = 60; // Maximum zoom out (can view entire grid)
+const ZOOM_SPEED = 2; // Ortho units per wheel tick (moderate zoom)
 
 // Clipping plane distances for orthographic camera
-const NEAR_CLIP = 0.1; // Very close to camera
+// In orthographic mode, minZ/maxZ define the depth range that's visible
+// Using negative minZ allows seeing objects "behind" the camera target
+const NEAR_CLIP = -200; // Allow objects behind the camera plane (ortho doesn't have true near plane)
 const FAR_CLIP = 500; // Far enough to see entire world
 
 /**

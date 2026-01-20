@@ -26,7 +26,7 @@ export interface BeveledHexOptions {
 const DEFAULT_OPTIONS: Required<BeveledHexOptions> = {
   size: 1.0,
   height: 0.3,
-  bevelSize: 0.18, // Larger bevel for more visible, pleasing edges
+  bevelSize: 0.02, // Very subtle bevel - hexes should look like solid terrain, not rings
 };
 
 /**
@@ -63,8 +63,8 @@ export function createBeveledHexMesh(
     innerCorners.push([size * innerScale * cos, size * innerScale * sin]);
   }
 
-  // More pronounced bevel drop for visual impact
-  const bevelHeight = height - bevelSize * 0.7;
+  // Minimal bevel drop - just enough for subtle edge highlight, not a visible groove
+  const bevelHeight = height - bevelSize * 0.3;
 
   // Build vertex positions and normals together for smooth shading
   const positions: number[] = [];
