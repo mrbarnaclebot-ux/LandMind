@@ -1,5 +1,44 @@
-import { Engine, Scene } from 'react-babylonjs';
-import { Vector3, Color3 } from '@babylonjs/core';
+import { Engine, Scene, useScene } from 'react-babylonjs';
+import { Vector3, Color3, StandardMaterial } from '@babylonjs/core';
+import { useEffect, useRef } from 'react';
+import { createBeveledHexMesh } from '../hex/hexMesh';
+
+/**
+ * Test component to verify beveled hex mesh renders correctly
+ * Temporary - will be replaced by HexWorld component
+ */
+function TestHex() {
+  const scene = useScene();
+  const createdRef = useRef(false);
+
+  useEffect(() => {
+    if (!scene || createdRef.current) return;
+    createdRef.current = true;
+
+    // Create beveled hex mesh
+    const hex = createBeveledHexMesh(scene, {
+      size: 1.0,
+      height: 0.3,
+      bevelSize: 0.08,
+    });
+
+    // Make it visible for testing
+    hex.isPickable = true;
+
+    // Add a simple material to see the bevel
+    const material = new StandardMaterial('hexMat', scene);
+    material.diffuseColor = new Color3(0.4, 0.7, 0.3); // Green grass color
+    material.specularColor = new Color3(0.2, 0.2, 0.2);
+    hex.material = material;
+
+    return () => {
+      hex.dispose();
+      material.dispose();
+    };
+  }, [scene]);
+
+  return null;
+}
 
 export function BabylonScene() {
   return (
@@ -9,7 +48,7 @@ export function BabylonScene() {
           name="camera"
           alpha={Math.PI / 2}
           beta={Math.PI / 4}
-          radius={10}
+          radius={5}
           target={Vector3.Zero()}
           minZ={0.1}
           wheelPrecision={50}
@@ -19,20 +58,12 @@ export function BabylonScene() {
           intensity={0.7}
           direction={Vector3.Up()}
         />
-        {/* Ground plane for visual reference */}
-        <ground
-          name="ground"
-          width={20}
-          height={20}
-          subdivisions={2}
-        >
-          <standardMaterial name="groundMat" specularColor={Color3.Black()}>
-            <texture
-              assignTo="diffuseTexture"
-              url="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-            />
-          </standardMaterial>
-        </ground>
+        <directionalLight
+          name="dirLight"
+          intensity={0.5}
+          direction={new Vector3(-1, -2, -1)}
+        />
+        <TestHex />
       </Scene>
     </Engine>
   );
