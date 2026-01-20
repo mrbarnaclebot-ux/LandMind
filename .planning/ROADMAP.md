@@ -12,7 +12,7 @@ LandMind progresses from foundational infrastructure through progressive capabil
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Database schema, server skeleton, Babylon.js setup, Anchor scaffold
+- [x] **Phase 1: Foundation** - Database schema, server skeleton, Babylon.js setup, Anchor scaffold
 - [ ] **Phase 2: 3D World Core** - Hex grid rendering with thin instances, camera navigation
 - [ ] **Phase 3: Real-Time Simulation** - Mining tick loop, WebSocket broadcast, Redis hot state
 - [ ] **Phase 4: Wallet Integration** - Phantom connection, session management, balance display
@@ -35,10 +35,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Docker Compose setup (PostgreSQL + Redis)
-- [ ] 01-02-PLAN.md — Prisma schema and Express server with health endpoint
-- [ ] 01-03-PLAN.md — Babylon.js + Vite frontend scaffold
-- [ ] 01-04-PLAN.md — Anchor project scaffold
+- [x] 01-01-PLAN.md — Docker Compose setup (PostgreSQL + Redis)
+- [x] 01-02-PLAN.md — Prisma schema and Express server with health endpoint
+- [x] 01-03-PLAN.md — Babylon.js + Vite frontend scaffold
+- [x] 01-04-PLAN.md — Anchor project scaffold
 
 ### Phase 2: 3D World Core
 **Goal**: Users can see and navigate a 3D hexagonal world in their browser
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Planned | - |
+| 1. Foundation | 4/4 | ✓ Complete | 2026-01-20 |
 | 2. 3D World Core | 0/TBD | Not started | - |
 | 3. Real-Time Simulation | 0/TBD | Not started | - |
 | 4. Wallet Integration | 0/TBD | Not started | - |

@@ -121,8 +121,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONTRACT-03 | Phase 7 | Pending |
 | BACKEND-01 | Phase 3 | Pending |
 | BACKEND-02 | Phase 3 | Pending |
-| BACKEND-03 | Phase 1 | Pending |
-| BACKEND-04 | Phase 1 | Pending |
+| BACKEND-03 | Phase 1 | Complete |
+| BACKEND-04 | Phase 1 | Complete |
 | ADMIN-01 | Phase 7 | Pending |
 | ADMIN-02 | Phase 7 | Pending |
 | ADMIN-03 | Phase 7 | Pending |
