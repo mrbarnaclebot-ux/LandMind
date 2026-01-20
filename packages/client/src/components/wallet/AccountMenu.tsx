@@ -1,5 +1,6 @@
 import { FC, useState, useRef, useEffect } from 'react';
 import { formatAddress, getExplorerUrl } from '../../lib/solana';
+import '../../styles/pixel-theme.css';
 
 interface AccountMenuProps {
   address: string;
@@ -7,78 +8,13 @@ interface AccountMenuProps {
   onDisconnect: () => void;
 }
 
-const menuContainerStyle: React.CSSProperties = {
-  position: 'relative',
-  display: 'inline-block'
-};
-
-const menuButtonStyle: React.CSSProperties = {
-  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  border: '1px solid rgba(255, 255, 255, 0.2)',
-  borderRadius: '8px',
-  padding: '8px 16px',
-  color: 'white',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '14px'
-};
-
-const dropdownStyle: React.CSSProperties = {
-  position: 'absolute',
-  top: '100%',
-  right: 0,
-  marginTop: '4px',
-  backgroundColor: 'rgba(20, 20, 30, 0.95)',
-  border: '1px solid rgba(255, 255, 255, 0.1)',
-  borderRadius: '8px',
-  padding: '8px 0',
-  minWidth: '200px',
-  zIndex: 1000,
-  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
-};
-
-const menuItemStyle: React.CSSProperties = {
-  padding: '10px 16px',
-  color: 'white',
-  cursor: 'pointer',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  fontSize: '14px',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  transition: 'background-color 0.15s'
-};
-
-const menuItemHoverStyle: React.CSSProperties = {
-  backgroundColor: 'rgba(255, 255, 255, 0.1)'
-};
-
-const balanceStyle: React.CSSProperties = {
-  padding: '10px 16px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-  marginBottom: '4px'
-};
-
-const balanceLabelStyle: React.CSSProperties = {
-  fontSize: '11px',
-  color: 'rgba(255, 255, 255, 0.5)',
-  textTransform: 'uppercase',
-  marginBottom: '4px'
-};
-
-const balanceValueStyle: React.CSSProperties = {
-  fontSize: '16px',
-  fontWeight: 'bold',
-  color: 'white'
-};
-
+/**
+ * Minecraft inventory-style account dropdown menu.
+ * Shows balance, copy address, explorer link, and disconnect.
+ */
 export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconnect }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedFeedback, setCopiedFeedback] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -104,66 +40,107 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
   };
 
   return (
-    <div style={menuContainerStyle} ref={menuRef}>
+    <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
+      {/* Main button - inventory slot style */}
       <button
-        style={menuButtonStyle}
+        className={`pixel-btn ${isOpen ? 'pressed' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          minWidth: '140px',
+        }}
       >
+        <span style={{ color: '#55CDFC' }}>◎</span>
         <span>{formatAddress(address)}</span>
-        <span style={{ fontSize: '10px' }}>{isOpen ? '▲' : '▼'}</span>
+        <span style={{
+          fontSize: '6px',
+          marginLeft: 'auto',
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+        }}>
+          ▼
+        </span>
       </button>
 
+      {/* Dropdown - inventory panel style */}
       {isOpen && (
-        <div style={dropdownStyle}>
-          {/* Balance display */}
-          <div style={balanceStyle}>
-            <div style={balanceLabelStyle}>Balance</div>
-            <div style={balanceValueStyle}>
-              {balance !== null ? `${balance.toFixed(4)} SOL` : 'Loading...'}
+        <div
+          className="pixel-dropdown"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            minWidth: '220px',
+            zIndex: 1000,
+          }}
+        >
+          {/* Balance display - gold text */}
+          <div
+            style={{
+              padding: '12px',
+              background: '#2D2D31',
+              marginBottom: '4px',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: '8px',
+                color: '#8B8B8B',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+              }}
+            >
+              Balance
+            </div>
+            <div
+              className="pixel-balance"
+              style={{
+                fontSize: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span style={{ color: '#55CDFC' }}>◎</span>
+              <span>
+                {balance !== null ? `${balance.toFixed(4)}` : '---'}
+              </span>
+              <span style={{ fontSize: '10px', color: '#FFAA00' }}>SOL</span>
             </div>
           </div>
 
-          {/* Copy address */}
+          <div className="pixel-divider" />
+
+          {/* Menu items */}
           <div
-            style={{
-              ...menuItemStyle,
-              ...(hoveredItem === 'copy' ? menuItemHoverStyle : {})
-            }}
+            className="pixel-dropdown-item"
             onClick={copyAddress}
-            onMouseEnter={() => setHoveredItem('copy')}
-            onMouseLeave={() => setHoveredItem(null)}
           >
-            {copiedFeedback ? 'Copied!' : 'Copy Address'}
+            <span style={{ marginRight: '8px' }}>📋</span>
+            {copiedFeedback ? '✓ COPIED!' : 'COPY ADDRESS'}
           </div>
 
-          {/* View on explorer */}
           <div
-            style={{
-              ...menuItemStyle,
-              ...(hoveredItem === 'explorer' ? menuItemHoverStyle : {})
-            }}
+            className="pixel-dropdown-item"
             onClick={openExplorer}
-            onMouseEnter={() => setHoveredItem('explorer')}
-            onMouseLeave={() => setHoveredItem(null)}
           >
-            View on Explorer
+            <span style={{ marginRight: '8px' }}>🔍</span>
+            EXPLORER
           </div>
 
-          {/* Disconnect */}
+          <div className="pixel-divider" />
+
           <div
-            style={{
-              ...menuItemStyle,
-              ...(hoveredItem === 'disconnect' ? menuItemHoverStyle : {}),
-              color: '#ff6b6b'
-            }}
+            className="pixel-dropdown-item danger"
             onClick={() => {
               onDisconnect();
               setIsOpen(false);
             }}
-            onMouseEnter={() => setHoveredItem('disconnect')}
-            onMouseLeave={() => setHoveredItem(null)}
           >
-            Disconnect
+            <span style={{ marginRight: '8px' }}>⏻</span>
+            DISCONNECT
           </div>
         </div>
       )}

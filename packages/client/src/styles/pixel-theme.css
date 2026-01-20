@@ -1,0 +1,306 @@
+/**
+ * LandMind Pixel/Voxel Theme
+ * Minecraft-inspired UI with blocky 3D effects
+ */
+
+/* Import Press Start 2P pixel font */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  /* Minecraft-inspired color palette */
+  --pixel-grass: #5D8C3E;
+  --pixel-grass-light: #7DB356;
+  --pixel-grass-dark: #3D5C2E;
+
+  --pixel-dirt: #8B6834;
+  --pixel-dirt-light: #AB8854;
+  --pixel-dirt-dark: #5B3814;
+
+  --pixel-stone: #7F7F7F;
+  --pixel-stone-light: #9F9F9F;
+  --pixel-stone-dark: #4F4F4F;
+
+  --pixel-diamond: #55CDFC;
+  --pixel-diamond-light: #85EDFF;
+  --pixel-diamond-dark: #35ADDC;
+
+  --pixel-gold: #FFAA00;
+  --pixel-gold-light: #FFCC44;
+  --pixel-gold-dark: #CC8800;
+
+  --pixel-redstone: #FF3333;
+  --pixel-redstone-light: #FF6666;
+  --pixel-redstone-dark: #CC0000;
+
+  --pixel-obsidian: #1D1D21;
+  --pixel-obsidian-light: #3D3D41;
+  --pixel-obsidian-dark: #0D0D11;
+
+  --pixel-inventory: #8B8B8B;
+  --pixel-inventory-dark: #373737;
+  --pixel-inventory-slot: #8B8B8B;
+
+  /* UI colors */
+  --pixel-text: #FFFFFF;
+  --pixel-text-shadow: #3F3F3F;
+  --pixel-border-light: #FFFFFF;
+  --pixel-border-dark: #000000;
+
+  /* Spacing based on 4px grid */
+  --pixel-unit: 4px;
+  --pixel-border: 4px;
+}
+
+/* Pixel font for all wallet UI */
+.pixel-ui {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  line-height: 1.6;
+  image-rendering: pixelated;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 3D Minecraft-style button */
+.pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--pixel-text);
+  background: var(--pixel-stone);
+  border: none;
+  padding: 12px 16px;
+  cursor: pointer;
+  position: relative;
+  text-shadow: 2px 2px 0 var(--pixel-text-shadow);
+  transition: none;
+
+  /* 3D border effect */
+  box-shadow:
+    inset -4px -4px 0 0 var(--pixel-stone-dark),
+    inset 4px 4px 0 0 var(--pixel-stone-light);
+}
+
+.pixel-btn:hover {
+  background: var(--pixel-stone-light);
+  box-shadow:
+    inset -4px -4px 0 0 var(--pixel-stone),
+    inset 4px 4px 0 0 var(--pixel-border-light);
+}
+
+.pixel-btn:active,
+.pixel-btn.pressed {
+  background: var(--pixel-stone-dark);
+  box-shadow:
+    inset 4px 4px 0 0 var(--pixel-stone-dark),
+    inset -4px -4px 0 0 var(--pixel-stone);
+  transform: translate(2px, 2px);
+}
+
+.pixel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Green variant (grass/emerald) */
+.pixel-btn-primary {
+  background: var(--pixel-grass);
+  box-shadow:
+    inset -4px -4px 0 0 var(--pixel-grass-dark),
+    inset 4px 4px 0 0 var(--pixel-grass-light);
+}
+
+.pixel-btn-primary:hover {
+  background: var(--pixel-grass-light);
+  box-shadow:
+    inset -4px -4px 0 0 var(--pixel-grass),
+    inset 4px 4px 0 0 #9DD376;
+}
+
+.pixel-btn-primary:active {
+  background: var(--pixel-grass-dark);
+  box-shadow:
+    inset 4px 4px 0 0 var(--pixel-grass-dark),
+    inset -4px -4px 0 0 var(--pixel-grass);
+}
+
+/* Gold variant */
+.pixel-btn-gold {
+  background: var(--pixel-gold);
+  color: var(--pixel-obsidian);
+  text-shadow: none;
+  box-shadow:
+    inset -4px -4px 0 0 var(--pixel-gold-dark),
+    inset 4px 4px 0 0 var(--pixel-gold-light);
+}
+
+.pixel-btn-gold:hover {
+  background: var(--pixel-gold-light);
+}
+
+/* Redstone/Error variant */
+.pixel-btn-danger {
+  background: var(--pixel-redstone);
+  box-shadow:
+    inset -4px -4px 0 0 var(--pixel-redstone-dark),
+    inset 4px 4px 0 0 var(--pixel-redstone-light);
+}
+
+.pixel-btn-danger:hover {
+  background: var(--pixel-redstone-light);
+}
+
+/* Inventory slot container */
+.pixel-inventory-bg {
+  background: var(--pixel-inventory-dark);
+  border: 4px solid var(--pixel-obsidian);
+  box-shadow:
+    inset 4px 4px 0 0 rgba(0, 0, 0, 0.5),
+    0 0 0 4px var(--pixel-inventory);
+}
+
+/* Single inventory slot */
+.pixel-slot {
+  background: var(--pixel-inventory-slot);
+  border: 2px solid var(--pixel-obsidian);
+  box-shadow:
+    inset 2px 2px 0 0 #5F5F5F,
+    inset -2px -2px 0 0 #AFAFAF;
+  padding: 8px;
+}
+
+.pixel-slot:hover {
+  background: #9F9F9F;
+  box-shadow:
+    inset 2px 2px 0 0 #6F6F6F,
+    inset -2px -2px 0 0 #CFCFCF;
+}
+
+/* Pixel badge */
+.pixel-badge {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 4px 8px;
+  background: var(--pixel-diamond);
+  color: var(--pixel-obsidian);
+  box-shadow:
+    inset -2px -2px 0 0 var(--pixel-diamond-dark),
+    inset 2px 2px 0 0 var(--pixel-diamond-light);
+}
+
+/* Dropdown menu (inventory style) */
+.pixel-dropdown {
+  font-family: 'Press Start 2P', monospace;
+  background: var(--pixel-inventory-dark);
+  border: 4px solid var(--pixel-obsidian);
+  box-shadow:
+    0 0 0 4px var(--pixel-inventory),
+    8px 8px 0 0 rgba(0, 0, 0, 0.4);
+  padding: 4px;
+}
+
+.pixel-dropdown-item {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: var(--pixel-text);
+  background: var(--pixel-inventory-slot);
+  padding: 10px 12px;
+  margin: 2px 0;
+  cursor: pointer;
+  text-shadow: 2px 2px 0 var(--pixel-text-shadow);
+  box-shadow:
+    inset 2px 2px 0 0 #AFAFAF,
+    inset -2px -2px 0 0 #5F5F5F;
+  transition: none;
+}
+
+.pixel-dropdown-item:hover {
+  background: #AFAFAF;
+  box-shadow:
+    inset 2px 2px 0 0 #CFCFCF,
+    inset -2px -2px 0 0 #7F7F7F;
+}
+
+.pixel-dropdown-item:active {
+  box-shadow:
+    inset -2px -2px 0 0 #AFAFAF,
+    inset 2px 2px 0 0 #5F5F5F;
+}
+
+.pixel-dropdown-item.danger {
+  color: var(--pixel-redstone-light);
+}
+
+.pixel-dropdown-item.danger:hover {
+  background: var(--pixel-redstone);
+  color: white;
+}
+
+/* Divider */
+.pixel-divider {
+  height: 4px;
+  background: linear-gradient(
+    to bottom,
+    var(--pixel-obsidian) 0%,
+    var(--pixel-obsidian) 50%,
+    var(--pixel-inventory) 50%,
+    var(--pixel-inventory) 100%
+  );
+  margin: 4px 0;
+}
+
+/* Animated pickaxe loader */
+@keyframes pixel-mine {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-20deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(20deg); }
+}
+
+.pixel-loading {
+  display: inline-block;
+  animation: pixel-mine 0.6s ease-in-out infinite;
+}
+
+/* Pixel icons (using emoji/text for now) */
+.pixel-icon {
+  font-style: normal;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  text-align: center;
+  line-height: 16px;
+}
+
+/* Header bar Minecraft style */
+.pixel-header {
+  background: var(--pixel-obsidian);
+  border-bottom: 4px solid var(--pixel-stone-dark);
+  box-shadow:
+    inset 0 4px 0 0 var(--pixel-obsidian-light),
+    0 4px 0 0 rgba(0, 0, 0, 0.3);
+}
+
+/* Tooltip */
+.pixel-tooltip {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  background: var(--pixel-obsidian);
+  color: var(--pixel-text);
+  padding: 8px;
+  border: 2px solid var(--pixel-diamond);
+  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Balance display */
+.pixel-balance {
+  font-family: 'Press Start 2P', monospace;
+  color: var(--pixel-gold);
+  text-shadow: 2px 2px 0 var(--pixel-gold-dark);
+}
+
+/* SOL icon representation */
+.pixel-sol-icon::before {
+  content: '◎';
+  color: var(--pixel-diamond);
+  margin-right: 4px;
+}

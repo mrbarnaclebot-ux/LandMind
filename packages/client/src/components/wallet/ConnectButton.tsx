@@ -6,40 +6,13 @@ import { useWalletSession } from '../../hooks/useWalletSession';
 import { getBalance } from '../../lib/solana';
 import { AccountMenu } from './AccountMenu';
 import { NetworkBadge } from './NetworkBadge';
+import '../../styles/pixel-theme.css';
 
-const BALANCE_REFRESH_INTERVAL = 30_000; // 30 seconds per CONTEXT.md
-
-const buttonStyle: React.CSSProperties = {
-  backgroundColor: '#512da8',
-  border: 'none',
-  borderRadius: '8px',
-  padding: '10px 20px',
-  color: 'white',
-  cursor: 'pointer',
-  fontWeight: 'bold',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '14px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px',
-  transition: 'background-color 0.15s'
-};
-
-const buttonDisabledStyle: React.CSSProperties = {
-  ...buttonStyle,
-  opacity: 0.7,
-  cursor: 'not-allowed'
-};
-
-const containerStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '8px'
-};
+const BALANCE_REFRESH_INTERVAL = 30_000; // 30 seconds
 
 /**
- * Main wallet connect button for header.
- * Shows connect button when disconnected, account menu when connected.
+ * Minecraft-styled wallet connect button.
+ * Shows blocky 3D button when disconnected, inventory-slot menu when connected.
  */
 export const ConnectButton: FC = () => {
   const { connection } = useConnection();
@@ -91,28 +64,34 @@ export const ConnectButton: FC = () => {
     }
   }, [connected, publicKey, isAuthenticated, isAuthenticating, authenticate]);
 
-  // Show toast for auth errors (simplified - just console for now)
+  // Show toast for auth errors
   useEffect(() => {
     if (authError) {
       console.error('Wallet auth error:', authError);
-      // TODO: Integrate with toast system in future
     }
   }, [authError]);
 
-  // Loading state during connection or authentication
+  // Container with network badge
+  const containerStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  };
+
+  // Loading state - pickaxe mining animation
   if (connecting || isAuthenticating) {
     return (
       <div style={containerStyle}>
         <NetworkBadge network={network} />
-        <button style={buttonDisabledStyle} disabled>
-          <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>&#8635;</span>
-          {connecting ? 'Connecting...' : 'Signing...'}
+        <button className="pixel-btn" disabled style={{ minWidth: '160px' }}>
+          <span className="pixel-loading">⛏</span>
+          <span>{connecting ? 'CONNECTING' : 'SIGNING'}</span>
         </button>
       </div>
     );
   }
 
-  // Connected and authenticated - show full account menu
+  // Connected and authenticated - show account menu
   if (connected && publicKey && isAuthenticated) {
     return (
       <div style={containerStyle}>
@@ -126,49 +105,55 @@ export const ConnectButton: FC = () => {
     );
   }
 
-  // Connected but auth failed or pending - show address with error/retry
+  // Connected but auth failed - redstone/error style with retry
   if (connected && publicKey) {
-    const errorStyle: React.CSSProperties = {
-      ...buttonStyle,
-      backgroundColor: authError ? '#c62828' : '#512da8',
-      cursor: authError ? 'pointer' : 'default'
-    };
-
     const shortAddress = `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`;
 
     return (
       <div style={containerStyle}>
         <NetworkBadge network={network} />
         <button
-          style={errorStyle}
+          className={`pixel-btn ${authError ? 'pixel-btn-danger' : ''}`}
           onClick={authError ? () => authenticate() : undefined}
           title={authError || 'Authenticating...'}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
         >
           {authError ? (
             <>
-              <span style={{ color: '#ffcdd2' }}>⚠</span>
-              {shortAddress}
-              <span style={{ fontSize: '12px', opacity: 0.8 }}>(retry)</span>
+              <span>⚠</span>
+              <span>{shortAddress}</span>
+              <span style={{ fontSize: '8px' }}>[RETRY]</span>
             </>
           ) : (
-            shortAddress
+            <>
+              <span className="pixel-loading">⛏</span>
+              <span>{shortAddress}</span>
+            </>
           )}
         </button>
       </div>
     );
   }
 
-  // Disconnected state
+  // Disconnected - emerald green connect button
   return (
     <div style={containerStyle}>
       <NetworkBadge network={network} />
       <button
-        style={buttonStyle}
+        className="pixel-btn pixel-btn-primary"
         onClick={() => setVisible(true)}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#7c4dff')}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#512da8')}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}
       >
-        Connect Wallet
+        <span>🔗</span>
+        <span>CONNECT</span>
       </button>
     </div>
   );
