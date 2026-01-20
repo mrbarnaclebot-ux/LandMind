@@ -2,7 +2,7 @@
  * Biome definitions and color palettes for terrain generation
  *
  * Color palette inspired by Zelda: Link's Awakening - saturated, stylized colors
- * Colors are in 0-1 range for Babylon.js compatibility
+ * Colors are in 0-1 range for Three.js compatibility
  */
 
 export type Biome = 'grassland' | 'marsh' | 'plains' | 'forest' | 'rocky' | 'alpine';
@@ -15,7 +15,7 @@ export interface BiomeColor {
 
 /**
  * Bright, saturated color palette for each biome
- * Values are in 0-1 range for Babylon.js
+ * Values are in 0-1 range for Three.js
  *
  * Colors are intentionally BRIGHT and vibrant for a Zelda-like stylized look.
  * Increased saturation and value for better visibility and cheerful aesthetic.
