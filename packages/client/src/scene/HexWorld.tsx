@@ -5,7 +5,7 @@
  * of hexes. Each hex is positioned based on axial coordinates and colored
  * by its biome type.
  *
- * Visual style: Minecraft-inspired with vibrant colors, beveled tiles,
+ * Visual style: Minecraft-inspired with vibrant colors, solid flat-top tiles,
  * and flat/toon shading for that chunky pixel-art aesthetic.
  *
  * Performance optimizations:
@@ -109,13 +109,11 @@ export function HexWorld({ gridRadius = 20, seed }: HexWorldProps) {
     return generateHexData(gridRadius, seed);
   }, [gridRadius, seed]);
 
-  // Create shared geometry for all hexes - beveled tiles with subtle height
+  // Create shared geometry for all hexes - solid flat-top prisms
   const geometry = useMemo(() => {
     return createHexGeometry({
-      size: 0.95,
+      size: 0.95, // Slightly smaller than spacing for visible gaps
       height: 0.35, // Thick tile, not tall column
-      bevelSize: 0.12, // Chamfered edge catches light nicely
-      bevelHeight: 0.08,
       skirtDepth: 0.3, // Enough to cover elevation gaps
     });
   }, []);
