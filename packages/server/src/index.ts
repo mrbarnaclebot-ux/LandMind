@@ -12,6 +12,7 @@ import { createServer } from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
 import healthRouter from './routes/health.js';
+import devRouter from './routes/dev.js';
 import { setupSocket } from './lib/socket.js';
 import { startTickLoop, stopTickLoop } from './simulation/tickLoop.js';
 import { flushToPostgres } from './cache/persistence.js';
@@ -31,6 +32,9 @@ app.use(express.json());
 
 // Routes
 app.use('/health', healthRouter);
+
+// Dev routes (development only)
+app.use('/dev', devRouter);
 
 // Graceful shutdown handler
 async function shutdown(signal: string): Promise<void> {
