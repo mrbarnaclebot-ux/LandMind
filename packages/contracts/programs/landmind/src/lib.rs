@@ -9,7 +9,7 @@ pub mod landmind {
     /// Initialize the LandMind program.
     /// This is a placeholder instruction for Phase 1.
     /// Real implementation will be added in Phase 5 (Agent Deployment).
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
         msg!("LandMind program initialized");
         Ok(())
     }
