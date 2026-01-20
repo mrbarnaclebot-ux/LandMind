@@ -32,11 +32,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Express server starts and responds to health check endpoint
   4. Babylon.js renders an empty scene in the browser
   5. Anchor project compiles with placeholder program structure
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Docker Compose setup (PostgreSQL + Redis)
+- [ ] 01-02-PLAN.md — Prisma schema and Express server with health endpoint
+- [ ] 01-03-PLAN.md — Babylon.js + Vite frontend scaffold
+- [ ] 01-04-PLAN.md — Anchor project scaffold
 
 ### Phase 2: 3D World Core
 **Goal**: Users can see and navigate a 3D hexagonal world in their browser
@@ -146,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/4 | Planned | - |
 | 2. 3D World Core | 0/TBD | Not started | - |
 | 3. Real-Time Simulation | 0/TBD | Not started | - |
 | 4. Wallet Integration | 0/TBD | Not started | - |
@@ -180,4 +182,4 @@ All 34 v1 requirements mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-19*
+*Last updated: 2026-01-20*
