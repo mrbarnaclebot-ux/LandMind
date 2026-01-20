@@ -11,9 +11,9 @@ import {
 // Camera configuration constants
 const DEFAULT_ALPHA = Math.PI / 4; // 45 degrees horizontal rotation
 const DEFAULT_BETA = Math.PI / 3; // ~60 degrees vertical (isometric feel)
-const DEFAULT_ORTHO_SIZE = 20; // Initial zoom level
-const MIN_ORTHO_SIZE = 5; // Maximum zoom in
-const MAX_ORTHO_SIZE = 60; // Maximum zoom out
+const DEFAULT_ORTHO_SIZE = 40; // Initial zoom level (shows ~80 unit diameter)
+const MIN_ORTHO_SIZE = 3; // Maximum zoom in
+const MAX_ORTHO_SIZE = 100; // Maximum zoom out (can view entire grid)
 const ZOOM_SPEED = 2; // Ortho units per wheel tick
 
 /**

@@ -65,38 +65,30 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
     templateMesh.isVisible = false;
     templateRef.current = templateMesh;
 
-    // Create instance mesh (the one that will render)
-    const instanceMesh = templateMesh.clone('hexInstances');
-    instanceMesh.isVisible = true;
-    meshRef.current = instanceMesh;
-
-    // Create material with vertex colors
-    // Note: StandardMaterial with useVertexColors may not work directly with thin instances
-    // Using a single base color as fallback - biome colors will be baked into per-instance colors
-    const material = new StandardMaterial('hexWorldMaterial', scene);
-    material.diffuseColor = new Color3(1, 1, 1); // White base, colors come from instances
-    material.specularColor = new Color3(0.2, 0.2, 0.2);
-
-    // For thin instances, we need to use a custom shader or bake colors differently
-    // StandardMaterial.useVertexColors doesn't work with thin instances by default
-    // Instead, we'll create multiple meshes grouped by biome for now
-    // TODO: Implement custom shader for per-instance colors in future plan
-
     // Group hexes by biome for color-based batching
     const hexesByBiome = new Map<string, typeof hexes>();
     hexes.forEach((hex) => {
-      const biomeHexes = hexesByBiome.get(hex.biome) || [];
-      biomeHexes.push(hex);
-      hexesByBiome.set(hex.biome, biomeHexes);
+      if (!hexesByBiome.has(hex.biome)) {
+        hexesByBiome.set(hex.biome, []);
+      }
+      hexesByBiome.get(hex.biome)!.push(hex);
     });
 
     // Create a separate instanced mesh for each biome
     const instanceMeshes: Mesh[] = [];
+    const materials: StandardMaterial[] = [];
 
     hexesByBiome.forEach((biomeHexes, biome) => {
-      // Create mesh for this biome
-      const biomeMesh = templateMesh.clone(`hexInstances_${biome}`);
+
+      // Create a NEW mesh for each biome using fresh geometry
+      const biomeMesh = createBeveledHexMesh(scene, {
+        size: 1.0,
+        height: 0.3,
+        bevelSize: 0.08,
+      });
+      biomeMesh.name = `hexInstances_${biome}`;
       biomeMesh.isVisible = true;
+      biomeMesh.isPickable = false;
 
       // Create material with biome color
       const biomeMaterial = new StandardMaterial(`hexMat_${biome}`, scene);
@@ -104,6 +96,7 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
       biomeMaterial.diffuseColor = new Color3(biomeColor.r, biomeColor.g, biomeColor.b);
       biomeMaterial.specularColor = new Color3(0.2, 0.2, 0.2);
       biomeMesh.material = biomeMaterial;
+      materials.push(biomeMaterial);
 
       // Allocate matrix buffer for this biome's hexes
       const matrixBuffer = new Float32Array(16 * biomeHexes.length);
@@ -122,15 +115,12 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
       instanceMeshes.push(biomeMesh);
     });
 
-    // Dispose the original instance mesh (we're using biome-grouped meshes instead)
-    instanceMesh.dispose();
-    meshRef.current = null;
-
-    // Store meshes for cleanup
-    const allMeshes = instanceMeshes;
+    // Store first mesh for ref tracking
+    meshRef.current = instanceMeshes[0] || null;
 
     return () => {
-      allMeshes.forEach((m) => m.dispose());
+      instanceMeshes.forEach((m) => m.dispose());
+      materials.forEach((m) => m.dispose());
       templateMesh.dispose();
     };
   }, [scene, hexes]);
