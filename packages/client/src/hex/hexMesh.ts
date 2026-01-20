@@ -26,9 +26,9 @@ export interface HexMeshOptions {
 }
 
 const DEFAULT_OPTIONS: Required<HexMeshOptions> = {
-  size: 1.0,
-  height: 0.3,
-  skirtDepth: 0.6, // Covers one elevation step (0.5) plus margin
+  size: 0.95, // Slightly smaller than 1.0 to create visible gaps between hexes
+  height: 0.8, // Chunky height for solid 3D block appearance
+  skirtDepth: 0.8, // Covers one elevation step (0.5) plus margin
 };
 
 /**

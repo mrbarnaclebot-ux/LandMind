@@ -10,12 +10,16 @@ import { HexWorld } from './HexWorld';
 
 // Static constants for scene configuration - defined once at module level
 // This prevents React re-renders from creating new object references
-const SCENE_CLEAR_COLOR = new Color3(0.45, 0.65, 0.85).toColor4();
-const SCENE_AMBIENT_COLOR = new Color3(0.4, 0.4, 0.5);
+const SCENE_CLEAR_COLOR = new Color3(0.4, 0.55, 0.75).toColor4();
+// Low ambient color to let directional lighting create visible shadows on hex sides
+const SCENE_AMBIENT_COLOR = new Color3(0.2, 0.2, 0.25);
 const HEMISPHERE_DIRECTION = Vector3.Up();
-const HEMISPHERE_DIFFUSE = new Color3(0.8, 0.85, 0.95);
-const HEMISPHERE_GROUND = new Color3(0.3, 0.35, 0.25);
-const SUN_DIRECTION = new Vector3(-1, -2, -1);
+// Dimmer hemisphere for subtle fill without washing out shadows
+const HEMISPHERE_DIFFUSE = new Color3(0.5, 0.55, 0.65);
+const HEMISPHERE_GROUND = new Color3(0.2, 0.22, 0.18);
+// Sun direction: angled to illuminate some hex sides while leaving others in shadow
+// This creates the 3D depth effect where sides facing away from sun are darker
+const SUN_DIRECTION = new Vector3(-1, -2, -0.5);
 const SUN_DIFFUSE = new Color3(1.0, 0.95, 0.85);
 
 export function BabylonSceneComponent() {
@@ -57,18 +61,18 @@ export function BabylonSceneComponent() {
         ambientColor={SCENE_AMBIENT_COLOR}
         onSceneMount={onSceneMount}
       >
-        {/* Ambient fill light - soft blue sky tones */}
+        {/* Ambient fill light - kept dim so shadows remain visible */}
         <hemisphericLight
           name="ambient"
-          intensity={0.5}
+          intensity={0.3}
           direction={HEMISPHERE_DIRECTION}
           diffuse={HEMISPHERE_DIFFUSE}
           groundColor={HEMISPHERE_GROUND}
         />
-        {/* Main sun light - bright warm directional */}
+        {/* Main sun light - bright directional creates shadows on hex sides */}
         <directionalLight
           name="sun"
-          intensity={1.5}
+          intensity={1.8}
           direction={SUN_DIRECTION}
           diffuse={SUN_DIFFUSE}
         />

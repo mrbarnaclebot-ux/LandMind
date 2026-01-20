@@ -22,10 +22,15 @@ import { StandardMaterial, Scene, Color3 } from '@babylonjs/core';
  * Uses StandardMaterial for reliable thin instance support.
  * Each biome gets its own material with its color.
  *
+ * Material settings are tuned for maximum depth perception:
+ * - No emissive (allows lighting to create shadows)
+ * - Low ambient (side faces stay darker)
+ * - Slight specular on tops (catches light)
+ *
  * @param scene - The Babylon.js scene
  * @param name - Material name
  * @param diffuseColor - Base color for the material (biome color)
- * @returns StandardMaterial configured for stylized look
+ * @returns StandardMaterial configured for solid 3D look
  */
 export function createHexMaterial(
   scene: Scene,
@@ -34,18 +39,21 @@ export function createHexMaterial(
 ): StandardMaterial {
   const material = new StandardMaterial(name, scene);
 
-  // Set the biome color as diffuse - boost slightly for vibrancy
-  material.diffuseColor = diffuseColor;
+  // Boost the diffuse color slightly for vibrancy
+  material.diffuseColor = diffuseColor.scale(1.1);
 
-  // No specular for flat, stylized cartoon look
-  material.specularColor = Color3.Black();
-  material.specularPower = 1;
+  // Subtle specular for slight shininess that helps show surface angles
+  // This creates slight highlights on top faces catching the sun
+  material.specularColor = new Color3(0.15, 0.15, 0.15);
+  material.specularPower = 32;
 
-  // Add ambient color for fill lighting (prevents pitch black shadows)
-  material.ambientColor = diffuseColor.scale(0.3);
+  // Very low ambient - this is KEY for depth perception
+  // Low ambient means side faces (not hit by directional light) appear darker
+  material.ambientColor = diffuseColor.scale(0.15);
 
-  // Slight emissive glow to make colors pop (stylized look)
-  material.emissiveColor = diffuseColor.scale(0.15);
+  // NO emissive - emissive washes out lighting and makes everything look flat
+  // Removing emissive lets the lighting create proper shadows on sides
+  material.emissiveColor = Color3.Black();
 
   // Enable backface culling for performance
   material.backFaceCulling = true;
