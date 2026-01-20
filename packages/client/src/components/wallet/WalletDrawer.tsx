@@ -1,0 +1,218 @@
+import { FC, useEffect, useState } from 'react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { getBalance, formatAddress } from '../../lib/solana';
+import { TransactionHistory } from './TransactionHistory';
+import '../../styles/pixel-theme.css';
+
+interface WalletDrawerProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const BALANCE_REFRESH_INTERVAL = 30_000; // 30 seconds
+
+/**
+ * Minecraft inventory-style wallet side panel.
+ * Slides in from right with balance display and transaction history.
+ */
+export const WalletDrawer: FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
+  const { connection } = useConnection();
+  const { publicKey, connected } = useWallet();
+  const [balance, setBalance] = useState<number | null>(null);
+
+  // Fetch balance
+  useEffect(() => {
+    if (!connected || !publicKey) {
+      setBalance(null);
+      return;
+    }
+
+    const fetchBalance = async () => {
+      try {
+        const bal = await getBalance(connection, publicKey);
+        setBalance(bal);
+      } catch (err) {
+        console.error('Failed to fetch balance:', err);
+      }
+    };
+
+    fetchBalance();
+    const interval = setInterval(fetchBalance, BALANCE_REFRESH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [connection, publicKey, connected]);
+
+  // Close on escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
+  if (!connected || !publicKey) {
+    return null;
+  }
+
+  // Overlay styles
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    zIndex: 999,
+    opacity: isOpen ? 1 : 0,
+    visibility: isOpen ? 'visible' : 'hidden',
+    transition: 'opacity 0.2s, visibility 0.2s',
+  };
+
+  // Drawer styles - Minecraft inventory panel
+  const drawerStyle: React.CSSProperties = {
+    position: 'fixed',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: '340px',
+    maxWidth: '100vw',
+    zIndex: 1000,
+    transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
+    transition: 'transform 0.25s ease-out',
+    display: 'flex',
+    flexDirection: 'column',
+    // Minecraft inventory styling
+    background: 'var(--pixel-inventory-dark)',
+    border: '4px solid var(--pixel-obsidian)',
+    boxShadow: '-8px 0 0 0 var(--pixel-inventory), inset 4px 4px 0 0 rgba(0, 0, 0, 0.5)',
+  };
+
+  // Header styles
+  const headerStyle: React.CSSProperties = {
+    padding: '16px',
+    background: 'var(--pixel-obsidian)',
+    borderBottom: '4px solid var(--pixel-stone-dark)',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    boxShadow: 'inset 0 4px 0 0 var(--pixel-obsidian-light)',
+  };
+
+  return (
+    <>
+      {/* Overlay */}
+      <div style={overlayStyle} onClick={onClose} />
+
+      {/* Drawer */}
+      <div style={drawerStyle} className="pixel-ui">
+        {/* Header */}
+        <header style={headerStyle}>
+          <span
+            style={{
+              fontFamily: "'Press Start 2P', monospace",
+              fontSize: '12px',
+              color: '#FFFFFF',
+              textShadow: '2px 2px 0 #3F3F3F',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ color: '#55CDFC' }}>[]</span>
+            WALLET
+          </span>
+          <button
+            onClick={onClose}
+            className="pixel-btn"
+            style={{
+              padding: '6px 10px',
+              fontSize: '10px',
+              minWidth: 'auto',
+            }}
+          >
+            X
+          </button>
+        </header>
+
+        {/* Balance Section */}
+        <section
+          style={{
+            padding: '20px 16px',
+            background: '#2D2D31',
+            borderBottom: '4px solid var(--pixel-stone-dark)',
+            textAlign: 'center',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'Press Start 2P', monospace",
+              fontSize: '8px',
+              color: '#8B8B8B',
+              textTransform: 'uppercase',
+              marginBottom: '12px',
+            }}
+          >
+            BALANCE
+          </div>
+          <div
+            className="pixel-balance"
+            style={{
+              fontSize: '20px',
+              marginBottom: '12px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span style={{ color: '#55CDFC' }}>{}</span>
+            <span>
+              {balance !== null ? balance.toFixed(4) : '---'}
+            </span>
+            <span style={{ fontSize: '12px', color: '#FFAA00' }}>SOL</span>
+          </div>
+          <div
+            style={{
+              fontFamily: "monospace",
+              fontSize: '10px',
+              color: '#8B8B8B',
+              padding: '8px',
+              background: 'rgba(0, 0, 0, 0.3)',
+              borderRadius: '0',
+              boxShadow: 'inset 2px 2px 0 0 rgba(0, 0, 0, 0.3)',
+            }}
+          >
+            {formatAddress(publicKey.toBase58(), 8)}
+          </div>
+        </section>
+
+        {/* Content - Transaction History */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '0 16px 16px',
+          }}
+        >
+          <TransactionHistory filterLandMind={false} />
+        </div>
+
+        {/* Footer hint */}
+        <div
+          style={{
+            padding: '8px 16px',
+            background: 'var(--pixel-obsidian)',
+            borderTop: '4px solid var(--pixel-stone-dark)',
+            fontFamily: "'Press Start 2P', monospace",
+            fontSize: '6px',
+            color: '#5F5F5F',
+            textAlign: 'center',
+          }}
+        >
+          CLICK TX TO VIEW IN EXPLORER
+        </div>
+      </div>
+    </>
+  );
+};
