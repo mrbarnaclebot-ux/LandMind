@@ -12,9 +12,13 @@ import {
 const DEFAULT_ALPHA = Math.PI / 4; // 45 degrees horizontal rotation
 const DEFAULT_BETA = Math.PI / 3; // ~60 degrees vertical (isometric feel)
 const DEFAULT_ORTHO_SIZE = 40; // Initial zoom level (shows ~80 unit diameter)
-const MIN_ORTHO_SIZE = 3; // Maximum zoom in
+const MIN_ORTHO_SIZE = 5; // Maximum zoom in (increased to prevent clipping)
 const MAX_ORTHO_SIZE = 100; // Maximum zoom out (can view entire grid)
-const ZOOM_SPEED = 2; // Ortho units per wheel tick
+const ZOOM_SPEED = 3; // Ortho units per wheel tick (faster zoom)
+
+// Clipping plane distances for orthographic camera
+const NEAR_CLIP = 0.1; // Very close to camera
+const FAR_CLIP = 500; // Far enough to see entire world
 
 /**
  * Creates an isometric-style orthographic camera with pan/rotate controls
@@ -34,6 +38,11 @@ export function setupIsometricCamera(
 
   // Set orthographic mode
   camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
+
+  // CRITICAL: Set clipping planes to prevent disappearing geometry
+  // For ortho cameras, minZ/maxZ define the visible depth range
+  camera.minZ = NEAR_CLIP;
+  camera.maxZ = FAR_CLIP;
 
   // Calculate aspect ratio and set initial ortho bounds
   const aspectRatio = canvas.width / canvas.height;

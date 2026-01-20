@@ -6,6 +6,12 @@
  *
  * StandardMaterial is used because it has full thin instance support,
  * unlike custom ShaderMaterial which requires manual instance matrix handling.
+ *
+ * The material is configured for a vibrant, cel-shaded look with:
+ * - High diffuse saturation
+ * - Minimal specular (matte finish)
+ * - Ambient emissive to prevent dark shadows
+ * - Freeze for performance optimization
  */
 
 import { StandardMaterial, Scene, Color3 } from '@babylonjs/core';
@@ -28,18 +34,25 @@ export function createHexMaterial(
 ): StandardMaterial {
   const material = new StandardMaterial(name, scene);
 
-  // Set the biome color as diffuse
+  // Set the biome color as diffuse - boost slightly for vibrancy
   material.diffuseColor = diffuseColor;
 
-  // Minimal specular for a more matte, stylized look
-  material.specularColor = new Color3(0.1, 0.1, 0.1);
-  material.specularPower = 8;
+  // No specular for flat, stylized cartoon look
+  material.specularColor = Color3.Black();
+  material.specularPower = 1;
 
-  // Slight emissive to prevent pure black shadows (stylized look)
-  material.emissiveColor = diffuseColor.scale(0.05);
+  // Add ambient color for fill lighting (prevents pitch black shadows)
+  material.ambientColor = diffuseColor.scale(0.3);
+
+  // Slight emissive glow to make colors pop (stylized look)
+  material.emissiveColor = diffuseColor.scale(0.15);
 
   // Enable backface culling for performance
   material.backFaceCulling = true;
+
+  // Freeze the material since we won't change it after creation
+  // This improves performance by avoiding unnecessary state checks
+  material.freeze();
 
   return material;
 }

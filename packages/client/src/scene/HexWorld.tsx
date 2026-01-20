@@ -5,9 +5,15 @@
  * of hexes. Each hex is positioned based on axial coordinates and colored
  * by its biome type.
  *
- * Thin instances share a single mesh template, sending transformation matrices
- * and colors to the GPU for per-instance rendering. This is significantly
+ * Thin instances share mesh geometry, sending transformation matrices
+ * to the GPU for per-instance rendering. This is significantly
  * more efficient than creating individual meshes.
+ *
+ * Performance optimizations:
+ * - One mesh per biome (6 draw calls total)
+ * - Frozen world matrices (no per-frame recalculation)
+ * - Frozen materials (no state change checks)
+ * - Static instance buffers (uploaded once)
  */
 
 import { useEffect, useRef, useMemo } from 'react';
@@ -29,14 +35,13 @@ export interface HexWorldProps {
 /**
  * HexWorld component - renders the hex grid with thin instances
  *
- * Creates a template hex mesh, then uses thin instances to render
- * thousands of hexes efficiently. Each hex is positioned at its
- * world coordinates with elevation and colored by biome.
+ * Creates one mesh per biome, each with thin instances for all hexes
+ * of that biome type. This results in 6 draw calls total regardless
+ * of how many hexes are rendered.
  */
 export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
   const scene = useScene();
   const meshRef = useRef<Mesh | null>(null);
-  const templateRef = useRef<Mesh | null>(null);
 
   // Generate hex data - only regenerate on seed/radius change
   const hexes = useMemo(() => {
@@ -52,19 +57,6 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
       meshRef.current.dispose();
       meshRef.current = null;
     }
-    if (templateRef.current) {
-      templateRef.current.dispose();
-      templateRef.current = null;
-    }
-
-    // Create template mesh (not rendered directly)
-    const templateMesh = createBeveledHexMesh(scene, {
-      size: 1.0,
-      height: 0.3,
-      bevelSize: 0.08,
-    });
-    templateMesh.isVisible = false;
-    templateRef.current = templateMesh;
 
     // Group hexes by biome for color-based batching
     const hexesByBiome = new Map<string, typeof hexes>();
@@ -80,7 +72,7 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
     const materials: StandardMaterial[] = [];
 
     hexesByBiome.forEach((biomeHexes, biome) => {
-      // Create a NEW mesh for each biome using fresh geometry
+      // Create a mesh for each biome
       const biomeMesh = createBeveledHexMesh(scene, {
         size: 1.0,
         height: 0.3,
@@ -110,8 +102,13 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
         Matrix.Translation(x, y, z).copyToArray(matrixBuffer, i * 16);
       });
 
-      // Apply thin instance buffer
+      // Apply thin instance buffer (static = true, won't change)
       biomeMesh.thinInstanceSetBuffer('matrix', matrixBuffer, 16, true);
+
+      // Freeze the mesh's world matrix since it won't move
+      biomeMesh.freezeWorldMatrix();
+
+      // Compute bounding info once for culling
       biomeMesh.thinInstanceRefreshBoundingInfo(true);
 
       instanceMeshes.push(biomeMesh);
@@ -123,7 +120,6 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
     return () => {
       instanceMeshes.forEach((m) => m.dispose());
       materials.forEach((m) => m.dispose());
-      templateMesh.dispose();
     };
   }, [scene, hexes]);
 
