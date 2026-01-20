@@ -43,18 +43,23 @@ export function BabylonSceneComponent() {
   return (
     <Engine antialias adaptToDeviceRatio canvasId="babylon-canvas">
       <Scene
-        clearColor={new Color3(0.1, 0.1, 0.15).toColor4()}
+        clearColor={new Color3(0.15, 0.18, 0.25).toColor4()}
         onSceneMount={onSceneMount}
       >
+        {/* Ambient fill light - cool blue tones for sky reflection */}
         <hemisphericLight
-          name="light"
-          intensity={0.7}
+          name="ambient"
+          intensity={0.3}
           direction={Vector3.Up()}
+          diffuse={new Color3(0.7, 0.75, 0.9)}
+          groundColor={new Color3(0.2, 0.2, 0.25)}
         />
+        {/* Main sun light - warm directional from upper right */}
         <directionalLight
-          name="dirLight"
-          intensity={0.5}
+          name="sun"
+          intensity={1.2}
           direction={new Vector3(-1, -2, -1)}
+          diffuse={new Color3(1.0, 0.98, 0.9)}
         />
         <HexWorld gridRadius={30} />
       </Scene>
