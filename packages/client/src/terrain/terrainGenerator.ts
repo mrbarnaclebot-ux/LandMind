@@ -9,29 +9,7 @@
 import { createNoise2D, type NoiseFunction2D } from 'simplex-noise';
 import alea from 'alea';
 import { getBiome, type Biome } from './biomes';
-
-/**
- * Hex size constant (outer radius)
- * TODO: Import from ../hex/hexMath when Plan 02-01 is executed
- */
-const HEX_SIZE = 1.0;
-
-/**
- * Convert axial hex coordinates to world position (flat-top orientation)
- * TODO: Import from ../hex/hexMath when Plan 02-01 is executed
- */
-function hexToPixel(q: number, r: number): { x: number; z: number } {
-  const x = HEX_SIZE * (3 / 2) * q;
-  const z = HEX_SIZE * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r);
-  return { x, z };
-}
-
-/**
- * Calculate hex distance from origin (for grid generation bounds)
- */
-function hexDistance(q: number, r: number): number {
-  return (Math.abs(q) + Math.abs(q + r) + Math.abs(r)) / 2;
-}
+import { hexToPixel, hexDistance } from '../hex/hexMath';
 
 /**
  * Data for a single hex tile
@@ -138,7 +116,8 @@ export function generateHexData(
   for (let q = -gridRadius; q <= gridRadius; q++) {
     for (let r = -gridRadius; r <= gridRadius; r++) {
       // Only include hexes within the radius
-      if (hexDistance(q, r) > gridRadius) continue;
+      const center = { q: 0, r: 0 };
+      if (hexDistance({ q, r }, center) > gridRadius) continue;
 
       // Get world position for noise sampling
       const { x, z } = hexToPixel(q, r);
