@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 2 - 3D World Core (In Progress)
+**Current focus:** Phase 3 - Real-Time Simulation (next)
 
 ## Current Position
 
-Phase: 2 of 7 (3D World Core)
-Plan: 4 of 5 in current phase
-Status: In progress
-Last activity: 2026-01-20 — Completed 02-04-PLAN.md (Isometric Camera)
+Phase: 2 of 7 (3D World Core) - COMPLETE
+Plan: 5 of 5 in current phase
+Status: Phase complete
+Last activity: 2026-01-20 — Completed 02-05-PLAN.md (Visual Polish - switched to Three.js)
 
-Progress: [████████░░] ~27% (8/~30 plans estimated)
+Progress: [██████░░░░] ~27% (9/~34 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 8 min
-- Total execution time: 61 min
+- Total plans completed: 9
+- Average duration: ~15 min
+- Total execution time: ~135 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4 | 45 min | 11 min |
-| 02-3d-world-core | 4 | 16 min | 4 min |
+| 02-3d-world-core | 5 | 90 min | 18 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (4 min), 02-03 (4 min), 02-02 (3 min), 02-01 (5 min), 01-02 (8 min)
-- Trend: Fast execution for focused utility plans
+- Phase 2 took longer due to visual iteration (Babylon.js → Three.js switch)
+- Multiple checkpoint iterations for visual quality
 
 *Updated after each plan completion*
 
@@ -49,7 +49,8 @@ Recent decisions affecting current work:
 - Automatic free relocation — reduces friction, agents mine forever once deployed
 - 50/50 fee split — balance between platform sustainability and user rewards
 - Monorepo with npm workspaces (packages/*) — supports client, server, contracts packages
-- react-babylonjs for scene composition — declarative JSX over imperative Babylon.js API
+- **Three.js instead of Babylon.js** — switched during Phase 2 for better visual results
+- react-three-fiber for scene composition — declarative JSX for Three.js
 - PostgreSQL on port 5433 (not 5432) — avoids conflict with existing host PostgreSQL
 - Anchor 0.30.1 via cargo install — avm had auth issues, direct cargo install works
 - Build with --no-idl flag — anchor-syn compatibility issue with newer proc-macro2
@@ -59,11 +60,9 @@ Recent decisions affecting current work:
 - Flat-top hex orientation with corners at 0, 60, 120, 180, 240, 300 degrees
 - Axial coordinates (q,r) based on Red Blob Games reference
 - simplex-noise + alea for deterministic terrain generation
-- 3 octaves fBm for elevation, separate noise for moisture
-- 6 biomes with Zelda-style saturated colors
-- Orthographic camera mode for consistent isometric feel
-- Custom zoom via ortho bounds (wheel precision disabled)
-- onSceneMount callback for imperative camera setup
+- 6 biomes with Minecraft-style vibrant colors
+- OrbitControls for camera navigation (pan, zoom, rotate)
+- InstancedMesh for efficient hex rendering (one per biome)
 
 ### Pending Todos
 
@@ -77,6 +76,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 02-04-PLAN.md (Isometric Camera)
+Stopped at: Completed Phase 2 (3D World Core) - All 5 plans executed, phase verified
 Resume file: None
-Next: 02-05-PLAN.md (Stylized Shaders)
+Next: Phase 3 planning (Real-Time Simulation)

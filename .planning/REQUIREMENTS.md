@@ -16,8 +16,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### 3D World & Visualization
 
-- [ ] **WORLD-01**: User sees 3D hexagonal world rendered in browser (Babylon.js)
-- [ ] **WORLD-02**: User can navigate the hex world (pan, zoom, rotate)
+- [x] **WORLD-01**: User sees 3D hexagonal world rendered in browser (Three.js)
+- [x] **WORLD-02**: User can navigate the hex world (pan, zoom, rotate)
 - [ ] **WORLD-03**: User sees their deployed agents on the hex grid
 - [ ] **WORLD-04**: User sees agents visually relocate when hexes deplete
 - [ ] **WORLD-05**: User sees resource concentration heat map overlay
@@ -100,8 +100,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WALLET-02 | Phase 4 | Pending |
 | WALLET-03 | Phase 4 | Pending |
 | WALLET-04 | Phase 4 | Pending |
-| WORLD-01 | Phase 2 | Pending |
-| WORLD-02 | Phase 2 | Pending |
+| WORLD-01 | Phase 2 | Complete |
+| WORLD-02 | Phase 2 | Complete |
 | WORLD-03 | Phase 5 | Pending |
 | WORLD-04 | Phase 5 | Pending |
 | WORLD-05 | Phase 6 | Pending |
