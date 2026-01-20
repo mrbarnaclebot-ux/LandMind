@@ -26,17 +26,15 @@ export interface BeveledHexOptions {
 const DEFAULT_OPTIONS: Required<BeveledHexOptions> = {
   size: 1.0,
   height: 0.3,
-  bevelSize: 0.08,
+  bevelSize: 0.18, // Larger bevel for more visible, pleasing edges
 };
 
 /**
  * Create a beveled hexagon mesh for use as thin instance template
  *
- * Vertex layout:
- * - Index 0: Top center (0, height, 0)
- * - Indices 1-6: Top inner ring (at full height)
- * - Indices 7-12: Top outer ring (lowered for bevel)
- * - Indices 13-18: Bottom outer ring (at y=0)
+ * Uses duplicated vertices for proper smooth normals on the bevel face,
+ * while keeping flat shading on the top and side faces. This creates a
+ * pleasing rounded-edge appearance on the hex tiles.
  *
  * @param scene - Babylon.js scene
  * @param options - Mesh generation options
@@ -65,83 +63,124 @@ export function createBeveledHexMesh(
     innerCorners.push([size * innerScale * cos, size * innerScale * sin]);
   }
 
-  // Build vertex positions
+  // More pronounced bevel drop for visual impact
+  const bevelHeight = height - bevelSize * 0.7;
+
+  // Build vertex positions and normals together for smooth shading
   const positions: number[] = [];
-
-  // Vertex 0: Top center
-  positions.push(0, height, 0);
-
-  // Vertices 1-6: Top inner ring (at full height)
-  for (let i = 0; i < 6; i++) {
-    positions.push(innerCorners[i][0], height, innerCorners[i][1]);
-  }
-
-  // Vertices 7-12: Top outer ring (lowered for bevel)
-  const bevelHeight = height - bevelSize * 0.5;
-  for (let i = 0; i < 6; i++) {
-    positions.push(outerCorners[i][0], bevelHeight, outerCorners[i][1]);
-  }
-
-  // Vertices 13-18: Bottom outer ring (at y=0)
-  for (let i = 0; i < 6; i++) {
-    positions.push(outerCorners[i][0], 0, outerCorners[i][1]);
-  }
-
-  // Vertex 19: Bottom center (for bottom face)
-  positions.push(0, 0, 0);
-
-  // Build indices (triangles, counter-clockwise winding)
+  const normals: number[] = [];
   const indices: number[] = [];
 
-  // Top face: 6 triangles from center (0) to inner ring (1-6)
+  let vertexIndex = 0;
+
+  // Helper to add a vertex
+  const addVertex = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => {
+    positions.push(x, y, z);
+    // Normalize the normal
+    const len = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    normals.push(nx / len, ny / len, nz / len);
+    return vertexIndex++;
+  };
+
+  // === TOP FACE (flat normal pointing up) ===
+  // Center vertex
+  const topCenter = addVertex(0, height, 0, 0, 1, 0);
+
+  // Inner ring vertices for top face (with up normal)
+  const topInnerRing: number[] = [];
   for (let i = 0; i < 6; i++) {
-    const next = (i + 1) % 6;
-    // CCW winding when viewed from above: center -> next -> current
-    indices.push(0, 1 + next, 1 + i);
+    topInnerRing.push(addVertex(innerCorners[i][0], height, innerCorners[i][1], 0, 1, 0));
   }
 
-  // Bevel face: 6 quads (12 triangles) from inner ring to outer ring
+  // Top face triangles
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
-    // Inner ring vertices: 1-6
-    // Outer ring vertices: 7-12
-    // Quad: inner[i], inner[next], outer[next], outer[i]
-    // Triangle 1 (CCW): inner[i] -> outer[i] -> outer[next]
-    indices.push(1 + i, 7 + i, 7 + next);
-    // Triangle 2 (CCW): inner[i] -> outer[next] -> inner[next]
-    indices.push(1 + i, 7 + next, 1 + next);
+    indices.push(topCenter, topInnerRing[next], topInnerRing[i]);
   }
 
-  // Side faces: 6 quads (12 triangles) from outer top ring to bottom ring
+  // === BEVEL FACE (smooth normals for rounded edge) ===
+  // Create separate vertices for bevel with angled normals
+  // The bevel normal points diagonally up and outward
+
+  // Inner edge of bevel (same position as top inner ring, but different normal)
+  const bevelInnerRing: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    // Normal points at an angle between up and outward
+    const nx = outerCorners[i][0] / size;
+    const nz = outerCorners[i][1] / size;
+    // Smooth normal: blend between straight up and outward
+    bevelInnerRing.push(addVertex(
+      innerCorners[i][0], height, innerCorners[i][1],
+      nx * 0.5, 0.866, nz * 0.5 // ~60 degrees up
+    ));
+  }
+
+  // Outer edge of bevel (at lowered position)
+  const bevelOuterRing: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    // Normal on outer edge points more outward
+    const nx = outerCorners[i][0] / size;
+    const nz = outerCorners[i][1] / size;
+    bevelOuterRing.push(addVertex(
+      outerCorners[i][0], bevelHeight, outerCorners[i][1],
+      nx * 0.866, 0.5, nz * 0.866 // ~30 degrees up
+    ));
+  }
+
+  // Bevel face quads
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
-    // Top outer ring vertices: 7-12
-    // Bottom outer ring vertices: 13-18
-    // Quad: top[i], top[next], bottom[next], bottom[i]
-    // Triangle 1 (CCW): top[i] -> bottom[i] -> bottom[next]
-    indices.push(7 + i, 13 + i, 13 + next);
-    // Triangle 2 (CCW): top[i] -> bottom[next] -> top[next]
-    indices.push(7 + i, 13 + next, 7 + next);
+    // Triangle 1
+    indices.push(bevelInnerRing[i], bevelOuterRing[i], bevelOuterRing[next]);
+    // Triangle 2
+    indices.push(bevelInnerRing[i], bevelOuterRing[next], bevelInnerRing[next]);
   }
 
-  // Bottom face: 6 triangles from center (19) to bottom ring (13-18)
+  // === SIDE FACES (flat normals pointing outward) ===
+  // Create vertices for each side face with face-specific normals
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
-    // CCW winding when viewed from below (opposite of top)
-    indices.push(19, 13 + i, 13 + next);
+
+    // Calculate face normal (perpendicular to edge, pointing outward)
+    const edgeX = outerCorners[next][0] - outerCorners[i][0];
+    const edgeZ = outerCorners[next][1] - outerCorners[i][1];
+    // Cross product with up vector gives outward normal
+    const faceNx = -edgeZ;
+    const faceNz = edgeX;
+    const len = Math.sqrt(faceNx * faceNx + faceNz * faceNz);
+    const nx = faceNx / len;
+    const nz = faceNz / len;
+
+    // Four corners of this side face quad
+    const v0 = addVertex(outerCorners[i][0], bevelHeight, outerCorners[i][1], nx, 0, nz);
+    const v1 = addVertex(outerCorners[next][0], bevelHeight, outerCorners[next][1], nx, 0, nz);
+    const v2 = addVertex(outerCorners[next][0], 0, outerCorners[next][1], nx, 0, nz);
+    const v3 = addVertex(outerCorners[i][0], 0, outerCorners[i][1], nx, 0, nz);
+
+    // Two triangles for the quad
+    indices.push(v0, v3, v2);
+    indices.push(v0, v2, v1);
   }
 
-  // Create vertex data and compute normals
+  // === BOTTOM FACE (flat normal pointing down) ===
+  const bottomCenter = addVertex(0, 0, 0, 0, -1, 0);
+  const bottomRing: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    bottomRing.push(addVertex(outerCorners[i][0], 0, outerCorners[i][1], 0, -1, 0));
+  }
+
+  // Bottom face triangles (reverse winding for correct facing)
+  for (let i = 0; i < 6; i++) {
+    const next = (i + 1) % 6;
+    indices.push(bottomCenter, bottomRing[i], bottomRing[next]);
+  }
+
+  // Create vertex data and apply to mesh
   const vertexData = new VertexData();
   vertexData.positions = positions;
+  vertexData.normals = normals;
   vertexData.indices = indices;
 
-  // Compute normals for proper lighting
-  const normals: number[] = [];
-  VertexData.ComputeNormals(positions, indices, normals);
-  vertexData.normals = normals;
-
-  // Apply to mesh
   vertexData.applyToMesh(mesh);
 
   // Mesh is created but not positioned - caller handles thin instances

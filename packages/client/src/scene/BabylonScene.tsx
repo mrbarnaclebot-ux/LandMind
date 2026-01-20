@@ -8,6 +8,16 @@ import {
 } from '../camera/isometricCamera';
 import { HexWorld } from './HexWorld';
 
+// Static constants for scene configuration - defined once at module level
+// This prevents React re-renders from creating new object references
+const SCENE_CLEAR_COLOR = new Color3(0.45, 0.65, 0.85).toColor4();
+const SCENE_AMBIENT_COLOR = new Color3(0.4, 0.4, 0.5);
+const HEMISPHERE_DIRECTION = Vector3.Up();
+const HEMISPHERE_DIFFUSE = new Color3(0.8, 0.85, 0.95);
+const HEMISPHERE_GROUND = new Color3(0.3, 0.35, 0.25);
+const SUN_DIRECTION = new Vector3(-1, -2, -1);
+const SUN_DIFFUSE = new Color3(1.0, 0.95, 0.85);
+
 export function BabylonSceneComponent() {
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -43,24 +53,24 @@ export function BabylonSceneComponent() {
   return (
     <Engine antialias adaptToDeviceRatio canvasId="babylon-canvas">
       <Scene
-        clearColor={new Color3(0.45, 0.65, 0.85).toColor4()}
-        ambientColor={new Color3(0.4, 0.4, 0.5)}
+        clearColor={SCENE_CLEAR_COLOR}
+        ambientColor={SCENE_AMBIENT_COLOR}
         onSceneMount={onSceneMount}
       >
         {/* Ambient fill light - soft blue sky tones */}
         <hemisphericLight
           name="ambient"
           intensity={0.5}
-          direction={Vector3.Up()}
-          diffuse={new Color3(0.8, 0.85, 0.95)}
-          groundColor={new Color3(0.3, 0.35, 0.25)}
+          direction={HEMISPHERE_DIRECTION}
+          diffuse={HEMISPHERE_DIFFUSE}
+          groundColor={HEMISPHERE_GROUND}
         />
         {/* Main sun light - bright warm directional */}
         <directionalLight
           name="sun"
           intensity={1.5}
-          direction={new Vector3(-1, -2, -1)}
-          diffuse={new Color3(1.0, 0.95, 0.85)}
+          direction={SUN_DIRECTION}
+          diffuse={SUN_DIFFUSE}
         />
         <HexWorld gridRadius={30} />
       </Scene>

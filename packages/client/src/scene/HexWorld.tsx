@@ -16,7 +16,7 @@
  * - Static instance buffers (uploaded once)
  */
 
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, memo } from 'react';
 import { useScene } from 'react-babylonjs';
 import { Mesh, Matrix, Color3, StandardMaterial } from '@babylonjs/core';
 import { createBeveledHexMesh } from '../hex/hexMesh';
@@ -38,8 +38,11 @@ export interface HexWorldProps {
  * Creates one mesh per biome, each with thin instances for all hexes
  * of that biome type. This results in 6 draw calls total regardless
  * of how many hexes are rendered.
+ *
+ * Wrapped with React.memo to prevent unnecessary re-renders when
+ * parent components re-render (e.g., during camera movement).
  */
-export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
+function HexWorldInner({ gridRadius = 30, seed }: HexWorldProps) {
   const scene = useScene();
   const meshRef = useRef<Mesh | null>(null);
 
@@ -72,11 +75,11 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
     const materials: StandardMaterial[] = [];
 
     hexesByBiome.forEach((biomeHexes, biome) => {
-      // Create a mesh for each biome
+      // Create a mesh for each biome (use default bevelSize for smooth bevels)
       const biomeMesh = createBeveledHexMesh(scene, {
         size: 1.0,
         height: 0.3,
-        bevelSize: 0.08,
+        // bevelSize uses default (0.18) for pleasing visible bevels
       });
       biomeMesh.name = `hexInstances_${biome}`;
       biomeMesh.isVisible = true;
@@ -126,3 +129,9 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
   // Component renders nothing - meshes are created imperatively
   return null;
 }
+
+/**
+ * Memoized HexWorld component to prevent re-renders during camera movement.
+ * The hex grid is static, so we only need to render it once when scene/props change.
+ */
+export const HexWorld = memo(HexWorldInner);
