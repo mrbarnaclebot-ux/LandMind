@@ -105,14 +105,14 @@ export const ConnectButton: FC = () => {
       <div style={containerStyle}>
         <NetworkBadge network={network} />
         <button style={buttonDisabledStyle} disabled>
-          <span className="spinner">&#8635;</span>
+          <span style={{ animation: 'spin 1s linear infinite', display: 'inline-block' }}>&#8635;</span>
           {connecting ? 'Connecting...' : 'Signing...'}
         </button>
       </div>
     );
   }
 
-  // Connected state
+  // Connected and authenticated - show full account menu
   if (connected && publicKey && isAuthenticated) {
     return (
       <div style={containerStyle}>
@@ -122,6 +122,38 @@ export const ConnectButton: FC = () => {
           balance={balance}
           onDisconnect={logout}
         />
+      </div>
+    );
+  }
+
+  // Connected but auth failed or pending - show address with error/retry
+  if (connected && publicKey) {
+    const errorStyle: React.CSSProperties = {
+      ...buttonStyle,
+      backgroundColor: authError ? '#c62828' : '#512da8',
+      cursor: authError ? 'pointer' : 'default'
+    };
+
+    const shortAddress = `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`;
+
+    return (
+      <div style={containerStyle}>
+        <NetworkBadge network={network} />
+        <button
+          style={errorStyle}
+          onClick={authError ? () => authenticate() : undefined}
+          title={authError || 'Authenticating...'}
+        >
+          {authError ? (
+            <>
+              <span style={{ color: '#ffcdd2' }}>⚠</span>
+              {shortAddress}
+              <span style={{ fontSize: '12px', opacity: 0.8 }}>(retry)</span>
+            </>
+          ) : (
+            shortAddress
+          )}
+        </button>
       </div>
     );
   }
