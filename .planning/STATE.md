@@ -5,33 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 1 - Foundation (COMPLETE)
+**Current focus:** Phase 2 - 3D World Core (In Progress)
 
 ## Current Position
 
-Phase: 1 of 7 (Foundation)
-Plan: 4 of 4 in current phase
-Status: Phase complete
-Last activity: 2026-01-20 — Completed 01-02-PLAN.md (Express Server Foundation)
+Phase: 2 of 7 (3D World Core)
+Plan: 1 of 5 in current phase
+Status: In progress
+Last activity: 2026-01-20 — Completed 02-01-PLAN.md (Hex Math & Mesh Foundation)
 
-Progress: [████░░░░░░] ~13% (4/~30 plans estimated)
+Progress: [█████░░░░░] ~17% (5/~30 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 11 min
-- Total execution time: 45 min
+- Total plans completed: 5
+- Average duration: 10 min
+- Total execution time: 50 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4 | 45 min | 11 min |
+| 02-3d-world-core | 1 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (8 min), 01-04 (25 min), 01-03 (4 min), 01-01 (8 min)
-- Trend: Variable (01-04 longer due to toolchain setup)
+- Last 5 plans: 02-01 (5 min), 01-02 (8 min), 01-04 (25 min), 01-03 (4 min), 01-01 (8 min)
+- Trend: Fast execution for focused utility plans
 
 *Updated after each plan completion*
 
@@ -55,6 +56,8 @@ Recent decisions affecting current work:
 - Load .env from project root using explicit path — workspace compatibility for server package
 - Express 5 with async handlers — latest stable with built-in async error handling
 - Separate Redis clients for pub/sub — subscriber mode blocks regular commands
+- Flat-top hex orientation with corners at 0, 60, 120, 180, 240, 300 degrees
+- Axial coordinates (q,r) based on Red Blob Games reference
 
 ### Pending Todos
 
@@ -68,6 +71,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 01-02-PLAN.md (Express Server Foundation) - Phase 1 COMPLETE
+Stopped at: Completed 02-01-PLAN.md (Hex Math & Mesh Foundation)
 Resume file: None
-Next: Phase 2 plans (02-XX-PLAN.md)
+Next: 02-02-PLAN.md (Terrain Generation)
