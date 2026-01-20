@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "server": "npm run dev --workspace=@landmind/server",
     "client": "npm run dev --workspace=@landmind/client"
   }
 }
