@@ -12,11 +12,12 @@
 
 import { useEffect, useRef, useMemo } from 'react';
 import { useScene } from 'react-babylonjs';
-import { Mesh, Matrix, StandardMaterial, Color3 } from '@babylonjs/core';
+import { Mesh, Matrix, Color3, ShaderMaterial } from '@babylonjs/core';
 import { createBeveledHexMesh } from '../hex/hexMesh';
 import { hexToPixel, ELEVATION_STEP } from '../hex/hexMath';
 import { generateHexData, type TerrainSeed } from '../terrain/terrainGenerator';
 import { getBiomeColor, type Biome } from '../terrain/biomes';
+import { createHexMaterial } from '../shaders/hexMaterial';
 
 export interface HexWorldProps {
   /** Grid radius in hex units (default: 30, ~2700 hexes) */
@@ -76,10 +77,9 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
 
     // Create a separate instanced mesh for each biome
     const instanceMeshes: Mesh[] = [];
-    const materials: StandardMaterial[] = [];
+    const materials: ShaderMaterial[] = [];
 
     hexesByBiome.forEach((biomeHexes, biome) => {
-
       // Create a NEW mesh for each biome using fresh geometry
       const biomeMesh = createBeveledHexMesh(scene, {
         size: 1.0,
@@ -90,11 +90,13 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
       biomeMesh.isVisible = true;
       biomeMesh.isPickable = false;
 
-      // Create material with biome color
-      const biomeMaterial = new StandardMaterial(`hexMat_${biome}`, scene);
+      // Create cell-shaded material with biome color
       const biomeColor = getBiomeColor(biome as Biome);
-      biomeMaterial.diffuseColor = new Color3(biomeColor.r, biomeColor.g, biomeColor.b);
-      biomeMaterial.specularColor = new Color3(0.2, 0.2, 0.2);
+      const biomeMaterial = createHexMaterial(
+        scene,
+        `hexMat_${biome}`,
+        new Color3(biomeColor.r, biomeColor.g, biomeColor.b)
+      );
       biomeMesh.material = biomeMaterial;
       materials.push(biomeMaterial);
 
