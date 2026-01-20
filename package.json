@@ -1,0 +1,11 @@
+{
+  "name": "landmind",
+  "version": "0.0.1",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "client": "npm run dev --workspace=@landmind/client"
+  }
+}
