@@ -50,11 +50,14 @@ Plans:
   3. User can zoom in and out of the hex world
   4. User can rotate the camera around the hex world
   5. Hex grid uses thin instances for efficient rendering
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — Hex math utilities and beveled mesh generator
+- [ ] 02-02-PLAN.md — Terrain generation with biomes and elevation
+- [ ] 02-03-PLAN.md — Hex grid rendering with thin instances
+- [ ] 02-04-PLAN.md — Isometric camera with pan/zoom/rotate
+- [ ] 02-05-PLAN.md — Visual polish and verification checkpoint
 
 ### Phase 3: Real-Time Simulation
 **Goal**: Mining simulation runs continuously and broadcasts updates to connected clients
@@ -149,7 +152,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | ✓ Complete | 2026-01-20 |
-| 2. 3D World Core | 0/TBD | Not started | - |
+| 2. 3D World Core | 0/5 | Not started | - |
 | 3. Real-Time Simulation | 0/TBD | Not started | - |
 | 4. Wallet Integration | 0/TBD | Not started | - |
 | 5. Agent Deployment | 0/TBD | Not started | - |
