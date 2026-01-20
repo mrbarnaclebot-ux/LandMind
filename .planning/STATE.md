@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 3 of 7 (Real-Time Simulation)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-20 - Completed 03-02-PLAN.md (Agent Caching and Mining Logic)
+Last activity: 2026-01-20 - Completed 03-03-PLAN.md (Mining Tick Loop with Persistence)
 
-Progress: [███████░░░] ~32% (11/~34 plans estimated)
+Progress: [███████░░░] ~35% (12/~34 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: ~13 min
-- Total execution time: ~147 min
+- Total plans completed: 12
+- Average duration: ~12.5 min
+- Total execution time: ~150.5 min
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [███████░░░] ~32% (11/~34 plans estimated)
 |-------|-------|-------|----------|
 | 01-foundation | 4 | 45 min | 11 min |
 | 02-3d-world-core | 5 | 90 min | 18 min |
-| 03-real-time-simulation | 2 | 12 min | 6 min |
+| 03-real-time-simulation | 3 | 15.5 min | 5 min |
 
 **Recent Trend:**
-- Phase 3 executing efficiently with straightforward module creation
-- Redis adapter and simulation modules ready for tick loop integration
+- Phase 3 executing very efficiently (5 min average)
+- Tick loop fully operational, ready for end-to-end testing
 
 *Updated after each plan completion*
 
@@ -70,6 +70,9 @@ Recent decisions affecting current work:
 - **Mining rates by resource type** - GOLD:10, SILVER:20, COPPER:35, IRON:50 per tick
 - **BigInt as string** - for Redis/JSON serialization compatibility
 - **Active agent index Set** - efficient getAllAgents without key scanning
+- **5-second tick interval** - balances real-time feel with server load
+- **30-second flush interval** - 6 ticks between DB writes reduces I/O
+- **Recursive setTimeout** - prevents timing drift vs setInterval
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 03-02-PLAN.md (Agent Caching and Mining Logic)
+Stopped at: Completed 03-03-PLAN.md (Mining Tick Loop with Persistence)
 Resume file: None
-Next: 03-03-PLAN.md (Tick Loop)
+Next: 03-04-PLAN.md (Integration Testing)
