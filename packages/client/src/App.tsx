@@ -1,7 +1,7 @@
-import { BabylonScene } from './scene/BabylonScene';
+import { BabylonSceneComponent } from './scene/BabylonScene';
 
 function App() {
-  return <BabylonScene />;
+  return <BabylonSceneComponent />;
 }
 
 export default App;

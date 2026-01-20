@@ -1,58 +1,51 @@
-import { Engine, Scene, useScene } from 'react-babylonjs';
-import { Vector3, Color3, StandardMaterial } from '@babylonjs/core';
-import { useEffect, useRef } from 'react';
-import { createBeveledHexMesh } from '../hex/hexMesh';
+import { Engine, Scene, SceneEventArgs } from 'react-babylonjs';
+import { Vector3, Color3 } from '@babylonjs/core';
+import { useEffect, useRef, useCallback } from 'react';
+import {
+  setupIsometricCamera,
+  attachZoomHandler,
+  updateCameraAspectRatio,
+} from '../camera/isometricCamera';
+import { HexWorld } from './HexWorld';
 
-/**
- * Test component to verify beveled hex mesh renders correctly
- * Temporary - will be replaced by HexWorld component
- */
-function TestHex() {
-  const scene = useScene();
-  const createdRef = useRef(false);
+export function BabylonSceneComponent() {
+  const cleanupRef = useRef<(() => void) | null>(null);
 
-  useEffect(() => {
-    if (!scene || createdRef.current) return;
-    createdRef.current = true;
+  const onSceneMount = useCallback(({ scene, canvas }: SceneEventArgs) => {
+    // Setup isometric camera with orthographic projection
+    const camera = setupIsometricCamera(scene, canvas);
 
-    // Create beveled hex mesh
-    const hex = createBeveledHexMesh(scene, {
-      size: 1.0,
-      height: 0.3,
-      bevelSize: 0.08,
-    });
+    // Attach custom zoom handler for orthographic mode
+    const cleanupZoom = attachZoomHandler(scene, camera, canvas);
 
-    // Make it visible for testing
-    hex.isPickable = true;
-
-    // Add a simple material to see the bevel
-    const material = new StandardMaterial('hexMat', scene);
-    material.diffuseColor = new Color3(0.4, 0.7, 0.3); // Green grass color
-    material.specularColor = new Color3(0.2, 0.2, 0.2);
-    hex.material = material;
-
-    return () => {
-      hex.dispose();
-      material.dispose();
+    // Handle window resize to maintain aspect ratio
+    const handleResize = () => {
+      updateCameraAspectRatio(camera, canvas);
     };
-  }, [scene]);
+    window.addEventListener('resize', handleResize);
 
-  return null;
-}
+    // Store cleanup function
+    cleanupRef.current = () => {
+      cleanupZoom();
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
-export function BabylonScene() {
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+    };
+  }, []);
+
   return (
     <Engine antialias adaptToDeviceRatio canvasId="babylon-canvas">
-      <Scene clearColor={new Color3(0.1, 0.1, 0.15).toColor4()}>
-        <arcRotateCamera
-          name="camera"
-          alpha={Math.PI / 2}
-          beta={Math.PI / 4}
-          radius={5}
-          target={Vector3.Zero()}
-          minZ={0.1}
-          wheelPrecision={50}
-        />
+      <Scene
+        clearColor={new Color3(0.1, 0.1, 0.15).toColor4()}
+        onSceneMount={onSceneMount}
+      >
         <hemisphericLight
           name="light"
           intensity={0.7}
@@ -63,7 +56,7 @@ export function BabylonScene() {
           intensity={0.5}
           direction={new Vector3(-1, -2, -1)}
         />
-        <TestHex />
+        <HexWorld gridRadius={30} />
       </Scene>
     </Engine>
   );
