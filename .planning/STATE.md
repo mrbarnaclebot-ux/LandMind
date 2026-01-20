@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 4 - Wallet Integration (SIWS authentication)
+**Current focus:** Phase 4 - Wallet Integration (Client session management complete)
 
 ## Current Position
 
 Phase: 4 of 7 (Wallet Integration)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-20 - Completed 04-02-PLAN.md (Server Auth Endpoints)
+Last activity: 2026-01-20 - Completed 04-03-PLAN.md (Client Session Management)
 
-Progress: [████████░░] ~41% (15/~36 plans estimated)
+Progress: [████████░░] ~44% (16/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: ~11.8 min
-- Total execution time: ~177 min
+- Total plans completed: 16
+- Average duration: ~11.3 min
+- Total execution time: ~180 min
 
 **By Phase:**
 
@@ -30,12 +30,13 @@ Progress: [████████░░] ~41% (15/~36 plans estimated)
 | 01-foundation | 4 | 45 min | 11 min |
 | 02-3d-world-core | 5 | 90 min | 18 min |
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
-| 04-wallet-integration | 2 | ~18 min | 9 min |
+| 04-wallet-integration | 3 | ~21 min | 7 min |
 
 **Recent Trend:**
-- Phase 4 progressing smoothly
-- Server auth endpoints complete, client integration next
-- SIWS flow ready for wallet connection
+- Phase 4 progressing efficiently (7 min average)
+- Server auth endpoints complete
+- Client session management complete
+- Ready for UI components
 
 *Updated after each plan completion*
 
@@ -83,6 +84,9 @@ Recent decisions affecting current work:
 - **SIWS message format** - standardized signing for wallet auth
 - **5-minute nonce TTL** - reasonable auth window, prevents stale nonces
 - **24-hour JWT expiry** - balance between security and convenience
+- **Zustand persist: metadata only** - session state persisted, JWT in httpOnly cookie
+- **30-second clock skew buffer** - session expiry check accounts for clock differences
+- **bs58 signature encoding** - standard Solana encoding for wallet signatures
 
 ### Pending Todos
 
@@ -96,6 +100,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 04-02-PLAN.md (Server Auth Endpoints)
+Stopped at: Completed 04-03-PLAN.md (Client Session Management)
 Resume file: None
-Next: 04-03-PLAN.md (Client Auth Flow) or 04-04-PLAN.md (Session Management)
+Next: 04-04-PLAN.md (UI Components) - ConnectButton, AccountMenu, wallet modal
