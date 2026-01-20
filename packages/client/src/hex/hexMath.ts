@@ -33,8 +33,8 @@ export interface WorldPosition {
 /** Hex outer radius (distance from center to corner) */
 export const HEX_SIZE = 1.0;
 
-/** Height per elevation tier */
-export const ELEVATION_STEP = 0.5;
+/** Height per elevation tier - subtle for rolling hills feel */
+export const ELEVATION_STEP = 0.15;
 
 /** Square root of 3, used frequently in hex math */
 const SQRT3 = Math.sqrt(3);

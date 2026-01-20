@@ -5,6 +5,9 @@
  * of hexes. Each hex is positioned based on axial coordinates and colored
  * by its biome type.
  *
+ * Visual style: Minecraft-inspired with vibrant colors, beveled tiles,
+ * and flat/toon shading for that chunky pixel-art aesthetic.
+ *
  * Performance optimizations:
  * - One InstancedMesh per biome (6 draw calls total)
  * - Shared geometry across all instances
@@ -28,6 +31,7 @@ export interface HexWorldProps {
 
 /**
  * Biome mesh component - renders all hexes of one biome type
+ * Uses MeshLambertMaterial with flatShading for toon-like appearance
  */
 interface BiomeMeshProps {
   biome: Biome;
@@ -74,17 +78,19 @@ function BiomeMesh({ biome, hexes, geometry }: BiomeMeshProps) {
 
   if (hexes.length === 0) return null;
 
+  // MeshLambertMaterial with flatShading gives clean toon-like appearance
+  // without the complexity of custom shaders
   return (
     <instancedMesh
       ref={meshRef}
       args={[geometry, undefined, hexes.length]}
       frustumCulled={true}
     >
-      <meshStandardMaterial
+      <meshLambertMaterial
         color={color}
-        roughness={0.8}
-        metalness={0.0}
-        flatShading={false}
+        flatShading={true}
+        emissive={color}
+        emissiveIntensity={0.1}
       />
     </instancedMesh>
   );
@@ -103,12 +109,14 @@ export function HexWorld({ gridRadius = 20, seed }: HexWorldProps) {
     return generateHexData(gridRadius, seed);
   }, [gridRadius, seed]);
 
-  // Create shared geometry for all hexes
+  // Create shared geometry for all hexes - beveled tiles with subtle height
   const geometry = useMemo(() => {
     return createHexGeometry({
       size: 0.95,
-      height: 0.8,
-      skirtDepth: 0.8,
+      height: 0.35, // Thick tile, not tall column
+      bevelSize: 0.12, // Chamfered edge catches light nicely
+      bevelHeight: 0.08,
+      skirtDepth: 0.3, // Enough to cover elevation gaps
     });
   }, []);
 

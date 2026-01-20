@@ -14,19 +14,33 @@ export interface BiomeColor {
 }
 
 /**
- * Bright, saturated color palette for each biome
+ * VIBRANT Minecraft-style color palette for each biome
  * Values are in 0-1 range for Three.js
  *
- * Colors are intentionally BRIGHT and vibrant for a Zelda-like stylized look.
- * Increased saturation and value for better visibility and cheerful aesthetic.
+ * Colors are BOLD and SATURATED like Minecraft:
+ * - Grass is bright lime green (#7CFC00)
+ * - Water is bright blue (#0099FF)
+ * - Sand is bright yellow (#FFEB3B)
+ * - No muddy colors - everything POPS
  */
 export const BIOME_COLORS: Record<Biome, BiomeColor> = {
-  grassland: { r: 0.45, g: 0.95, b: 0.35 }, // Bright lime green
-  marsh: { r: 0.3, g: 0.8, b: 0.7 },        // Bright teal
-  plains: { r: 0.95, g: 0.88, b: 0.45 },    // Bright golden yellow
-  forest: { r: 0.25, g: 0.75, b: 0.35 },    // Bright forest green
-  rocky: { r: 0.75, g: 0.65, b: 0.5 },      // Bright warm sandstone
-  alpine: { r: 0.85, g: 0.9, b: 0.98 },     // Bright snow white
+  // Minecraft grass: #7CFC00 = rgb(124, 252, 0) = (0.486, 0.988, 0.0)
+  grassland: { r: 0.486, g: 0.988, b: 0.0 },
+
+  // Bright cyan/teal water: #00CED1 = rgb(0, 206, 209)
+  marsh: { r: 0.0, g: 0.808, b: 0.82 },
+
+  // Minecraft sand/wheat: #F4D03F = rgb(244, 208, 63)
+  plains: { r: 0.957, g: 0.816, b: 0.247 },
+
+  // Rich forest green: #228B22 = rgb(34, 139, 34)
+  forest: { r: 0.133, g: 0.545, b: 0.133 },
+
+  // Warm terracotta/stone: #CD853F = rgb(205, 133, 63)
+  rocky: { r: 0.804, g: 0.522, b: 0.247 },
+
+  // Pure snow white: #FFFFFF with slight blue tint
+  alpine: { r: 0.95, g: 0.97, b: 1.0 },
 };
 
 /**

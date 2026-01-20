@@ -14,27 +14,28 @@ import * as THREE from 'three';
 import { HexWorld } from './HexWorld';
 
 /**
- * Scene lighting component - ambient fill + directional sun
+ * Scene lighting component - bright and contrasty for Minecraft-style look
+ * Higher contrast lighting makes the beveled edges pop and colors vibrant
  */
 function Lighting() {
   return (
     <>
-      {/* Ambient light for soft fill in shadows */}
-      <ambientLight intensity={0.4} color="#b0c0d0" />
+      {/* Ambient light - higher for better color visibility */}
+      <ambientLight intensity={0.6} color="#ffffff" />
 
-      {/* Main directional "sun" light */}
+      {/* Main directional "sun" light - bright white for color accuracy */}
       <directionalLight
-        position={[50, 80, 30]}
-        intensity={1.5}
-        color="#fff8e8"
+        position={[50, 100, 30]}
+        intensity={1.8}
+        color="#ffffff"
         castShadow={false}
       />
 
-      {/* Secondary fill light from opposite side */}
+      {/* Secondary fill light - subtle warm fill from opposite side */}
       <directionalLight
-        position={[-30, 40, -20]}
-        intensity={0.3}
-        color="#e0e8ff"
+        position={[-30, 50, -20]}
+        intensity={0.4}
+        color="#fff0d0"
       />
     </>
   );
