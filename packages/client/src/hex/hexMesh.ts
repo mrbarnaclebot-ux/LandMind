@@ -99,24 +99,32 @@ export function createHexGeometry(
     const next = (i + 1) % 6;
 
     // Calculate face normal (perpendicular to edge, pointing outward)
+    // Edge goes from corner[i] to corner[next] (CCW around hex when viewed from above)
+    // Outward normal is 90 degrees clockwise from edge direction (right-hand rule)
     const edgeX = corners[next][0] - corners[i][0];
     const edgeZ = corners[next][1] - corners[i][1];
-    // Cross product with up vector gives outward normal
-    const faceNx = -edgeZ;
-    const faceNz = edgeX;
+    // Rotate edge direction 90 degrees clockwise in XZ plane for outward normal
+    const faceNx = edgeZ;
+    const faceNz = -edgeX;
     const len = Math.sqrt(faceNx * faceNx + faceNz * faceNz);
     const nx = faceNx / len;
     const nz = faceNz / len;
 
     // Four corners of this side face quad (top at height, bottom at sideBottom)
+    // v0 = top-left (corner[i] at height)
+    // v1 = top-right (corner[next] at height)
+    // v2 = bottom-right (corner[next] at sideBottom)
+    // v3 = bottom-left (corner[i] at sideBottom)
     const v0 = addVertex(corners[i][0], height, corners[i][1], nx, 0, nz);
     const v1 = addVertex(corners[next][0], height, corners[next][1], nx, 0, nz);
     const v2 = addVertex(corners[next][0], sideBottom, corners[next][1], nx, 0, nz);
     const v3 = addVertex(corners[i][0], sideBottom, corners[i][1], nx, 0, nz);
 
-    // Two triangles for the quad (CCW winding)
-    indices.push(v0, v1, v2);
-    indices.push(v0, v2, v3);
+    // Two triangles for the quad (CCW winding when viewed from outside)
+    // Looking from outside: need CCW order, which is v0 -> v3 -> v2 and v0 -> v2 -> v1
+    // But simpler: v0 -> v2 -> v1 for top triangle, v0 -> v3 -> v2 for bottom triangle
+    indices.push(v0, v2, v1);
+    indices.push(v0, v3, v2);
   }
 
   // === BOTTOM FACE (flat normal pointing down) ===
