@@ -5,6 +5,15 @@
  * Run with: npm run --workspace=@landmind/server db:seed
  */
 
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+// Load .env from project root (three levels up from packages/server/prisma)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: resolve(__dirname, '../../../.env') });
+
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
