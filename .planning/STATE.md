@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 2 of 7 (3D World Core)
-Plan: 1 of 5 in current phase
+Plan: 2 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-20 — Completed 02-01-PLAN.md (Hex Math & Mesh Foundation)
+Last activity: 2026-01-20 — Completed 02-02-PLAN.md (Terrain Generator)
 
-Progress: [█████░░░░░] ~17% (5/~30 plans estimated)
+Progress: [██████░░░░] ~20% (6/~30 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 10 min
-- Total execution time: 50 min
+- Total plans completed: 6
+- Average duration: 9 min
+- Total execution time: 53 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 4 | 45 min | 11 min |
-| 02-3d-world-core | 1 | 5 min | 5 min |
+| 02-3d-world-core | 2 | 8 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (5 min), 01-02 (8 min), 01-04 (25 min), 01-03 (4 min), 01-01 (8 min)
+- Last 5 plans: 02-02 (3 min), 02-01 (5 min), 01-02 (8 min), 01-04 (25 min), 01-03 (4 min)
 - Trend: Fast execution for focused utility plans
 
 *Updated after each plan completion*
@@ -58,6 +58,9 @@ Recent decisions affecting current work:
 - Separate Redis clients for pub/sub — subscriber mode blocks regular commands
 - Flat-top hex orientation with corners at 0, 60, 120, 180, 240, 300 degrees
 - Axial coordinates (q,r) based on Red Blob Games reference
+- simplex-noise + alea for deterministic terrain generation
+- 3 octaves fBm for elevation, separate noise for moisture
+- 6 biomes with Zelda-style saturated colors
 
 ### Pending Todos
 
@@ -71,6 +74,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 02-01-PLAN.md (Hex Math & Mesh Foundation)
+Stopped at: Completed 02-02-PLAN.md (Terrain Generator)
 Resume file: None
-Next: 02-02-PLAN.md (Terrain Generation)
+Next: 02-03-PLAN.md (Hex Grid Rendering)
