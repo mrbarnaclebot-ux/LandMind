@@ -12,25 +12,25 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 Phase: 1 of 7 (Foundation)
 Plan: 4 of 4 in current phase
 Status: Phase complete
-Last activity: 2026-01-20 — Completed 01-04-PLAN.md (Anchor Project Scaffold)
+Last activity: 2026-01-20 — Completed 01-02-PLAN.md (Express Server Foundation)
 
 Progress: [████░░░░░░] ~13% (4/~30 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 12 min
-- Total execution time: 37 min
+- Total plans completed: 4
+- Average duration: 11 min
+- Total execution time: 45 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 3 | 37 min | 12 min |
+| 01-foundation | 4 | 45 min | 11 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-04 (25 min), 01-03 (4 min), 01-01 (8 min)
+- Last 5 plans: 01-02 (8 min), 01-04 (25 min), 01-03 (4 min), 01-01 (8 min)
 - Trend: Variable (01-04 longer due to toolchain setup)
 
 *Updated after each plan completion*
@@ -52,6 +52,9 @@ Recent decisions affecting current work:
 - PostgreSQL on port 5433 (not 5432) — avoids conflict with existing host PostgreSQL
 - Anchor 0.30.1 via cargo install — avm had auth issues, direct cargo install works
 - Build with --no-idl flag — anchor-syn compatibility issue with newer proc-macro2
+- Load .env from project root using explicit path — workspace compatibility for server package
+- Express 5 with async handlers — latest stable with built-in async error handling
+- Separate Redis clients for pub/sub — subscriber mode blocks regular commands
 
 ### Pending Todos
 
@@ -65,6 +68,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 01-04-PLAN.md (Anchor Project Scaffold) - Phase 1 COMPLETE
+Stopped at: Completed 01-02-PLAN.md (Express Server Foundation) - Phase 1 COMPLETE
 Resume file: None
 Next: Phase 2 plans (02-XX-PLAN.md)
