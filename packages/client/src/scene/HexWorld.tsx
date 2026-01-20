@@ -75,11 +75,10 @@ function HexWorldInner({ gridRadius = 15, seed }: HexWorldProps) {
     const materials: StandardMaterial[] = [];
 
     hexesByBiome.forEach((biomeHexes, biome) => {
-      // Create a mesh for each biome with subtle bevel for solid terrain look
+      // Create flat-top hex mesh for each biome (no bevel - clean game-like tiles)
       const biomeMesh = createBeveledHexMesh(scene, {
         size: 1.0,
         height: 0.3,
-        bevelSize: 0.02, // Very subtle - hexes blend into cohesive terrain
       });
       biomeMesh.name = `hexInstances_${biome}`;
       biomeMesh.isVisible = true;
