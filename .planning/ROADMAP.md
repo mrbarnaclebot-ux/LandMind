@@ -69,12 +69,13 @@ Plans:
   3. Redis caches hot game state for fast access
   4. Agents automatically relocate when their hex depletes (simulated)
   5. Mining state persists across server restarts
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md — Socket.io WebSocket server with Redis adapter
+- [ ] 03-02-PLAN.md — Agent cache and mining/relocation logic
+- [ ] 03-03-PLAN.md — Tick loop with persistence and server integration
+- [ ] 03-04-PLAN.md — Dev endpoints and end-to-end verification
 
 ### Phase 4: Wallet Integration
 **Goal**: Users can securely connect their Solana wallet and authenticate
@@ -151,9 +152,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | ✓ Complete | 2026-01-20 |
-| 2. 3D World Core | 5/5 | ✓ Complete | 2026-01-20 |
-| 3. Real-Time Simulation | 0/TBD | Not started | - |
+| 1. Foundation | 4/4 | Complete | 2026-01-20 |
+| 2. 3D World Core | 5/5 | Complete | 2026-01-20 |
+| 3. Real-Time Simulation | 0/4 | In Progress | - |
 | 4. Wallet Integration | 0/TBD | Not started | - |
 | 5. Agent Deployment | 0/TBD | Not started | - |
 | 6. Economy & Distribution | 0/TBD | Not started | - |
@@ -185,4 +186,4 @@ All 34 v1 requirements mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-20 (Phase 2 complete)*
+*Last updated: 2026-01-20 (Phase 3 planned)*
