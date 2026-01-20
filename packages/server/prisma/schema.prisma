@@ -1,0 +1,74 @@
+// Source: Adapted from Prisma data modeling docs
+// packages/server/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  walletPubkey String @unique @map("wallet_pubkey")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  agents    Agent[]
+
+  @@map("users")
+}
+
+model Agent {
+  id           String   @id @default(uuid())
+  owner        User     @relation(fields: [ownerId], references: [id])
+  ownerId      String   @map("owner_id")
+  hexId        Int?     @map("hex_id")
+  hex          Hex?     @relation(fields: [hexId], references: [id])
+  status       AgentStatus @default(IDLE)
+  deployedAt   DateTime @default(now()) @map("deployed_at")
+  miningState  MiningState?
+
+  @@map("agents")
+}
+
+model Hex {
+  id             Int      @id @default(autoincrement())
+  q              Int      // Axial coordinate
+  r              Int      // Axial coordinate
+  resourceType   ResourceType @map("resource_type")
+  resourceAmount BigInt   @default(1000000) @map("resource_amount")
+  currentAgent   Agent[]
+
+  @@unique([q, r])
+  @@index([q, r])
+  @@map("hexes")
+}
+
+model MiningState {
+  id         String   @id @default(uuid())
+  agent      Agent    @relation(fields: [agentId], references: [id])
+  agentId    String   @unique @map("agent_id")
+  gold       BigInt   @default(0)
+  silver     BigInt   @default(0)
+  copper     BigInt   @default(0)
+  iron       BigInt   @default(0)
+  lastUpdate DateTime @default(now()) @map("last_update")
+
+  @@map("mining_states")
+}
+
+enum AgentStatus {
+  IDLE
+  MINING
+  RELOCATING
+}
+
+enum ResourceType {
+  GOLD
+  SILVER
+  COPPER
+  IRON
+  EMPTY
+}
