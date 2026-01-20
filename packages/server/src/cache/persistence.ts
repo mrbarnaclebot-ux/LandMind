@@ -11,43 +11,52 @@ import { getAllAgents, cacheAgent, type CachedAgent } from './agentCache.js';
  * Called on server startup to restore hot state
  */
 export async function loadHotAgentsFromPostgres(): Promise<number> {
-  const agents = await prisma.agent.findMany({
-    where: {
-      status: { in: ['MINING', 'RELOCATING'] },
-    },
-    include: {
-      owner: true,
-      hex: true,
-      miningState: true,
-    },
-  });
+  try {
+    const agents = await prisma.agent.findMany({
+      where: {
+        status: { in: ['MINING', 'RELOCATING'] },
+      },
+      include: {
+        owner: true,
+        hex: true,
+        miningState: true,
+      },
+    });
 
-  let count = 0;
+    let count = 0;
 
-  for (const agent of agents) {
-    if (!agent.hex || !agent.miningState) continue;
+    for (const agent of agents) {
+      if (!agent.hex || !agent.miningState) continue;
 
-    const cached: CachedAgent = {
-      agentId: agent.id,
-      ownerId: agent.ownerId,
-      ownerWallet: agent.owner.walletPubkey,
-      hexId: agent.hexId!,
-      hexQ: agent.hex.q,
-      hexR: agent.hex.r,
-      gold: String(agent.miningState.gold),
-      silver: String(agent.miningState.silver),
-      copper: String(agent.miningState.copper),
-      iron: String(agent.miningState.iron),
-      status: agent.status as 'MINING' | 'RELOCATING',
-      lastTick: 0, // Will be updated on first tick
-    };
+      const cached: CachedAgent = {
+        agentId: agent.id,
+        ownerId: agent.ownerId,
+        ownerWallet: agent.owner.walletPubkey,
+        hexId: agent.hexId!,
+        hexQ: agent.hex.q,
+        hexR: agent.hex.r,
+        gold: String(agent.miningState.gold),
+        silver: String(agent.miningState.silver),
+        copper: String(agent.miningState.copper),
+        iron: String(agent.miningState.iron),
+        status: agent.status as 'MINING' | 'RELOCATING',
+        lastTick: 0, // Will be updated on first tick
+      };
 
-    await cacheAgent(cached);
-    count++;
+      await cacheAgent(cached);
+      count++;
+    }
+
+    console.log(`Loaded ${count} hot agents from PostgreSQL to Redis`);
+    return count;
+  } catch (error) {
+    // Handle case where database tables don't exist yet (development/testing)
+    if (error instanceof Error && error.message.includes('does not exist')) {
+      console.warn('Database tables not yet created, skipping agent load');
+      return 0;
+    }
+    throw error;
   }
-
-  console.log(`Loaded ${count} hot agents from PostgreSQL to Redis`);
-  return count;
 }
 
 /**
