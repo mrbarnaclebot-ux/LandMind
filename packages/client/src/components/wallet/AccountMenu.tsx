@@ -6,13 +6,14 @@ interface AccountMenuProps {
   address: string;
   balance: number | null;
   onDisconnect: () => void;
+  onViewHistory: () => void;
 }
 
 /**
  * Minecraft inventory-style account dropdown menu.
  * Shows balance, copy address, explorer link, and disconnect.
  */
-export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconnect }) => {
+export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconnect, onViewHistory }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedFeedback, setCopiedFeedback] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -128,6 +129,17 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
           >
             <span style={{ marginRight: '8px' }}>🔍</span>
             EXPLORER
+          </div>
+
+          <div
+            className="pixel-dropdown-item"
+            onClick={() => {
+              onViewHistory();
+              setIsOpen(false);
+            }}
+          >
+            <span style={{ marginRight: '8px' }}>[]</span>
+            VIEW HISTORY
           </div>
 
           <div className="pixel-divider" />

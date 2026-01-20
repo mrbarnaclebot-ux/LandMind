@@ -6,6 +6,7 @@ import { useWalletSession } from '../../hooks/useWalletSession';
 import { getBalance } from '../../lib/solana';
 import { AccountMenu } from './AccountMenu';
 import { NetworkBadge } from './NetworkBadge';
+import { WalletDrawer } from './WalletDrawer';
 import '../../styles/pixel-theme.css';
 
 const BALANCE_REFRESH_INTERVAL = 30_000; // 30 seconds
@@ -27,6 +28,7 @@ export const ConnectButton: FC = () => {
   } = useWalletSession();
 
   const [balance, setBalance] = useState<number | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Determine current network from connection endpoint
   const network = connection.rpcEndpoint.includes('devnet')
@@ -94,14 +96,21 @@ export const ConnectButton: FC = () => {
   // Connected and authenticated - show account menu
   if (connected && publicKey && isAuthenticated) {
     return (
-      <div style={containerStyle}>
-        <NetworkBadge network={network} />
-        <AccountMenu
-          address={publicKey.toBase58()}
-          balance={balance}
-          onDisconnect={logout}
+      <>
+        <div style={containerStyle}>
+          <NetworkBadge network={network} />
+          <AccountMenu
+            address={publicKey.toBase58()}
+            balance={balance}
+            onDisconnect={logout}
+            onViewHistory={() => setDrawerOpen(true)}
+          />
+        </div>
+        <WalletDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
         />
-      </div>
+      </>
     );
   }
 

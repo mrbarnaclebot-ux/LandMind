@@ -1,4 +1,4 @@
-import { Connection, PublicKey, ParsedTransactionWithMeta } from '@solana/web3.js';
+import { Connection, PublicKey, ParsedTransactionWithMeta, ParsedInstruction, PartiallyDecodedInstruction } from '@solana/web3.js';
 
 export interface TransactionInfo {
   signature: string;
@@ -72,7 +72,7 @@ function parseTransaction(
   signature: string
 ): TransactionInfo {
   const meta = tx.meta;
-  const blockTime = tx.blockTime;
+  const blockTime = tx.blockTime ?? null; // Convert undefined to null
   const slot = tx.slot;
   const status = meta?.err ? 'failed' : 'success';
 
@@ -97,6 +97,13 @@ function parseTransaction(
 }
 
 /**
+ * Check if instruction is a ParsedInstruction (has 'program' field).
+ */
+function isParsedInstruction(ix: ParsedInstruction | PartiallyDecodedInstruction): ix is ParsedInstruction {
+  return 'program' in ix;
+}
+
+/**
  * Determine transaction type from instructions.
  * Will be enhanced when LandMind program is deployed.
  */
@@ -105,15 +112,15 @@ function determineTransactionType(tx: ParsedTransactionWithMeta): TransactionInf
 
   for (const ix of instructions) {
     // Check for known program patterns
-    if ('program' in ix) {
+    if (isParsedInstruction(ix)) {
       // System program transfer
-      if (ix.program === 'system' && 'parsed' in ix && ix.parsed?.type === 'transfer') {
+      if (ix.program === 'system' && ix.parsed?.type === 'transfer') {
         return 'transfer';
       }
     }
 
     // When LandMind program is deployed, add detection here:
-    // if ('programId' in ix && ix.programId.toBase58() === LANDMIND_PROGRAM_ID) {
+    // if (!isParsedInstruction(ix) && ix.programId.toBase58() === LANDMIND_PROGRAM_ID) {
     //   const ixData = ix.data; // Parse instruction data to determine deploy vs claim
     //   return ixData.startsWith('deploy') ? 'deploy' : 'claim';
     // }
@@ -129,10 +136,11 @@ function extractProgramIds(tx: ParsedTransactionWithMeta): string[] {
   const programIds = new Set<string>();
 
   for (const ix of tx.transaction.message.instructions) {
-    if ('programId' in ix) {
+    if (!isParsedInstruction(ix)) {
+      // PartiallyDecodedInstruction has programId
       programIds.add(ix.programId.toBase58());
-    } else if ('program' in ix) {
-      // Parsed instructions have program name, not ID
+    } else {
+      // ParsedInstruction has program name
       // Map known programs to IDs
       if (ix.program === 'system') {
         programIds.add('11111111111111111111111111111111');
