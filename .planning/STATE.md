@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 4 of 7 (Wallet Integration)
-Plan: 3 of 4 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-20 - Completed 04-03-PLAN.md (Client Session Management)
+Last activity: 2026-01-20 - Completed 04-01-PLAN.md (Wallet Provider Setup - retroactive)
 
 Progress: [████████░░] ~44% (16/~36 plans estimated)
 
@@ -87,6 +87,9 @@ Recent decisions affecting current work:
 - **Zustand persist: metadata only** - session state persisted, JWT in httpOnly cookie
 - **30-second clock skew buffer** - session expiry check accounts for clock differences
 - **bs58 signature encoding** - standard Solana encoding for wallet signatures
+- **Empty wallets array with Wallet Standard** - auto-detects modern wallets (Phantom, Solflare)
+- **Devnet default with VITE_SOLANA_RPC_URL** - configurable RPC for production
+- **autoConnect enabled** - better UX for returning users
 
 ### Pending Todos
 
@@ -100,6 +103,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 04-03-PLAN.md (Client Session Management)
+Stopped at: Completed 04-01-PLAN.md (retroactive - completed after 04-02/04-03)
 Resume file: None
-Next: 04-04-PLAN.md (UI Components) - ConnectButton, AccountMenu, wallet modal
+Next: 04-04-PLAN.md (Session Management) or 04-05-PLAN.md (Connect Button UI)
