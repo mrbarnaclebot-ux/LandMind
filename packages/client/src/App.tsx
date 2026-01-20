@@ -1,4 +1,4 @@
-import { BabylonSceneComponent } from './scene/BabylonScene';
+import { ThreeScene } from './scene/ThreeScene';
 
 /**
  * Controls overlay styles - positioned in bottom-left corner
@@ -55,10 +55,6 @@ function ControlsOverlay() {
         <span style={keyStyle}>Scroll</span>
         <span>Zoom in/out</span>
       </div>
-      <div style={controlRowStyle}>
-        <span style={keyStyle}>WASD/Arrows</span>
-        <span>Pan camera</span>
-      </div>
     </div>
   );
 }
@@ -66,7 +62,7 @@ function ControlsOverlay() {
 function App() {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <BabylonSceneComponent />
+      <ThreeScene />
       <ControlsOverlay />
     </div>
   );
