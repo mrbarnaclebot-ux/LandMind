@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useMemo } from 'react';
 import { useScene } from 'react-babylonjs';
-import { Mesh, Matrix, Color3, ShaderMaterial } from '@babylonjs/core';
+import { Mesh, Matrix, Color3, StandardMaterial } from '@babylonjs/core';
 import { createBeveledHexMesh } from '../hex/hexMesh';
 import { hexToPixel, ELEVATION_STEP } from '../hex/hexMath';
 import { generateHexData, type TerrainSeed } from '../terrain/terrainGenerator';
@@ -77,7 +77,7 @@ export function HexWorld({ gridRadius = 30, seed }: HexWorldProps) {
 
     // Create a separate instanced mesh for each biome
     const instanceMeshes: Mesh[] = [];
-    const materials: ShaderMaterial[] = [];
+    const materials: StandardMaterial[] = [];
 
     hexesByBiome.forEach((biomeHexes, biome) => {
       // Create a NEW mesh for each biome using fresh geometry
