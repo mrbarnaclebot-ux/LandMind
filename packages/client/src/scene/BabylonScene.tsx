@@ -72,7 +72,7 @@ export function BabylonSceneComponent() {
           direction={SUN_DIRECTION}
           diffuse={SUN_DIFFUSE}
         />
-        <HexWorld gridRadius={30} />
+        <HexWorld gridRadius={20} />
       </Scene>
     </Engine>
   );

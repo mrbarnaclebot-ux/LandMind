@@ -8,6 +8,7 @@
  * - Top face: center to inner ring (6 triangles)
  * - Bevel face: inner ring to outer ring (12 triangles / 6 quads)
  * - Side faces: outer top ring to bottom ring (12 triangles / 6 quads)
+ * - Skirt faces: extend sides down to y=0 to prevent gaps between elevations
  *
  * Uses counter-clockwise winding for proper face normals.
  */
@@ -21,12 +22,15 @@ export interface BeveledHexOptions {
   height?: number;
   /** Size of the bevel edge (default: 0.08) */
   bevelSize?: number;
+  /** Skirt depth below y=0 to close gaps between elevations (default: 2.0) */
+  skirtDepth?: number;
 }
 
 const DEFAULT_OPTIONS: Required<BeveledHexOptions> = {
   size: 1.0,
   height: 0.3,
   bevelSize: 0.02, // Very subtle bevel - hexes should look like solid terrain, not rings
+  skirtDepth: 2.0, // Deep enough to cover max elevation difference
 };
 
 /**
@@ -44,7 +48,7 @@ export function createBeveledHexMesh(
   scene: Scene,
   options: BeveledHexOptions = {}
 ): Mesh {
-  const { size, height, bevelSize } = { ...DEFAULT_OPTIONS, ...options };
+  const { size, height, bevelSize, skirtDepth } = { ...DEFAULT_OPTIONS, ...options };
 
   const mesh = new Mesh('hexTemplate', scene);
 
@@ -138,6 +142,9 @@ export function createBeveledHexMesh(
 
   // === SIDE FACES (flat normals pointing outward) ===
   // Create vertices for each side face with face-specific normals
+  // Sides extend down to -skirtDepth to prevent gaps between hexes at different elevations
+  const sideBottom = -skirtDepth;
+
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
 
@@ -151,11 +158,11 @@ export function createBeveledHexMesh(
     const nx = faceNx / len;
     const nz = faceNz / len;
 
-    // Four corners of this side face quad
+    // Four corners of this side face quad (extends down to -skirtDepth)
     const v0 = addVertex(outerCorners[i][0], bevelHeight, outerCorners[i][1], nx, 0, nz);
     const v1 = addVertex(outerCorners[next][0], bevelHeight, outerCorners[next][1], nx, 0, nz);
-    const v2 = addVertex(outerCorners[next][0], 0, outerCorners[next][1], nx, 0, nz);
-    const v3 = addVertex(outerCorners[i][0], 0, outerCorners[i][1], nx, 0, nz);
+    const v2 = addVertex(outerCorners[next][0], sideBottom, outerCorners[next][1], nx, 0, nz);
+    const v3 = addVertex(outerCorners[i][0], sideBottom, outerCorners[i][1], nx, 0, nz);
 
     // Two triangles for the quad
     indices.push(v0, v3, v2);
@@ -163,10 +170,11 @@ export function createBeveledHexMesh(
   }
 
   // === BOTTOM FACE (flat normal pointing down) ===
-  const bottomCenter = addVertex(0, 0, 0, 0, -1, 0);
+  // Bottom is at -skirtDepth to close off the mesh
+  const bottomCenter = addVertex(0, sideBottom, 0, 0, -1, 0);
   const bottomRing: number[] = [];
   for (let i = 0; i < 6; i++) {
-    bottomRing.push(addVertex(outerCorners[i][0], 0, outerCorners[i][1], 0, -1, 0));
+    bottomRing.push(addVertex(outerCorners[i][0], sideBottom, outerCorners[i][1], 0, -1, 0));
   }
 
   // Bottom face triangles (reverse winding for correct facing)

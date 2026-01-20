@@ -15,12 +15,26 @@ const DEFAULT_ORTHO_SIZE = 20; // Initial zoom level for smaller grid (radius 15
 const MIN_ORTHO_SIZE = 3; // Maximum zoom in (closer view)
 const MAX_ORTHO_SIZE = 60; // Maximum zoom out (can view entire grid)
 const ZOOM_SPEED = 2; // Ortho units per wheel tick (moderate zoom)
+const BASE_PAN_SENSITIVITY = 200; // Base panning sensitivity at default zoom
 
 // Clipping plane distances for orthographic camera
 // In orthographic mode, minZ/maxZ define the depth range that's visible
 // Using negative minZ allows seeing objects "behind" the camera target
 const NEAR_CLIP = -200; // Allow objects behind the camera plane (ortho doesn't have true near plane)
 const FAR_CLIP = 500; // Far enough to see entire world
+
+/**
+ * Calculate panning sensitivity based on current zoom level.
+ * At close zoom (small ortho size), panning should be faster (lower value).
+ * At far zoom (large ortho size), panning should be slower (higher value).
+ */
+function calculatePanSensitivity(orthoSize: number): number {
+  // Scale sensitivity proportionally to zoom level
+  // At default zoom (20), use base sensitivity (200)
+  // At close zoom (3), use faster sensitivity (~30)
+  // At far zoom (60), use slower sensitivity (~600)
+  return BASE_PAN_SENSITIVITY * (orthoSize / DEFAULT_ORTHO_SIZE);
+}
 
 /**
  * Creates an isometric-style orthographic camera with pan/rotate controls
@@ -54,11 +68,19 @@ export function setupIsometricCamera(
   camera.orthoBottom = -DEFAULT_ORTHO_SIZE;
 
   // Configure controls
-  camera.panningSensibility = 50; // Lower = faster panning
+  // Panning sensibility: lower = faster. Scale based on zoom level for consistent feel.
+  camera.panningSensibility = calculatePanSensitivity(DEFAULT_ORTHO_SIZE);
   camera.wheelPrecision = 0; // Disable default zoom (we handle it)
   camera.allowUpsideDown = false;
   camera.lowerBetaLimit = 0.3; // Prevent looking straight down
   camera.upperBetaLimit = Math.PI / 2.2; // Prevent looking horizontal
+
+  // Enable keyboard panning as backup (arrow keys)
+  camera.keysUp = [87, 38];    // W and Up arrow
+  camera.keysDown = [83, 40];  // S and Down arrow
+  camera.keysLeft = [65, 37];  // A and Left arrow
+  camera.keysRight = [68, 39]; // D and Right arrow
+  camera.speed = 2; // Keyboard panning speed
 
   // Attach controls to canvas
   camera.attachControl(canvas, true);
@@ -68,6 +90,7 @@ export function setupIsometricCamera(
 
 /**
  * Handles orthographic zoom by adjusting ortho bounds
+ * Also adjusts panning sensitivity to maintain consistent feel across zoom levels
  */
 export function handleZoom(
   camera: ArcRotateCamera,
@@ -84,6 +107,9 @@ export function handleZoom(
   camera.orthoRight = newSize * aspectRatio;
   camera.orthoTop = newSize;
   camera.orthoBottom = -newSize;
+
+  // Adjust panning sensitivity based on new zoom level
+  camera.panningSensibility = calculatePanSensitivity(newSize);
 }
 
 /**

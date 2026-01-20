@@ -14,19 +14,19 @@ export interface BiomeColor {
 }
 
 /**
- * Saturated, stylized color palette for each biome
+ * Bright, saturated color palette for each biome
  * Values are in 0-1 range for Babylon.js
  *
- * Colors are intentionally vibrant/saturated for a Zelda-like stylized look
- * These work well with the cell-shaded material lighting bands
+ * Colors are intentionally BRIGHT and vibrant for a Zelda-like stylized look.
+ * Increased saturation and value for better visibility and cheerful aesthetic.
  */
 export const BIOME_COLORS: Record<Biome, BiomeColor> = {
-  grassland: { r: 0.35, g: 0.85, b: 0.25 }, // Vibrant lime green
-  marsh: { r: 0.2, g: 0.65, b: 0.55 },      // Teal blue-green
-  plains: { r: 0.85, g: 0.78, b: 0.35 },    // Golden yellow
-  forest: { r: 0.15, g: 0.6, b: 0.2 },      // Rich forest green
-  rocky: { r: 0.6, g: 0.5, b: 0.35 },       // Warm sandstone
-  alpine: { r: 0.7, g: 0.75, b: 0.85 },     // Snow-capped blue-white
+  grassland: { r: 0.45, g: 0.95, b: 0.35 }, // Bright lime green
+  marsh: { r: 0.3, g: 0.8, b: 0.7 },        // Bright teal
+  plains: { r: 0.95, g: 0.88, b: 0.45 },    // Bright golden yellow
+  forest: { r: 0.25, g: 0.75, b: 0.35 },    // Bright forest green
+  rocky: { r: 0.75, g: 0.65, b: 0.5 },      // Bright warm sandstone
+  alpine: { r: 0.85, g: 0.9, b: 0.98 },     // Bright snow white
 };
 
 /**
