@@ -10,6 +10,90 @@ export interface TransactionInfo {
   programId: string | null;
 }
 
+// Error classification types
+export type RpcErrorCode = 'RATE_LIMIT' | 'NETWORK' | 'UNKNOWN';
+
+export interface ClassifiedError {
+  code: RpcErrorCode;
+  retryable: boolean;
+  message: string;
+}
+
+/**
+ * Custom error class for transaction fetch failures.
+ */
+export class TransactionFetchError extends Error {
+  code: RpcErrorCode;
+  retryable: boolean;
+  originalError: unknown;
+
+  constructor(code: RpcErrorCode, message: string, retryable: boolean, originalError: unknown) {
+    super(message);
+    this.name = 'TransactionFetchError';
+    this.code = code;
+    this.retryable = retryable;
+    this.originalError = originalError;
+  }
+}
+
+/**
+ * Classify an RPC error by type.
+ */
+function classifyRpcError(error: unknown): ClassifiedError {
+  const errorMsg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+
+  // Rate limit detection
+  if (errorMsg.includes('429') || errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
+    return { code: 'RATE_LIMIT', retryable: true, message: 'Server busy' };
+  }
+
+  // Network error detection
+  if (errorMsg.includes('fetch') || errorMsg.includes('network') ||
+      errorMsg.includes('econnrefused') || errorMsg.includes('timeout') ||
+      errorMsg.includes('failed to fetch')) {
+    return { code: 'NETWORK', retryable: true, message: 'Connection failed' };
+  }
+
+  // Unknown error - still allow retry
+  return { code: 'UNKNOWN', retryable: true, message: 'Failed to load' };
+}
+
+/**
+ * Retry a function with exponential backoff.
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelayMs: number = 1000
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const classified = classifyRpcError(error);
+
+      // Don't retry non-retryable errors
+      if (!classified.retryable) {
+        throw new TransactionFetchError(classified.code, classified.message, classified.retryable, error);
+      }
+
+      // If not last attempt, wait with exponential backoff
+      if (attempt < maxRetries - 1) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        console.log(`[transactions] Retry ${attempt + 1}/${maxRetries} after ${delay}ms (${classified.code})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  // All retries exhausted
+  const classified = classifyRpcError(lastError);
+  throw new TransactionFetchError(classified.code, classified.message, classified.retryable, lastError);
+}
+
 // LandMind program ID - will be set after contract deployment
 // For now, show all transactions (filtering will work once we have program ID)
 const LANDMIND_PROGRAM_ID = import.meta.env.VITE_LANDMIND_PROGRAM_ID || null;
@@ -24,20 +108,24 @@ export async function fetchTransactionHistory(
   limit: number = 20,
   filterLandMind: boolean = true
 ): Promise<TransactionInfo[]> {
-  // Get signatures for address
-  const signatures = await connection.getSignaturesForAddress(
-    publicKey,
-    { limit: filterLandMind && LANDMIND_PROGRAM_ID ? limit * 5 : limit }
+  // Get signatures for address with retry
+  const signatures = await retryWithBackoff(() =>
+    connection.getSignaturesForAddress(
+      publicKey,
+      { limit: filterLandMind && LANDMIND_PROGRAM_ID ? limit * 5 : limit }
+    )
   );
 
   if (signatures.length === 0) {
     return [];
   }
 
-  // Fetch parsed transaction details
-  const transactions = await connection.getParsedTransactions(
-    signatures.map(sig => sig.signature),
-    { maxSupportedTransactionVersion: 0 }
+  // Fetch parsed transaction details with retry
+  const transactions = await retryWithBackoff(() =>
+    connection.getParsedTransactions(
+      signatures.map(sig => sig.signature),
+      { maxSupportedTransactionVersion: 0 }
+    )
   );
 
   // Parse and filter transactions

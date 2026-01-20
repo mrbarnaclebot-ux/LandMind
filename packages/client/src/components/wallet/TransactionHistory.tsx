@@ -1,11 +1,31 @@
-import { FC, useEffect, useState } from 'react';
+import { FC, useEffect, useState, useCallback } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { fetchTransactionHistory, TransactionInfo } from '../../lib/transactions';
+import { fetchTransactionHistory, TransactionInfo, TransactionFetchError, RpcErrorCode } from '../../lib/transactions';
 import { TransactionCard } from './TransactionCard';
 import '../../styles/pixel-theme.css';
 
 interface TransactionHistoryProps {
   filterLandMind?: boolean;
+}
+
+interface ErrorState {
+  message: string;
+  code: RpcErrorCode | 'UNKNOWN';
+  retryable: boolean;
+}
+
+/**
+ * Get user-friendly error message based on error code.
+ */
+function getErrorMessage(code: string): string {
+  switch (code) {
+    case 'RATE_LIMIT':
+      return 'Server busy';
+    case 'NETWORK':
+      return 'Connection failed';
+    default:
+      return 'Failed to load';
+  }
 }
 
 /**
@@ -20,7 +40,41 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
 
   const [transactions, setTransactions] = useState<TransactionInfo[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
+
+  const loadTransactions = useCallback(async () => {
+    if (!publicKey) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const txs = await fetchTransactionHistory(
+        connection,
+        publicKey,
+        20,
+        filterLandMind
+      );
+      setTransactions(txs);
+    } catch (err) {
+      console.error('Failed to fetch transactions:', err);
+      if (err instanceof TransactionFetchError) {
+        setError({
+          message: getErrorMessage(err.code),
+          code: err.code,
+          retryable: err.retryable
+        });
+      } else {
+        setError({
+          message: 'Failed to load',
+          code: 'UNKNOWN',
+          retryable: true
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [connection, publicKey, filterLandMind]);
 
   useEffect(() => {
     if (!connected || !publicKey) {
@@ -28,28 +82,8 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
       return;
     }
 
-    const loadTransactions = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const txs = await fetchTransactionHistory(
-          connection,
-          publicKey,
-          20,
-          filterLandMind
-        );
-        setTransactions(txs);
-      } catch (err) {
-        console.error('Failed to fetch transactions:', err);
-        setError('Failed to load');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadTransactions();
-  }, [connection, publicKey, connected, filterLandMind]);
+  }, [connected, publicKey, loadTransactions]);
 
   if (!connected) {
     return null;
@@ -97,7 +131,7 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
     );
   }
 
-  // Error state - redstone style
+  // Error state - redstone style with retry button
   if (error) {
     return (
       <div style={containerStyle}>
@@ -114,7 +148,28 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
             color: '#FF3333',
           }}
         >
-          !! {error} !!
+          !! {error.message} !!
+          {error.retryable && (
+            <button
+              onClick={loadTransactions}
+              disabled={loading}
+              style={{
+                display: 'block',
+                margin: '12px auto 0',
+                background: 'transparent',
+                border: '2px solid #55FF55',
+                color: '#55FF55',
+                fontFamily: "'Press Start 2P', monospace",
+                fontSize: '8px',
+                padding: '6px 12px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.5 : 1,
+                imageRendering: 'pixelated',
+              }}
+            >
+              {loading ? '...' : '[RETRY]'}
+            </button>
+          )}
         </div>
       </div>
     );
