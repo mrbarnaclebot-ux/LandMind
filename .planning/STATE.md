@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 3 Complete - Ready for Phase 4 (Deployment) or Phase 5 (Solana Contracts)
+**Current focus:** Phase 4 - Wallet Integration (SIWS authentication)
 
 ## Current Position
 
-Phase: 3 of 7 (Real-Time Simulation) - COMPLETE
-Plan: 4 of 4 in current phase - COMPLETE
-Status: Phase complete
-Last activity: 2026-01-20 - Completed 03-04-PLAN.md (Integration Testing)
+Phase: 4 of 7 (Wallet Integration)
+Plan: 2 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-20 - Completed 04-02-PLAN.md (Server Auth Endpoints)
 
-Progress: [████████░░] ~38% (13/~34 plans estimated)
+Progress: [████████░░] ~41% (15/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: ~12.2 min
-- Total execution time: ~158.5 min
+- Total plans completed: 15
+- Average duration: ~11.8 min
+- Total execution time: ~177 min
 
 **By Phase:**
 
@@ -30,11 +30,12 @@ Progress: [████████░░] ~38% (13/~34 plans estimated)
 | 01-foundation | 4 | 45 min | 11 min |
 | 02-3d-world-core | 5 | 90 min | 18 min |
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
+| 04-wallet-integration | 2 | ~18 min | 9 min |
 
 **Recent Trend:**
-- Phase 3 completed very efficiently (6 min average)
-- Full simulation pipeline operational and verified
-- Ready for deployment or Solana contract work
+- Phase 4 progressing smoothly
+- Server auth endpoints complete, client integration next
+- SIWS flow ready for wallet connection
 
 *Updated after each plan completion*
 
@@ -76,6 +77,12 @@ Recent decisions affecting current work:
 - **Recursive setTimeout** - prevents timing drift vs setInterval
 - **Dev routes guarded by NODE_ENV** - returns 404 in production
 - **Explicit .env path in seed scripts** - workspace compatibility
+- **tweetnacl for Ed25519 verification** - battle-tested, used by Solana internally
+- **jose for JWT** - modern ESM-native, Edge-compatible
+- **httpOnly cookies for session** - XSS protection
+- **SIWS message format** - standardized signing for wallet auth
+- **5-minute nonce TTL** - reasonable auth window, prevents stale nonces
+- **24-hour JWT expiry** - balance between security and convenience
 
 ### Pending Todos
 
@@ -89,6 +96,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-20
-Stopped at: Completed 03-04-PLAN.md (Integration Testing) - Phase 3 COMPLETE
+Stopped at: Completed 04-02-PLAN.md (Server Auth Endpoints)
 Resume file: None
-Next: Phase 4 (Deployment) or Phase 5 (Solana Contracts) - user choice
+Next: 04-03-PLAN.md (Client Auth Flow) or 04-04-PLAN.md (Session Management)
