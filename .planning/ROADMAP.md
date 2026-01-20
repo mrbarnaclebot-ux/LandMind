@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Database schema, server skeleton, Babylon.js setup, Anchor scaffold
 - [x] **Phase 2: 3D World Core** - Hex grid rendering with thin instances, camera navigation (Three.js)
-- [ ] **Phase 3: Real-Time Simulation** - Mining tick loop, WebSocket broadcast, Redis hot state
+- [x] **Phase 3: Real-Time Simulation** - Mining tick loop, WebSocket broadcast, Redis hot state
 - [ ] **Phase 4: Wallet Integration** - Phantom connection, session management, balance display
 - [ ] **Phase 5: Agent Deployment** - cNFT minting, agent creation on-chain, ownership display
 - [ ] **Phase 6: Economy & Distribution** - Fee vault, reward tracking, claims, PumpFun integration
@@ -72,10 +72,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Socket.io WebSocket server with Redis adapter
-- [ ] 03-02-PLAN.md — Agent cache and mining/relocation logic
-- [ ] 03-03-PLAN.md — Tick loop with persistence and server integration
-- [ ] 03-04-PLAN.md — Dev endpoints and end-to-end verification
+- [x] 03-01-PLAN.md — Socket.io WebSocket server with Redis adapter
+- [x] 03-02-PLAN.md — Agent cache and mining/relocation logic
+- [x] 03-03-PLAN.md — Tick loop with persistence and server integration
+- [x] 03-04-PLAN.md — Dev endpoints and end-to-end verification
 
 ### Phase 4: Wallet Integration
 **Goal**: Users can securely connect their Solana wallet and authenticate
@@ -152,9 +152,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/4 | Complete | 2026-01-20 |
-| 2. 3D World Core | 5/5 | Complete | 2026-01-20 |
-| 3. Real-Time Simulation | 0/4 | In Progress | - |
+| 1. Foundation | 4/4 | ✓ Complete | 2026-01-20 |
+| 2. 3D World Core | 5/5 | ✓ Complete | 2026-01-20 |
+| 3. Real-Time Simulation | 4/4 | ✓ Complete | 2026-01-20 |
 | 4. Wallet Integration | 0/TBD | Not started | - |
 | 5. Agent Deployment | 0/TBD | Not started | - |
 | 6. Economy & Distribution | 0/TBD | Not started | - |
@@ -186,4 +186,4 @@ All 34 v1 requirements mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-20 (Phase 3 planned)*
+*Last updated: 2026-01-20 (Phase 3 complete)*

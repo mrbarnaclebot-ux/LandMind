@@ -27,8 +27,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **AGENT-01**: User can deploy an agent for 0.1 SOL
 - [ ] **AGENT-02**: User sees agent appear on a hex and begin mining after deployment
-- [ ] **AGENT-03**: User's agent mines virtual resources (gold, silver, copper, iron)
-- [ ] **AGENT-04**: User's agent automatically relocates to new hex when current hex depletes (free)
+- [x] **AGENT-03**: User's agent mines virtual resources (gold, silver, copper, iron)
+- [x] **AGENT-04**: User's agent automatically relocates to new hex when current hex depletes (free)
 - [ ] **AGENT-05**: User can view all their deployed agents and their mining status
 
 ### Economy & Earnings
@@ -47,10 +47,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Backend & Infrastructure
 
-- [ ] **BACKEND-01**: Mining simulation runs off-chain with periodic state sync
-- [ ] **BACKEND-02**: Real-time updates delivered via WebSocket
-- [ ] **BACKEND-03**: PostgreSQL stores persistent game state
-- [ ] **BACKEND-04**: Redis caches hot state and enables real-time pub/sub
+- [x] **BACKEND-01**: Mining simulation runs off-chain with periodic state sync
+- [x] **BACKEND-02**: Real-time updates delivered via WebSocket
+- [x] **BACKEND-03**: PostgreSQL stores persistent game state
+- [x] **BACKEND-04**: Redis caches hot state and enables real-time pub/sub
 
 ### Admin Dashboard
 
@@ -108,8 +108,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WORLD-06 | Phase 4 | Pending |
 | AGENT-01 | Phase 5 | Pending |
 | AGENT-02 | Phase 5 | Pending |
-| AGENT-03 | Phase 3 | Pending |
-| AGENT-04 | Phase 3 | Pending |
+| AGENT-03 | Phase 3 | Complete |
+| AGENT-04 | Phase 3 | Complete |
 | AGENT-05 | Phase 5 | Pending |
 | ECON-01 | Phase 6 | Pending |
 | ECON-02 | Phase 6 | Pending |
@@ -119,8 +119,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONTRACT-01 | Phase 5 | Pending |
 | CONTRACT-02 | Phase 6 | Pending |
 | CONTRACT-03 | Phase 7 | Pending |
-| BACKEND-01 | Phase 3 | Pending |
-| BACKEND-02 | Phase 3 | Pending |
+| BACKEND-01 | Phase 3 | Complete |
+| BACKEND-02 | Phase 3 | Complete |
 | BACKEND-03 | Phase 1 | Complete |
 | BACKEND-04 | Phase 1 | Complete |
 | ADMIN-01 | Phase 7 | Pending |
@@ -138,4 +138,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-19*
-*Last updated: 2026-01-19 after roadmap creation*
+*Last updated: 2026-01-20 (Phase 3 complete)*
