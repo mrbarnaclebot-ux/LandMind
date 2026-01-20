@@ -1,138 +1,139 @@
 /**
- * HexWorld component - Renders hex grid using thin instances
+ * HexWorld component - Renders hex grid using Three.js InstancedMesh
  *
- * Uses Babylon.js thin instances for efficient GPU rendering of thousands
+ * Uses Three.js InstancedMesh for efficient GPU rendering of thousands
  * of hexes. Each hex is positioned based on axial coordinates and colored
  * by its biome type.
  *
- * Thin instances share mesh geometry, sending transformation matrices
- * to the GPU for per-instance rendering. This is significantly
- * more efficient than creating individual meshes.
- *
  * Performance optimizations:
- * - One mesh per biome (6 draw calls total)
- * - Frozen world matrices (no per-frame recalculation)
- * - Frozen materials (no state change checks)
- * - Static instance buffers (uploaded once)
+ * - One InstancedMesh per biome (6 draw calls total)
+ * - Shared geometry across all instances
+ * - Static matrices (uploaded once to GPU)
+ * - Frustum culling enabled
  */
 
-import { useEffect, useRef, useMemo, memo } from 'react';
-import { useScene } from 'react-babylonjs';
-import { Mesh, Matrix, Color3, StandardMaterial } from '@babylonjs/core';
-import { createBeveledHexMesh } from '../hex/hexMesh';
+import { useMemo } from 'react';
+import * as THREE from 'three';
+import { createHexGeometry } from '../hex/hexMesh';
 import { hexToPixel, ELEVATION_STEP } from '../hex/hexMath';
 import { generateHexData, type TerrainSeed } from '../terrain/terrainGenerator';
 import { getBiomeColor, type Biome } from '../terrain/biomes';
-import { createHexMaterial } from '../shaders/hexMaterial';
 
 export interface HexWorldProps {
-  /** Grid radius in hex units (default: 15, ~721 hexes) */
+  /** Grid radius in hex units (default: 20, ~1261 hexes) */
   gridRadius?: number;
   /** Optional seeds for deterministic terrain generation */
   seed?: TerrainSeed;
 }
 
 /**
- * HexWorld component - renders the hex grid with thin instances
+ * Biome mesh component - renders all hexes of one biome type
+ */
+interface BiomeMeshProps {
+  biome: Biome;
+  hexes: Array<{ q: number; r: number; elevation: number }>;
+  geometry: THREE.BufferGeometry;
+}
+
+function BiomeMesh({ biome, hexes, geometry }: BiomeMeshProps) {
+  const biomeColor = getBiomeColor(biome);
+  const color = new THREE.Color(biomeColor.r, biomeColor.g, biomeColor.b);
+
+  // Create instance matrices for all hexes of this biome
+  const instanceData = useMemo(() => {
+    const count = hexes.length;
+    const matrices = new Float32Array(count * 16);
+    const tempMatrix = new THREE.Matrix4();
+
+    hexes.forEach((hex, i) => {
+      const { x, z } = hexToPixel(hex.q, hex.r);
+      const y = hex.elevation * ELEVATION_STEP;
+      tempMatrix.makeTranslation(x, y, z);
+      tempMatrix.toArray(matrices, i * 16);
+    });
+
+    return { count, matrices };
+  }, [hexes]);
+
+  return (
+    <instancedMesh
+      args={[geometry, undefined, instanceData.count]}
+      frustumCulled={true}
+      ref={(mesh) => {
+        if (mesh) {
+          // Set all instance matrices
+          const tempMatrix = new THREE.Matrix4();
+          for (let i = 0; i < instanceData.count; i++) {
+            tempMatrix.fromArray(instanceData.matrices, i * 16);
+            mesh.setMatrixAt(i, tempMatrix);
+          }
+          mesh.instanceMatrix.needsUpdate = true;
+        }
+      }}
+    >
+      <meshStandardMaterial
+        color={color}
+        roughness={0.8}
+        metalness={0.0}
+        flatShading={false}
+      />
+    </instancedMesh>
+  );
+}
+
+/**
+ * HexWorld component - renders the hex grid with instanced meshes
  *
- * Creates one mesh per biome, each with thin instances for all hexes
+ * Creates one InstancedMesh per biome, each containing all hexes
  * of that biome type. This results in 6 draw calls total regardless
  * of how many hexes are rendered.
- *
- * Wrapped with React.memo to prevent unnecessary re-renders when
- * parent components re-render (e.g., during camera movement).
  */
-function HexWorldInner({ gridRadius = 15, seed }: HexWorldProps) {
-  const scene = useScene();
-  const meshRef = useRef<Mesh | null>(null);
-
+export function HexWorld({ gridRadius = 20, seed }: HexWorldProps) {
   // Generate hex data - only regenerate on seed/radius change
   const hexes = useMemo(() => {
     return generateHexData(gridRadius, seed);
   }, [gridRadius, seed]);
 
-  // Set up thin instances when scene is ready or hexes change
-  useEffect(() => {
-    if (!scene) return;
+  // Create shared geometry for all hexes
+  const geometry = useMemo(() => {
+    return createHexGeometry({
+      size: 0.95,
+      height: 0.8,
+      skirtDepth: 0.8,
+    });
+  }, []);
 
-    // Clean up previous meshes
-    if (meshRef.current) {
-      meshRef.current.dispose();
-      meshRef.current = null;
-    }
+  // Group hexes by biome for color-based batching
+  const hexesByBiome = useMemo(() => {
+    const grouped = new Map<
+      Biome,
+      Array<{ q: number; r: number; elevation: number }>
+    >();
 
-    // Group hexes by biome for color-based batching
-    const hexesByBiome = new Map<string, typeof hexes>();
     hexes.forEach((hex) => {
-      if (!hexesByBiome.has(hex.biome)) {
-        hexesByBiome.set(hex.biome, []);
+      if (!grouped.has(hex.biome)) {
+        grouped.set(hex.biome, []);
       }
-      hexesByBiome.get(hex.biome)!.push(hex);
+      grouped.get(hex.biome)!.push({
+        q: hex.q,
+        r: hex.r,
+        elevation: hex.elevation,
+      });
     });
 
-    // Create a separate instanced mesh for each biome
-    const instanceMeshes: Mesh[] = [];
-    const materials: StandardMaterial[] = [];
+    return grouped;
+  }, [hexes]);
 
-    hexesByBiome.forEach((biomeHexes, biome) => {
-      // Create flat-top hex mesh for each biome
-      // Size 0.95 creates visible gaps between hexes for edge definition
-      // Height 0.8 creates chunky solid 3D blocks (like Minecraft or Zelda terrain)
-      const biomeMesh = createBeveledHexMesh(scene, {
-        size: 0.95,
-        height: 0.8,
-      });
-      biomeMesh.name = `hexInstances_${biome}`;
-      biomeMesh.isVisible = true;
-      biomeMesh.isPickable = false;
-
-      // Create cell-shaded material with biome color
-      const biomeColor = getBiomeColor(biome as Biome);
-      const biomeMaterial = createHexMaterial(
-        scene,
-        `hexMat_${biome}`,
-        new Color3(biomeColor.r, biomeColor.g, biomeColor.b)
-      );
-      biomeMesh.material = biomeMaterial;
-      materials.push(biomeMaterial);
-
-      // Allocate matrix buffer for this biome's hexes
-      const matrixBuffer = new Float32Array(16 * biomeHexes.length);
-
-      // Fill buffer with transformation matrices
-      biomeHexes.forEach((hex, i) => {
-        const { x, z } = hexToPixel(hex.q, hex.r);
-        const y = hex.elevation * ELEVATION_STEP;
-        Matrix.Translation(x, y, z).copyToArray(matrixBuffer, i * 16);
-      });
-
-      // Apply thin instance buffer (static = true, won't change)
-      biomeMesh.thinInstanceSetBuffer('matrix', matrixBuffer, 16, true);
-
-      // Freeze the mesh's world matrix since it won't move
-      biomeMesh.freezeWorldMatrix();
-
-      // Compute bounding info once for culling
-      biomeMesh.thinInstanceRefreshBoundingInfo(true);
-
-      instanceMeshes.push(biomeMesh);
-    });
-
-    // Store first mesh for ref tracking
-    meshRef.current = instanceMeshes[0] || null;
-
-    return () => {
-      instanceMeshes.forEach((m) => m.dispose());
-      materials.forEach((m) => m.dispose());
-    };
-  }, [scene, hexes]);
-
-  // Component renders nothing - meshes are created imperatively
-  return null;
+  return (
+    <group name="hexWorld">
+      {Array.from(hexesByBiome.entries()).map(([biome, biomeHexes]) => (
+        <BiomeMesh
+          key={biome}
+          biome={biome}
+          hexes={biomeHexes}
+          geometry={geometry}
+        />
+      ))}
+    </group>
+  );
 }
-
-/**
- * Memoized HexWorld component to prevent re-renders during camera movement.
- * The hex grid is static, so we only need to render it once when scene/props change.
- */
-export const HexWorld = memo(HexWorldInner);

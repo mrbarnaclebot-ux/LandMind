@@ -1,0 +1,107 @@
+/**
+ * ThreeScene - Main 3D scene component using react-three-fiber
+ *
+ * Sets up the Three.js Canvas with:
+ * - OrbitControls for smooth camera navigation
+ * - Proper lighting (ambient + directional)
+ * - Sky background for visual polish
+ * - HexWorld for terrain rendering
+ */
+
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Sky } from '@react-three/drei';
+import { HexWorld } from './HexWorld';
+
+/**
+ * Scene lighting component - ambient fill + directional sun
+ */
+function Lighting() {
+  return (
+    <>
+      {/* Ambient light for soft fill in shadows */}
+      <ambientLight intensity={0.4} color="#b0c0d0" />
+
+      {/* Main directional "sun" light */}
+      <directionalLight
+        position={[50, 80, 30]}
+        intensity={1.5}
+        color="#fff8e8"
+        castShadow={false}
+      />
+
+      {/* Secondary fill light from opposite side */}
+      <directionalLight
+        position={[-30, 40, -20]}
+        intensity={0.3}
+        color="#e0e8ff"
+      />
+    </>
+  );
+}
+
+/**
+ * Camera controls with isometric-friendly settings
+ */
+function CameraControls() {
+  return (
+    <OrbitControls
+      // Start at nice isometric-ish angle
+      minPolarAngle={Math.PI / 6} // Don't look straight down
+      maxPolarAngle={Math.PI / 2.2} // Don't look horizontal
+      // Zoom limits
+      minDistance={10}
+      maxDistance={100}
+      // Smooth damping
+      enableDamping={true}
+      dampingFactor={0.1}
+      // Pan settings
+      enablePan={true}
+      panSpeed={1.5}
+      screenSpacePanning={true}
+      // Mouse buttons: left=rotate, right=pan, middle=zoom
+      mouseButtons={{
+        LEFT: 0, // ROTATE
+        MIDDLE: 1, // DOLLY
+        RIGHT: 2, // PAN
+      }}
+    />
+  );
+}
+
+/**
+ * Main Three.js scene component
+ *
+ * Provides Canvas with proper defaults and scene setup for the hex world.
+ */
+export function ThreeScene() {
+  return (
+    <Canvas
+      camera={{
+        position: [30, 40, 30],
+        fov: 50,
+        near: 0.1,
+        far: 1000,
+      }}
+      style={{ background: '#1a2533' }}
+      gl={{ antialias: true }}
+    >
+      {/* Sky backdrop */}
+      <Sky
+        distance={450000}
+        sunPosition={[50, 80, 30]}
+        inclination={0.6}
+        azimuth={0.25}
+        rayleigh={0.5}
+      />
+
+      {/* Scene lighting */}
+      <Lighting />
+
+      {/* Camera controls */}
+      <CameraControls />
+
+      {/* The hex world terrain */}
+      <HexWorld gridRadius={20} />
+    </Canvas>
+  );
+}
