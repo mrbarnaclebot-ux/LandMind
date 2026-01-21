@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 6 of 7 (Economy Distribution)
-Plan: 6 of ? in current phase (06-01 through 06-06 complete)
+Plan: 7 of 8 in current phase (06-01 through 06-07 complete)
 Status: In progress
-Last activity: 2026-01-21 - Completed 06-06-PLAN.md (Earnings Dashboard UI)
+Last activity: 2026-01-21 - Completed 06-07-PLAN.md (Leaderboard & Heat Map)
 
-Progress: [███████████████░] ~92% (33/~36 plans estimated)
+Progress: [████████████████░] ~94% (34/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33
+- Total plans completed: 34
 - Average duration: ~8 min
-- Total execution time: ~253 min
+- Total execution time: ~257 min
 
 **By Phase:**
 
@@ -32,14 +32,14 @@ Progress: [███████████████░] ~92% (33/~36 plans 
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
-| 06-economy-distribution | 6 | 26 min | 4 min |
+| 06-economy-distribution | 7 | 30 min | 4 min |
 
 **Recent Trend:**
-- Phase 6 progressing - Earnings Dashboard UI (06-06) complete in 4 min
-- EarningsDashboard slide-in panel with pixel theme
-- ClaimButton with multi-step status tracking
-- useEarnings + useClaimEarnings hooks with socket subscriptions
-- Next: Phase 6 completion or Phase 7 planning
+- Phase 6 progressing - Leaderboard & Heat Map (06-07) complete in 4 min
+- useLeaderboard hook with 30-second auto-refresh
+- HeatMapOverlay with InstancedMesh per-instance colors
+- EARNINGS and HEAT MAP toggle buttons in header
+- Next: 06-08 or Phase 6 completion
 
 *Updated after each plan completion*
 
@@ -133,6 +133,9 @@ Recent decisions affecting current work:
 - **EarningsDashboard slides from right** - mirrors AgentDashboard from left, balances UI
 - **ClaimStatus enum for flow tracking** - idle/building/signing/sending/confirming/success/error
 - **Parallel API fetch in useEarnings** - earnings + leaderboard fetched together
+- **30-second leaderboard refresh** - auto-refresh interval matching earnings
+- **Heat map additive blending** - glow effect for resource visualization
+- **Heat colors blue-cyan-green-yellow-red** - cold to hot gradient based on resource value
 
 ### Pending Todos
 
@@ -147,6 +150,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 06-06-PLAN.md (Earnings Dashboard UI)
+Stopped at: Completed 06-07-PLAN.md (Leaderboard & Heat Map)
 Resume file: None
-Next: Phase 6 completion or Phase 7 planning
+Next: 06-08 or Phase 6 completion
