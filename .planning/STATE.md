@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 5 In Progress - Client deployment UI complete, server endpoints next
+**Current focus:** Phase 5 In Progress - Server deployment endpoints and client UI complete, ready for E2E testing
 
 ## Current Position
 
 Phase: 5 of 7 (Agent Deployment)
-Plan: 4 of 7 in current phase - COMPLETE
+Plan: 4 of 7 in current phase - COMPLETE (05-01 through 05-04)
 Status: In progress
-Last activity: 2026-01-21 - Completed 05-04-PLAN.md (Client Deployment Flow)
+Last activity: 2026-01-21 - Completed 05-03-PLAN.md (Agent Minting) and 05-04-PLAN.md (Client Deployment Flow)
 
-Progress: [██████████░] ~61% (22/~36 plans estimated)
+Progress: [██████████░] ~64% (23/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: ~9 min
-- Total execution time: ~210 min
+- Total execution time: ~214 min
 
 **By Phase:**
 
@@ -31,13 +31,14 @@ Progress: [██████████░] ~61% (22/~36 plans estimated)
 | 02-3d-world-core | 5 | 90 min | 18 min |
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
-| 05-agent-deployment | 4 | 11 min | 2.75 min |
+| 05-agent-deployment | 4 | 15 min | 3.75 min |
 
 **Recent Trend:**
-- Phase 5 progressing very quickly (2.75 min average)
+- Phase 5 progressing very quickly (3.75 min average)
+- Server deployment endpoints complete (POST /deploy, POST /confirm)
 - Client deployment UI complete (DeployButton, useAgentDeploy, agentStore)
-- Requires server-side deployment endpoints to function
-- Next: 05-05 or server endpoint implementation
+- cNFT minting service ready with Bubblegum
+- Next: 05-05 (Agent Grid/List UI) or E2E testing
 
 *Updated after each plan completion*
 
@@ -100,6 +101,9 @@ Recent decisions affecting current work:
 - **Treasury as SystemAccount PDA** - seeds=[b"treasury"], receives SOL directly
 - **DeployStatus enum** - tracks deployment flow: idle, requesting, signing, sending, confirming, success, error
 - **Soft cap 10 / hard cap 20** - visual warning at 10 agents, button disabled at 20
+- **Two-phase deployment flow** - client signs SOL transfer, server confirms and mints cNFT
+- **Asset ID derivation via findLeafAssetIdPda** - merkle tree + leaf index for cNFT asset ID
+- **requireAuth middleware** - extracts userId from JWT for protected routes
 
 ### Pending Todos
 
@@ -114,6 +118,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 05-04-PLAN.md (Client Deployment Flow)
+Stopped at: Completed 05-03-PLAN.md (Agent Minting)
 Resume file: None
-Next: Plan 05-05 or server deployment endpoints (05-03 if not done)
+Next: Plan 05-05 (Agent Grid/List UI) or E2E deployment testing
