@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Real-Time Simulation** - Mining tick loop, WebSocket broadcast, Redis hot state
 - [x] **Phase 4: Wallet Integration** - Phantom connection, session management, balance display
 - [x] **Phase 5: Agent Deployment** - cNFT minting, agent creation on-chain, ownership display
-- [ ] **Phase 6: Economy & Distribution** - Fee vault, reward tracking, claims, PumpFun integration
+- [x] **Phase 6: Economy & Distribution** - Fee vault, reward tracking, claims, PumpFun integration
 - [ ] **Phase 7: Scale & Launch** - Performance optimization, admin dashboard, audit, mobile responsive
 
 ## Phase Details
@@ -132,14 +132,14 @@ Plans:
 **Plans**: 8 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Database schema for fees, claims, and earnings snapshots
-- [ ] 06-02-PLAN.md — Smart contract extension with claim and pause instructions
-- [ ] 06-03-PLAN.md — Earnings calculation and leaderboard services
-- [ ] 06-04-PLAN.md — Merkle tree service and fee monitoring
-- [ ] 06-05-PLAN.md — API routes and socket events for earnings
-- [ ] 06-06-PLAN.md — Earnings dashboard UI with claim flow
-- [ ] 06-07-PLAN.md — Leaderboard component and heat map overlay
-- [ ] 06-08-PLAN.md — End-to-end verification checkpoint
+- [x] 06-01-PLAN.md — Database schema for fees, claims, and earnings snapshots
+- [x] 06-02-PLAN.md — Smart contract extension with claim and pause instructions
+- [x] 06-03-PLAN.md — Earnings calculation and leaderboard services
+- [x] 06-04-PLAN.md — Merkle tree service and fee monitoring
+- [x] 06-05-PLAN.md — API routes and socket events for earnings
+- [x] 06-06-PLAN.md — Earnings dashboard UI with claim flow
+- [x] 06-07-PLAN.md — Leaderboard component and heat map overlay
+- [x] 06-08-PLAN.md — End-to-end verification checkpoint
 
 ### Phase 7: Scale & Launch
 **Goal**: System is production-ready for mainnet launch with performance, admin tools, and audit
@@ -171,7 +171,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Real-Time Simulation | 4/4 | ✓ Complete | 2026-01-20 |
 | 4. Wallet Integration | 6/6 | ✓ Complete | 2026-01-20 |
 | 5. Agent Deployment | 8/8 | ✓ Complete | 2026-01-21 |
-| 6. Economy & Distribution | 0/8 | Planning complete | - |
+| 6. Economy & Distribution | 8/8 | ✓ Complete | 2026-01-21 |
 | 7. Scale & Launch | 0/TBD | Not started | - |
 
 ## Requirement Coverage
@@ -200,4 +200,4 @@ All 34 v1 requirements mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-21 (Phase 6 planned - Economy & Distribution)*
+*Last updated: 2026-01-21 (Phase 6 complete - Economy & Distribution)*
