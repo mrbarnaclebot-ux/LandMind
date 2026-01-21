@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 6 of 7 (Economy Distribution)
-Plan: 2 of ? in current phase (06-01, 06-02 complete)
+Plan: 3 of ? in current phase (06-01, 06-02, 06-03 complete)
 Status: In progress
-Last activity: 2026-01-21 - Completed 06-02-PLAN.md (Fee Vault Smart Contract)
+Last activity: 2026-01-21 - Completed 06-03-PLAN.md (Earnings & Leaderboard Services)
 
-Progress: [█████████████░] ~81% (29/~36 plans estimated)
+Progress: [█████████████░] ~83% (30/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 29
+- Total plans completed: 30
 - Average duration: ~8 min
-- Total execution time: ~235 min
+- Total execution time: ~242 min
 
 **By Phase:**
 
@@ -32,14 +32,14 @@ Progress: [█████████████░] ~81% (29/~36 plans estima
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
-| 06-economy-distribution | 2 | 8 min | 4 min |
+| 06-economy-distribution | 3 | 15 min | 5 min |
 
 **Recent Trend:**
-- Phase 6 progressing - Fee Vault Smart Contract (06-02) complete in 6 min
-- Extended Anchor contract with FeeVaultState, claim_earnings with Merkle proofs
-- Admin controls: pause_vault, unpause_vault, update_merkle_root
-- IDL and TypeScript types updated for client/server integration
-- Next: Claim API implementation (06-03)
+- Phase 6 progressing - Earnings & Leaderboard Services (06-03) complete in 7 min
+- Weighted resource scoring: Gold 4x, Silver 2x, Copper 1.5x, Iron 1x
+- Redis ZSET leaderboard for O(log N) ranking operations
+- Integration with flush cycle for automatic score updates
+- Next: Claim API and frontend integration
 
 *Updated after each plan completion*
 
@@ -121,6 +121,9 @@ Recent decisions affecting current work:
 - **Merkle proof verification pattern** - hash(pubkey, padded_amount) as leaf, keccak-based tree
 - **MIN_CLAIM of 0.025 SOL** - prevents dust claims and reduces transaction overhead
 - **Authority via has_one constraint** - vault creator is permanent admin
+- **Resource weights scaled by 1000** - Gold 4000n, Silver 2000n, Copper 1500n, Iron 1000n for BigInt precision
+- **Redis ZSET for leaderboard** - O(log N) rank operations with ZADD, ZREVRANGE, ZREVRANK
+- **Earnings snapshot in flush cycle** - automatically updated every 30 seconds with mining state
 
 ### Pending Todos
 
@@ -135,6 +138,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 06-02-PLAN.md (Fee Vault Smart Contract)
+Stopped at: Completed 06-03-PLAN.md (Earnings & Leaderboard Services)
 Resume file: None
-Next: 06-03-PLAN.md (Claim API implementation)
+Next: 06-04-PLAN.md (Claim API and frontend integration)
