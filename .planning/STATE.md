@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 4 Complete - Ready for Phase 5 (Agent Deployment)
+**Current focus:** Phase 5 In Progress - Umi SDK setup complete, ready for cNFT minting
 
 ## Current Position
 
-Phase: 4 of 7 (Wallet Integration) - COMPLETE
-Plan: 5 of 5 in current phase - COMPLETE
-Status: Phase complete
-Last activity: 2026-01-20 - Completed 04-05-PLAN.md (Transaction History)
+Phase: 5 of 7 (Agent Deployment)
+Plan: 2 of 5 in current phase
+Status: In progress
+Last activity: 2026-01-21 - Completed 05-02-PLAN.md (Umi Setup)
 
-Progress: [█████████░] ~51% (18/~36 plans estimated)
+Progress: [█████████░░] ~53% (19/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: ~10.5 min
-- Total execution time: ~190 min
+- Total plans completed: 19
+- Average duration: ~10.1 min
+- Total execution time: ~193 min
 
 **By Phase:**
 
@@ -31,12 +31,13 @@ Progress: [█████████░] ~51% (18/~36 plans estimated)
 | 02-3d-world-core | 5 | 90 min | 18 min |
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
+| 05-agent-deployment | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Phase 4 completed efficiently (6 min average)
-- Full wallet integration working: connect, auth, balance, history
-- Minecraft pixel UI theme established and applied
-- Ready for on-chain agent deployment
+- Phase 5 started with fast Umi setup (3 min)
+- Metaplex SDK installed on server and client
+- Merkle tree creation script ready
+- Next: cNFT minting endpoint
 
 *Updated after each plan completion*
 
@@ -92,6 +93,9 @@ Recent decisions affecting current work:
 - **autoConnect enabled** - better UX for returning users
 - **Minecraft pixel UI theme** - Press Start 2P font, 3D blocky buttons, inventory-slot styling
 - **30-second balance refresh** - real-time balance updates without excessive RPC calls
+- **Helius RPC for DAS API** - required for getAssetsByOwner to fetch cNFTs
+- **Merkle tree: maxDepth 14, canopyDepth 8** - 16K agents max, reduced proof size
+- **useUmi hook returns null when disconnected** - components handle gracefully
 
 ### Pending Todos
 
@@ -101,10 +105,11 @@ None yet.
 
 - Anchor IDL generation requires workaround (--no-idl flag + manual IDL)
 - Solana platform-tools cargo version (1.84.0) limits some dependency versions
+- Merkle tree must be created before minting (one-time setup with SERVER_WALLET_SECRET)
 
 ## Session Continuity
 
-Last session: 2026-01-20
-Stopped at: Completed Phase 4 (Wallet Integration) - all 5 plans done
+Last session: 2026-01-21
+Stopped at: Completed 05-02-PLAN.md (Umi Setup)
 Resume file: None
-Next: Phase 5 (Agent Deployment) - cNFT minting, on-chain agents, ownership display
+Next: Plan 05-03 (Agent Minting) - cNFT minting endpoint, deployment flow
