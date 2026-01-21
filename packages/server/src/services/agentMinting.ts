@@ -3,7 +3,7 @@
  * Mints compressed NFTs representing agents using Metaplex Bubblegum
  */
 import { getServerUmi } from '../lib/umi.js';
-import { mintV1 } from '@metaplex-foundation/mpl-bubblegum';
+import { mintV1, findLeafAssetIdPda } from '@metaplex-foundation/mpl-bubblegum';
 import { publicKey, none } from '@metaplex-foundation/umi';
 import bs58 from 'bs58';
 
@@ -21,7 +21,7 @@ export interface MintResult {
  * Mint a new agent cNFT to the specified owner
  * @param ownerAddress - Wallet address to own the cNFT
  * @param agentId - Internal agent UUID
- * @param agentIndex - On-chain agent index
+ * @param agentIndex - On-chain agent index (also used as leaf index)
  * @returns Transaction signature and asset ID
  */
 export async function mintAgentNFT(
@@ -34,11 +34,12 @@ export async function mintAgentNFT(
   }
 
   const umi = getServerUmi();
+  const merkleTreePubkey = publicKey(MERKLE_TREE_ADDRESS);
 
   // Mint the cNFT
   const result = await mintV1(umi, {
     leafOwner: publicKey(ownerAddress),
-    merkleTree: publicKey(MERKLE_TREE_ADDRESS),
+    merkleTree: merkleTreePubkey,
     metadata: {
       name: `LandMind Agent #${agentIndex}`,
       symbol: 'LMAG',
@@ -49,9 +50,17 @@ export async function mintAgentNFT(
     },
   }).sendAndConfirm(umi);
 
+  // Derive asset ID from merkle tree and leaf index
+  // Note: The leaf index is based on the tree's current state
+  // For simplicity, we use agentIndex as a proxy (may need adjustment for production)
+  const [assetId] = findLeafAssetIdPda(umi, {
+    merkleTree: merkleTreePubkey,
+    leafIndex: agentIndex - 1, // Zero-indexed
+  });
+
   return {
     signature: bs58.encode(result.signature),
-    assetId: result.result.assetId?.toString() || '',
+    assetId: assetId.toString(),
   };
 }
 

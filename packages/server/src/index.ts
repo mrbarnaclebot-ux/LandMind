@@ -15,6 +15,7 @@ import cookieParser from 'cookie-parser';
 import healthRouter from './routes/health.js';
 import devRouter from './routes/dev.js';
 import authRouter from './routes/auth.js';
+import { agentRouter } from './routes/agents.js';
 import { setupSocket } from './lib/socket.js';
 import { startTickLoop, stopTickLoop } from './simulation/tickLoop.js';
 import { flushToPostgres } from './cache/persistence.js';
@@ -39,6 +40,7 @@ app.use(express.json());
 // Routes
 app.use('/health', healthRouter);
 app.use('/auth', authRouter);
+app.use('/api/agents', agentRouter);
 
 // Dev routes (development only)
 app.use('/dev', devRouter);
