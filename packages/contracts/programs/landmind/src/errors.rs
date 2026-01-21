@@ -10,4 +10,13 @@ pub enum LandMindError {
 
     #[msg("Unauthorized: only the authority can perform this action")]
     Unauthorized,
+
+    #[msg("Vault is paused")]
+    VaultPaused,
+
+    #[msg("Amount below minimum claim (0.025 SOL)")]
+    BelowMinimumClaim,
+
+    #[msg("Invalid Merkle proof")]
+    InvalidProof,
 }
