@@ -107,6 +107,9 @@ Recent decisions affecting current work:
 - **Agent placement on random hex** - assigns agents to hexes with resources and room
 - **agent:placed socket event** - real-time notification when agent assigned to hex
 - **AgentDashboard side panel** - slides from left, mirrors WalletDrawer pattern
+- **InstancedMesh for agent rendering** - GPU-efficient rendering for multiple agents
+- **Typed socket events on client** - duplicated server types for type safety
+- **Mining animation** - bobbing (0.04 amplitude) + rotation (0.1 amplitude) for mining agents
 
 ### Pending Todos
 
