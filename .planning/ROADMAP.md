@@ -129,12 +129,17 @@ Plans:
   3. User can claim accumulated fee earnings to their wallet
   4. Fee distribution is weighted by cumulative resources mined per user
   5. User sees leaderboard ranking miners by total resources mined
-**Plans**: TBD
+**Plans**: 8 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md — Database schema for fees, claims, and earnings snapshots
+- [ ] 06-02-PLAN.md — Smart contract extension with claim and pause instructions
+- [ ] 06-03-PLAN.md — Earnings calculation and leaderboard services
+- [ ] 06-04-PLAN.md — Merkle tree service and fee monitoring
+- [ ] 06-05-PLAN.md — API routes and socket events for earnings
+- [ ] 06-06-PLAN.md — Earnings dashboard UI with claim flow
+- [ ] 06-07-PLAN.md — Leaderboard component and heat map overlay
+- [ ] 06-08-PLAN.md — End-to-end verification checkpoint
 
 ### Phase 7: Scale & Launch
 **Goal**: System is production-ready for mainnet launch with performance, admin tools, and audit
@@ -166,7 +171,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Real-Time Simulation | 4/4 | ✓ Complete | 2026-01-20 |
 | 4. Wallet Integration | 6/6 | ✓ Complete | 2026-01-20 |
 | 5. Agent Deployment | 8/8 | ✓ Complete | 2026-01-21 |
-| 6. Economy & Distribution | 0/TBD | Not started | - |
+| 6. Economy & Distribution | 0/8 | Planning complete | - |
 | 7. Scale & Launch | 0/TBD | Not started | - |
 
 ## Requirement Coverage
@@ -195,4 +200,4 @@ All 34 v1 requirements mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-21 (Phase 5 complete - Agent Deployment verified)*
+*Last updated: 2026-01-21 (Phase 6 planned - Economy & Distribution)*
