@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 5 In Progress - Agent Factory contract and Umi SDK complete, ready for cNFT minting
+**Current focus:** Phase 5 In Progress - Client deployment UI complete, server endpoints next
 
 ## Current Position
 
 Phase: 5 of 7 (Agent Deployment)
-Plan: 2 of 7 in current phase - COMPLETE
+Plan: 4 of 7 in current phase - COMPLETE
 Status: In progress
-Last activity: 2026-01-21 - Completed 05-01-PLAN.md (Agent Factory Contract) and 05-02-PLAN.md (Umi Setup)
+Last activity: 2026-01-21 - Completed 05-04-PLAN.md (Client Deployment Flow)
 
-Progress: [█████████░░] ~56% (20/~36 plans estimated)
+Progress: [██████████░] ~61% (22/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
-- Average duration: ~10 min
-- Total execution time: ~199 min
+- Total plans completed: 22
+- Average duration: ~9 min
+- Total execution time: ~210 min
 
 **By Phase:**
 
@@ -31,14 +31,13 @@ Progress: [█████████░░] ~56% (20/~36 plans estimated)
 | 02-3d-world-core | 5 | 90 min | 18 min |
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
-| 05-agent-deployment | 2 | 9 min | 4.5 min |
+| 05-agent-deployment | 4 | 11 min | 2.75 min |
 
 **Recent Trend:**
-- Phase 5 progressing quickly (4.5 min average)
-- Agent Factory contract with deploy_agent instruction ready
-- Metaplex Umi SDK installed on server and client
-- Treasury PDA and AgentDeployedEvent ready for integration
-- Next: cNFT minting endpoint (05-03)
+- Phase 5 progressing very quickly (2.75 min average)
+- Client deployment UI complete (DeployButton, useAgentDeploy, agentStore)
+- Requires server-side deployment endpoints to function
+- Next: 05-05 or server endpoint implementation
 
 *Updated after each plan completion*
 
@@ -99,6 +98,8 @@ Recent decisions affecting current work:
 - **useUmi hook returns null when disconnected** - components handle gracefully
 - **Agent index from treasury balance** - derive from lamports/DEPLOY_COST, no counter account needed
 - **Treasury as SystemAccount PDA** - seeds=[b"treasury"], receives SOL directly
+- **DeployStatus enum** - tracks deployment flow: idle, requesting, signing, sending, confirming, success, error
+- **Soft cap 10 / hard cap 20** - visual warning at 10 agents, button disabled at 20
 
 ### Pending Todos
 
@@ -113,6 +114,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 05-01-PLAN.md (Agent Factory Contract) - summary created retroactively
+Stopped at: Completed 05-04-PLAN.md (Client Deployment Flow)
 Resume file: None
-Next: Plan 05-03 (Agent Minting) - cNFT minting endpoint, deployment flow
+Next: Plan 05-05 or server deployment endpoints (05-03 if not done)
