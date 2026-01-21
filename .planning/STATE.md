@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 5 In Progress - Umi SDK setup complete, ready for cNFT minting
+**Current focus:** Phase 5 In Progress - Agent Factory contract and Umi SDK complete, ready for cNFT minting
 
 ## Current Position
 
 Phase: 5 of 7 (Agent Deployment)
-Plan: 2 of 5 in current phase
+Plan: 2 of 7 in current phase - COMPLETE
 Status: In progress
-Last activity: 2026-01-21 - Completed 05-02-PLAN.md (Umi Setup)
+Last activity: 2026-01-21 - Completed 05-01-PLAN.md (Agent Factory Contract) and 05-02-PLAN.md (Umi Setup)
 
-Progress: [█████████░░] ~53% (19/~36 plans estimated)
+Progress: [█████████░░] ~56% (20/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
-- Average duration: ~10.1 min
-- Total execution time: ~193 min
+- Total plans completed: 20
+- Average duration: ~10 min
+- Total execution time: ~199 min
 
 **By Phase:**
 
@@ -31,13 +31,14 @@ Progress: [█████████░░] ~53% (19/~36 plans estimated)
 | 02-3d-world-core | 5 | 90 min | 18 min |
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
-| 05-agent-deployment | 1 | 3 min | 3 min |
+| 05-agent-deployment | 2 | 9 min | 4.5 min |
 
 **Recent Trend:**
-- Phase 5 started with fast Umi setup (3 min)
-- Metaplex SDK installed on server and client
-- Merkle tree creation script ready
-- Next: cNFT minting endpoint
+- Phase 5 progressing quickly (4.5 min average)
+- Agent Factory contract with deploy_agent instruction ready
+- Metaplex Umi SDK installed on server and client
+- Treasury PDA and AgentDeployedEvent ready for integration
+- Next: cNFT minting endpoint (05-03)
 
 *Updated after each plan completion*
 
@@ -96,6 +97,8 @@ Recent decisions affecting current work:
 - **Helius RPC for DAS API** - required for getAssetsByOwner to fetch cNFTs
 - **Merkle tree: maxDepth 14, canopyDepth 8** - 16K agents max, reduced proof size
 - **useUmi hook returns null when disconnected** - components handle gracefully
+- **Agent index from treasury balance** - derive from lamports/DEPLOY_COST, no counter account needed
+- **Treasury as SystemAccount PDA** - seeds=[b"treasury"], receives SOL directly
 
 ### Pending Todos
 
@@ -110,6 +113,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 05-02-PLAN.md (Umi Setup)
+Stopped at: Completed 05-01-PLAN.md (Agent Factory Contract) - summary created retroactively
 Resume file: None
 Next: Plan 05-03 (Agent Minting) - cNFT minting endpoint, deployment flow
