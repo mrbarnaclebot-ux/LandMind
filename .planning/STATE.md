@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 5 In Progress - Server deployment endpoints and client UI complete, ready for E2E testing
+**Current focus:** Phase 5 In Progress - Agent dashboard and placement complete, ready for E2E testing
 
 ## Current Position
 
 Phase: 5 of 7 (Agent Deployment)
-Plan: 4 of 7 in current phase - COMPLETE (05-01 through 05-04)
+Plan: 6 of 7 in current phase - COMPLETE (05-01 through 05-06)
 Status: In progress
-Last activity: 2026-01-21 - Completed 05-03-PLAN.md (Agent Minting) and 05-04-PLAN.md (Client Deployment Flow)
+Last activity: 2026-01-21 - Completed 05-06-PLAN.md (Agent Dashboard)
 
-Progress: [██████████░] ~64% (23/~36 plans estimated)
+Progress: [███████████░] ~69% (25/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 25
 - Average duration: ~9 min
-- Total execution time: ~214 min
+- Total execution time: ~222 min
 
 **By Phase:**
 
@@ -31,14 +31,14 @@ Progress: [██████████░] ~64% (23/~36 plans estimated)
 | 02-3d-world-core | 5 | 90 min | 18 min |
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
-| 05-agent-deployment | 4 | 15 min | 3.75 min |
+| 05-agent-deployment | 6 | 19 min | 3.2 min |
 
 **Recent Trend:**
-- Phase 5 progressing very quickly (3.75 min average)
-- Server deployment endpoints complete (POST /deploy, POST /confirm)
-- Client deployment UI complete (DeployButton, useAgentDeploy, agentStore)
-- cNFT minting service ready with Bubblegum
-- Next: 05-05 (Agent Grid/List UI) or E2E testing
+- Phase 5 progressing very quickly (3.2 min average)
+- Agent dashboard side panel with stats and agent list
+- Agent placement service assigns agents to random hexes
+- Server places agents immediately after deployment
+- Next: 05-07 (E2E testing) or Phase 6
 
 *Updated after each plan completion*
 
@@ -104,6 +104,9 @@ Recent decisions affecting current work:
 - **Two-phase deployment flow** - client signs SOL transfer, server confirms and mints cNFT
 - **Asset ID derivation via findLeafAssetIdPda** - merkle tree + leaf index for cNFT asset ID
 - **requireAuth middleware** - extracts userId from JWT for protected routes
+- **Agent placement on random hex** - assigns agents to hexes with resources and room
+- **agent:placed socket event** - real-time notification when agent assigned to hex
+- **AgentDashboard side panel** - slides from left, mirrors WalletDrawer pattern
 
 ### Pending Todos
 
@@ -118,6 +121,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 05-03-PLAN.md (Agent Minting)
+Stopped at: Completed 05-06-PLAN.md (Agent Dashboard)
 Resume file: None
-Next: Plan 05-05 (Agent Grid/List UI) or E2E deployment testing
+Next: Plan 05-07 (E2E testing) or Phase 6 (Polish)
