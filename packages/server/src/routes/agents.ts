@@ -5,6 +5,7 @@ import { Router, Request, Response } from 'express';
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
 import { prisma } from '../lib/prisma.js';
 import { mintAgentNFT, getAgentMetadata } from '../services/agentMinting.js';
+import { placeAgentOnHex, getUserAgentStats } from '../services/agentPlacement.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 
 export const agentRouter = Router();
@@ -35,6 +36,19 @@ agentRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respons
   } catch (error) {
     console.error('Failed to fetch agents:', error);
     res.status(500).json({ error: 'Failed to fetch agents' });
+  }
+});
+
+/**
+ * GET /api/agents/stats - Get user's agent statistics
+ */
+agentRouter.get('/stats', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const stats = await getUserAgentStats(req.userId!);
+    res.json(stats);
+  } catch (error) {
+    console.error('Failed to get agent stats:', error);
+    res.status(500).json({ error: 'Failed to get statistics' });
   }
 });
 
@@ -206,16 +220,51 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
         },
       });
 
+      // Place agent on a hex
+      const placement = await placeAgentOnHex(agent.id);
+
+      if (placement) {
+        // Emit socket event for real-time update
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`user:${user.walletPubkey}`).emit('agent:placed', {
+            agentId: agent.id,
+            hexId: placement.hexId,
+            hexQ: placement.q,
+            hexR: placement.r,
+          });
+        }
+      }
+
       res.json({
         success: true,
         agent: {
           id: agent.id,
           agentIndex,
           mintAddress: mintResult.assetId,
+          hexId: placement?.hexId ?? null,
+          hexQ: placement?.q ?? null,
+          hexR: placement?.r ?? null,
         },
       });
     } catch (mintError) {
       console.error('Minting failed but agent created:', mintError);
+
+      // Still try to place the agent even if minting failed
+      const placement = await placeAgentOnHex(agent.id);
+
+      if (placement) {
+        const io = req.app.get('io');
+        if (io) {
+          io.to(`user:${user.walletPubkey}`).emit('agent:placed', {
+            agentId: agent.id,
+            hexId: placement.hexId,
+            hexQ: placement.q,
+            hexR: placement.r,
+          });
+        }
+      }
+
       // Agent exists but minting failed - can retry later
       res.json({
         success: true,
@@ -224,6 +273,9 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
           agentIndex,
           mintAddress: null,
           mintPending: true,
+          hexId: placement?.hexId ?? null,
+          hexQ: placement?.q ?? null,
+          hexR: placement?.r ?? null,
         },
         warning: 'Agent created but NFT minting pending',
       });
