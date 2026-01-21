@@ -16,6 +16,8 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   agents    Agent[]
+  claims    Claim[]
+  earningsSnapshot EarningsSnapshot?
 
   @@map("users")
 }
@@ -77,4 +79,43 @@ enum ResourceType {
   COPPER
   IRON
   EMPTY
+}
+
+enum FeeSource {
+  DEPLOYMENT
+  PUMPFUN
+}
+
+model FeeDeposit {
+  id          String    @id @default(uuid())
+  txSignature String    @unique @map("tx_signature")
+  amount      BigInt    // lamports
+  source      FeeSource
+  depositedAt DateTime  @default(now()) @map("deposited_at")
+  processed   Boolean   @default(false)
+
+  @@map("fee_deposits")
+}
+
+model Claim {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @map("user_id")
+  amount      BigInt   // lamports claimed
+  txSignature String   @unique @map("tx_signature")
+  claimedAt   DateTime @default(now()) @map("claimed_at")
+
+  @@map("claims")
+}
+
+model EarningsSnapshot {
+  id            String    @id @default(uuid())
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String    @unique @map("user_id")
+  weightedScore BigInt    @map("weighted_score")
+  totalClaimed  BigInt    @default(0) @map("total_claimed")
+  lastClaimAt   DateTime? @map("last_claim_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("earnings_snapshots")
 }
