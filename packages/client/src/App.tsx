@@ -1,5 +1,6 @@
 import { ThreeScene } from './scene/ThreeScene';
 import { ConnectButton } from './components/wallet/ConnectButton';
+import { DeployButton } from './components/agents/DeployButton';
 import './styles/pixel-theme.css';
 
 /**
@@ -42,7 +43,10 @@ function Header() {
         <span>LANDMIND</span>
       </div>
 
-      <ConnectButton />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <DeployButton />
+        <ConnectButton />
+      </div>
     </header>
   );
 }
