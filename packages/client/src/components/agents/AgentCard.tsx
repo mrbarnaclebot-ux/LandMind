@@ -69,18 +69,16 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
       </div>
 
       {/* Location */}
-      {hasLocation && (
-        <div
-          style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '7px',
-            color: '#8B8B8B',
-            marginBottom: '8px',
-          }}
-        >
-          HEX ({agent.hex!.q}, {agent.hex!.r})
-        </div>
-      )}
+      <div
+        style={{
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: '7px',
+          color: hasLocation ? '#8B8B8B' : '#666666',
+          marginBottom: '8px',
+        }}
+      >
+        {hasLocation ? `HEX (${agent.hex!.q}, ${agent.hex!.r})` : 'UNASSIGNED'}
+      </div>
 
       {/* Resources mined */}
       {agent.miningState && (
