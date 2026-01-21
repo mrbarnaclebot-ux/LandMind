@@ -70,3 +70,34 @@ export async function requireAuth(
     res.status(401).json({ error: 'Invalid or expired session' });
   }
 }
+
+/**
+ * Optional authentication middleware.
+ * Sets req.walletAddress and req.userId if token is valid, otherwise leaves them undefined.
+ * Does NOT reject requests without valid tokens - just passes through.
+ * Use this for public routes that can optionally use user context.
+ */
+export async function optionalAuth(
+  req: AuthenticatedRequest,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
+  const token = req.cookies?.session ||
+    req.headers.authorization?.replace('Bearer ', '');
+
+  if (!token) {
+    // No token - continue without user context
+    next();
+    return;
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    req.walletAddress = payload.sub as string;
+    req.userId = payload.userId as string;
+  } catch {
+    // Invalid token - continue without user context (don't reject)
+  }
+
+  next();
+}

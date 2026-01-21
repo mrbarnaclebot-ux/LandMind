@@ -16,6 +16,8 @@ import healthRouter from './routes/health.js';
 import devRouter from './routes/dev.js';
 import authRouter from './routes/auth.js';
 import { agentRouter } from './routes/agents.js';
+import { earningsRouter } from './routes/earnings.js';
+import { leaderboardRouter } from './routes/leaderboard.js';
 import { setupSocket } from './lib/socket.js';
 import { startTickLoop, stopTickLoop } from './simulation/tickLoop.js';
 import { flushToPostgres } from './cache/persistence.js';
@@ -41,6 +43,8 @@ app.use(express.json());
 app.use('/health', healthRouter);
 app.use('/auth', authRouter);
 app.use('/api/agents', agentRouter);
+app.use('/api/earnings', earningsRouter);
+app.use('/api/leaderboard', leaderboardRouter);
 
 // Dev routes (development only)
 app.use('/dev', devRouter);
