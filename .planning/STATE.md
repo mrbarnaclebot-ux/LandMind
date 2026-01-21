@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 5 COMPLETE - All UAT gaps closed (including round 2), ready for Phase 6 or final testing
+**Current focus:** Phase 6 IN PROGRESS - Economy/Distribution layer, starting with database schema
 
 ## Current Position
 
-Phase: 5 of 7 (Agent Deployment)
-Plan: 8 of 8 in current phase - COMPLETE (05-01 through 05-08)
-Status: Phase complete
-Last activity: 2026-01-21 - Completed 05-08-PLAN.md (UAT Gap Closure Round 2)
+Phase: 6 of 7 (Economy Distribution)
+Plan: 1 of ? in current phase (06-01 complete)
+Status: In progress
+Last activity: 2026-01-21 - Completed 06-01-PLAN.md (Economy Database Schema)
 
-Progress: [████████████░] ~75% (27/~36 plans estimated)
+Progress: [█████████████░] ~78% (28/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27
+- Total plans completed: 28
 - Average duration: ~8 min
-- Total execution time: ~227 min
+- Total execution time: ~229 min
 
 **By Phase:**
 
@@ -32,12 +32,13 @@ Progress: [████████████░] ~75% (27/~36 plans estimated
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
+| 06-economy-distribution | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Phase 5 COMPLETE (8 plans, 24 min total, 3 min avg)
-- UAT gap closure round 2 fixed: agent elevation, hexQ/hexR emission, live mining indicator
-- All agent deployment features verified and functional
-- Next: Phase 6 (Polish) or comprehensive E2E testing
+- Phase 6 started - Economy Database Schema (06-01) complete in 2 min
+- Added FeeDeposit, Claim, EarningsSnapshot models to Prisma schema
+- Database synced using prisma db push (schema drift workaround)
+- Next: Earnings calculation service (06-02)
 
 *Updated after each plan completion*
 
@@ -111,6 +112,10 @@ Recent decisions affecting current work:
 - **Mining animation** - bobbing (0.04 amplitude) + rotation (0.1 amplitude) for mining agents
 - **Full HEX_TILE_HEIGHT for agent Y** - hex geometry places top face at y=height, not y=height/2
 - **CSS pulse animation for live indicators** - pulsing green dot shows real-time activity
+- **BigInt for lamport amounts in economy tables** - consistent with mining state pattern
+- **FeeSource enum (DEPLOYMENT, PUMPFUN)** - categorize fee deposits by source
+- **EarningsSnapshot as cumulative tracker** - one per user, updated as mining progresses
+- **prisma db push for schema drift** - database had existing tables without migration tracking
 
 ### Pending Todos
 
@@ -125,6 +130,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 05-08-PLAN.md (UAT Gap Closure Round 2) - Phase 5 complete
+Stopped at: Completed 06-01-PLAN.md (Economy Database Schema)
 Resume file: None
-Next: Phase 6 (Polish) or comprehensive E2E verification
+Next: 06-02-PLAN.md (Earnings calculation service)
