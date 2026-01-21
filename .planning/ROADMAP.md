@@ -110,13 +110,13 @@ Plans:
 **Plans**: 7 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Anchor smart contract with deploy_agent instruction
-- [ ] 05-02-PLAN.md — Metaplex Umi setup and Merkle tree creation script
-- [ ] 05-03-PLAN.md — Server minting service and deployment endpoints
-- [ ] 05-04-PLAN.md — Client deploy flow (button, hooks, store)
-- [ ] 05-05-PLAN.md — Agent rendering layer with mining animations
-- [ ] 05-06-PLAN.md — Agent dashboard and placement service
-- [ ] 05-07-PLAN.md — Final verification checkpoint
+- [x] 05-01-PLAN.md — Anchor smart contract with deploy_agent instruction
+- [x] 05-02-PLAN.md — Metaplex Umi setup and Merkle tree creation script
+- [x] 05-03-PLAN.md — Server minting service and deployment endpoints
+- [x] 05-04-PLAN.md — Client deploy flow (button, hooks, store)
+- [x] 05-05-PLAN.md — Agent rendering layer with mining animations
+- [x] 05-06-PLAN.md — Agent dashboard and placement service
+- [ ] 05-07-PLAN.md — UAT gap fixes (agent elevation, card location, tooltip size, text contrast)
 
 ### Phase 6: Economy & Distribution
 **Goal**: Users earn passive income from PumpFun fees proportional to their mining output
@@ -164,7 +164,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. 3D World Core | 5/5 | ✓ Complete | 2026-01-20 |
 | 3. Real-Time Simulation | 4/4 | ✓ Complete | 2026-01-20 |
 | 4. Wallet Integration | 6/6 | ✓ Complete | 2026-01-20 |
-| 5. Agent Deployment | 0/7 | Planned | - |
+| 5. Agent Deployment | 6/7 | In Progress | - |
 | 6. Economy & Distribution | 0/TBD | Not started | - |
 | 7. Scale & Launch | 0/TBD | Not started | - |
 
@@ -194,4 +194,4 @@ All 34 v1 requirements mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-20 (Phase 5 planned - 7 plans in 4 waves)*
+*Last updated: 2026-01-21 (Phase 5 gap closure - fixing UAT issues)*
