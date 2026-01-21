@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: 3D World Core** - Hex grid rendering with thin instances, camera navigation (Three.js)
 - [x] **Phase 3: Real-Time Simulation** - Mining tick loop, WebSocket broadcast, Redis hot state
 - [x] **Phase 4: Wallet Integration** - Phantom connection, session management, balance display
-- [ ] **Phase 5: Agent Deployment** - cNFT minting, agent creation on-chain, ownership display
+- [x] **Phase 5: Agent Deployment** - cNFT minting, agent creation on-chain, ownership display
 - [ ] **Phase 6: Economy & Distribution** - Fee vault, reward tracking, claims, PumpFun integration
 - [ ] **Phase 7: Scale & Launch** - Performance optimization, admin dashboard, audit, mobile responsive
 
@@ -117,7 +117,7 @@ Plans:
 - [x] 05-05-PLAN.md — Agent rendering layer with mining animations
 - [x] 05-06-PLAN.md — Agent dashboard and placement service
 - [x] 05-07-PLAN.md — UAT gap fixes (agent elevation, card location, tooltip size, text contrast)
-- [ ] 05-08-PLAN.md — UAT gap fixes round 2 (agent elevation calc, mining visual feedback)
+- [x] 05-08-PLAN.md — UAT gap fixes round 2 (agent elevation calc, mining visual feedback)
 
 ### Phase 6: Economy & Distribution
 **Goal**: Users earn passive income from PumpFun fees proportional to their mining output
@@ -165,7 +165,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. 3D World Core | 5/5 | ✓ Complete | 2026-01-20 |
 | 3. Real-Time Simulation | 4/4 | ✓ Complete | 2026-01-20 |
 | 4. Wallet Integration | 6/6 | ✓ Complete | 2026-01-20 |
-| 5. Agent Deployment | 7/8 | In Progress | - |
+| 5. Agent Deployment | 8/8 | ✓ Complete | 2026-01-21 |
 | 6. Economy & Distribution | 0/TBD | Not started | - |
 | 7. Scale & Launch | 0/TBD | Not started | - |
 
