@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 6 of 7 (Economy Distribution)
-Plan: 3 of ? in current phase (06-01, 06-02, 06-03 complete)
+Plan: 4 of ? in current phase (06-01, 06-02, 06-03, 06-04 complete)
 Status: In progress
-Last activity: 2026-01-21 - Completed 06-03-PLAN.md (Earnings & Leaderboard Services)
+Last activity: 2026-01-21 - Completed 06-04-PLAN.md (Merkle Proofs & Fee Monitoring)
 
-Progress: [█████████████░] ~83% (30/~36 plans estimated)
+Progress: [██████████████░] ~86% (31/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 30
+- Total plans completed: 31
 - Average duration: ~8 min
-- Total execution time: ~242 min
+- Total execution time: ~246 min
 
 **By Phase:**
 
@@ -32,14 +32,14 @@ Progress: [█████████████░] ~83% (30/~36 plans estima
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
-| 06-economy-distribution | 3 | 15 min | 5 min |
+| 06-economy-distribution | 4 | 19 min | 5 min |
 
 **Recent Trend:**
-- Phase 6 progressing - Earnings & Leaderboard Services (06-03) complete in 7 min
-- Weighted resource scoring: Gold 4x, Silver 2x, Copper 1.5x, Iron 1x
-- Redis ZSET leaderboard for O(log N) ranking operations
-- Integration with flush cycle for automatic score updates
-- Next: Claim API and frontend integration
+- Phase 6 progressing - Merkle Proofs & Fee Monitoring (06-04) complete in 4 min
+- Merkle tree service with keccak256 matching smart contract hashing
+- Fee monitoring for treasury (deployments) and PumpFun wallet (optional)
+- Vault initialization script for one-time FeeVaultState setup
+- Next: Claim API implementation
 
 *Updated after each plan completion*
 
@@ -124,6 +124,10 @@ Recent decisions affecting current work:
 - **Resource weights scaled by 1000** - Gold 4000n, Silver 2000n, Copper 1500n, Iron 1000n for BigInt precision
 - **Redis ZSET for leaderboard** - O(log N) rank operations with ZADD, ZREVRANGE, ZREVRANK
 - **Earnings snapshot in flush cycle** - automatically updated every 30 seconds with mining state
+- **@noble/hashes keccak256 for Merkle** - matches Solana keccak (solana_program::keccak)
+- **OpenZeppelin sorted hashing** - deterministic Merkle trees regardless of input order
+- **60-second fee monitoring** - balances responsiveness with RPC rate limits
+- **Optional PUMPFUN_FEE_WALLET** - fee monitor works without PumpFun wallet configured
 
 ### Pending Todos
 
@@ -138,6 +142,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 06-03-PLAN.md (Earnings & Leaderboard Services)
+Stopped at: Completed 06-04-PLAN.md (Merkle Proofs & Fee Monitoring)
 Resume file: None
-Next: 06-04-PLAN.md (Claim API and frontend integration)
+Next: 06-05-PLAN.md (Claim API implementation)
