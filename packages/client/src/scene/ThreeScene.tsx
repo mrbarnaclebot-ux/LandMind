@@ -17,9 +17,15 @@ import { OrbitControls, Sky } from '@react-three/drei';
 import * as THREE from 'three';
 import { HexWorld } from './HexWorld';
 import { AgentLayer } from './AgentLayer';
+import { HeatMapOverlay } from './HeatMapOverlay';
 import { HexTooltip, useHexHover } from './HexTooltip';
 import { useUserAgents } from '../hooks/useUserAgents';
 import { useCameraStore } from '../stores/cameraStore';
+
+interface ThreeSceneProps {
+  /** Whether the heat map overlay is visible */
+  heatMapVisible?: boolean;
+}
 
 /**
  * Scene lighting component - bright and contrasty for Minecraft-style look
@@ -147,7 +153,7 @@ function PointerCaptureGround({
 /**
  * Inner scene content - uses R3F hooks for agents and hover
  */
-function SceneContent() {
+function SceneContent({ heatMapVisible = false }: { heatMapVisible?: boolean }) {
   // Initialize agent loading and subscription
   useUserAgents();
 
@@ -180,6 +186,9 @@ function SceneContent() {
       {/* Hex world terrain */}
       <HexWorld gridRadius={GRID_RADIUS} />
 
+      {/* Heat map overlay for resource visualization */}
+      <HeatMapOverlay visible={heatMapVisible} />
+
       {/* Agents rendered on hexes */}
       <AgentLayer />
 
@@ -194,7 +203,7 @@ function SceneContent() {
  *
  * Provides Canvas with proper defaults and scene setup for the hex world.
  */
-export function ThreeScene() {
+export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
   return (
     <Canvas
       camera={{
@@ -211,7 +220,7 @@ export function ThreeScene() {
       }}
       gl={{ antialias: true }}
     >
-      <SceneContent />
+      <SceneContent heatMapVisible={heatMapVisible} />
     </Canvas>
   );
 }

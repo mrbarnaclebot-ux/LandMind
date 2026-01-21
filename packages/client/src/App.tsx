@@ -3,18 +3,29 @@ import { ThreeScene } from './scene/ThreeScene';
 import { ConnectButton } from './components/wallet/ConnectButton';
 import { DeployButton } from './components/agents/DeployButton';
 import { AgentDashboard } from './components/agents/AgentDashboard';
+import { Leaderboard } from './components/earnings/Leaderboard';
 import { useCameraStore } from './stores/cameraStore';
 import { hexToPixel } from './hex/hexMath';
 import './styles/pixel-theme.css';
 
 interface HeaderProps {
   onOpenAgentDashboard: () => void;
+  onToggleHeatMap: () => void;
+  heatMapVisible: boolean;
+  onToggleEarnings: () => void;
+  earningsVisible: boolean;
 }
 
 /**
  * Minecraft-style header with pixel aesthetics
  */
-function Header({ onOpenAgentDashboard }: HeaderProps) {
+function Header({
+  onOpenAgentDashboard,
+  onToggleHeatMap,
+  heatMapVisible,
+  onToggleEarnings,
+  earningsVisible,
+}: HeaderProps) {
   return (
     <header
       className="pixel-header"
@@ -52,6 +63,28 @@ function Header({ onOpenAgentDashboard }: HeaderProps) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={onToggleEarnings}
+          className={`pixel-btn ${earningsVisible ? 'pixel-btn-gold' : ''}`}
+          style={{
+            padding: '8px 12px',
+            fontSize: '10px',
+            opacity: 0.9,
+          }}
+        >
+          EARNINGS
+        </button>
+        <button
+          onClick={onToggleHeatMap}
+          className={`pixel-btn ${heatMapVisible ? 'pixel-btn-primary' : ''}`}
+          style={{
+            padding: '8px 12px',
+            fontSize: '10px',
+            opacity: 0.9,
+          }}
+        >
+          HEAT MAP
+        </button>
         <button
           onClick={onOpenAgentDashboard}
           className="pixel-btn"
@@ -151,6 +184,8 @@ function ControlsOverlay() {
 
 function App() {
   const [isAgentDashboardOpen, setIsAgentDashboardOpen] = useState(false);
+  const [heatMapVisible, setHeatMapVisible] = useState(false);
+  const [earningsVisible, setEarningsVisible] = useState(false);
   const { panToPosition } = useCameraStore();
 
   // Camera pan callback - pans camera to hex location
@@ -165,14 +200,33 @@ function App() {
 
   return (
     <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}>
-      <Header onOpenAgentDashboard={() => setIsAgentDashboardOpen(true)} />
-      <ThreeScene />
+      <Header
+        onOpenAgentDashboard={() => setIsAgentDashboardOpen(true)}
+        onToggleHeatMap={() => setHeatMapVisible((v) => !v)}
+        heatMapVisible={heatMapVisible}
+        onToggleEarnings={() => setEarningsVisible((v) => !v)}
+        earningsVisible={earningsVisible}
+      />
+      <ThreeScene heatMapVisible={heatMapVisible} />
       <ControlsOverlay />
       <AgentDashboard
         isOpen={isAgentDashboardOpen}
         onClose={() => setIsAgentDashboardOpen(false)}
         onLocateAgent={handleLocateAgent}
       />
+      {/* Earnings/Leaderboard panel */}
+      {earningsVisible && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '80px',
+            right: '16px',
+            zIndex: 100,
+          }}
+        >
+          <Leaderboard />
+        </div>
+      )}
     </div>
   );
 }
