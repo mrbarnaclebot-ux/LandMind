@@ -1,12 +1,18 @@
+import { useState, useCallback } from 'react';
 import { ThreeScene } from './scene/ThreeScene';
 import { ConnectButton } from './components/wallet/ConnectButton';
 import { DeployButton } from './components/agents/DeployButton';
+import { AgentDashboard } from './components/agents/AgentDashboard';
 import './styles/pixel-theme.css';
+
+interface HeaderProps {
+  onOpenAgentDashboard: () => void;
+}
 
 /**
  * Minecraft-style header with pixel aesthetics
  */
-function Header() {
+function Header({ onOpenAgentDashboard }: HeaderProps) {
   return (
     <header
       className="pixel-header"
@@ -44,6 +50,17 @@ function Header() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          onClick={onOpenAgentDashboard}
+          className="pixel-btn"
+          style={{
+            padding: '8px 12px',
+            fontSize: '10px',
+            opacity: 0.9,
+          }}
+        >
+          MY AGENTS
+        </button>
         <DeployButton />
         <ConnectButton />
       </div>
@@ -131,11 +148,26 @@ function ControlsOverlay() {
 }
 
 function App() {
+  const [isAgentDashboardOpen, setIsAgentDashboardOpen] = useState(false);
+
+  // Camera pan callback - will be passed to ThreeScene
+  const handleLocateAgent = useCallback((q: number, r: number) => {
+    // TODO: Integrate with camera controls
+    console.log('Locate agent at:', q, r);
+    // Close panel after locate
+    setIsAgentDashboardOpen(false);
+  }, []);
+
   return (
     <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}>
-      <Header />
+      <Header onOpenAgentDashboard={() => setIsAgentDashboardOpen(true)} />
       <ThreeScene />
       <ControlsOverlay />
+      <AgentDashboard
+        isOpen={isAgentDashboardOpen}
+        onClose={() => setIsAgentDashboardOpen(false)}
+        onLocateAgent={handleLocateAgent}
+      />
     </div>
   );
 }
