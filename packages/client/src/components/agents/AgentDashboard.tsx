@@ -164,7 +164,7 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
             }}
           >
             <div style={{ color: '#8B8B8B', marginBottom: '6px' }}>TOTAL MINED</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px', color: '#E0E0E0' }}>
               <span><span style={{ color: '#FFD700' }}>Au:</span> {formatNumber(totalMined.gold)}</span>
               <span><span style={{ color: '#C0C0C0' }}>Ag:</span> {formatNumber(totalMined.silver)}</span>
               <span><span style={{ color: '#B87333' }}>Cu:</span> {formatNumber(totalMined.copper)}</span>
