@@ -164,10 +164,9 @@ export function AgentLayer() {
         const elevation = hexInfo?.elevation ?? 0;
 
         // Position on top of hex tile surface
-        // Hex center Y = elevation * ELEVATION_STEP
-        // Hex top surface = hex center Y + HEX_TILE_HEIGHT / 2
+        // Hex geometry places top face at y=height (0.35), not y=height/2
         // Agent should stand on top with feet at surface
-        const hexTopSurface = elevation * ELEVATION_STEP + HEX_TILE_HEIGHT / 2;
+        const hexTopSurface = elevation * ELEVATION_STEP + HEX_TILE_HEIGHT;
         const y = hexTopSurface + 0.02; // Small offset above surface
 
         return {
