@@ -30,6 +30,12 @@ model Agent {
   deployedAt   DateTime @default(now()) @map("deployed_at")
   miningState  MiningState?
 
+  // cNFT fields - added for Phase 5
+  mintAddress     String?  @unique @map("mint_address")  // cNFT asset ID
+  deployTxSig     String?  @map("deploy_tx_sig")         // Deployment transaction signature
+  mintTxSig       String?  @map("mint_tx_sig")           // Minting transaction signature
+  agentIndex      Int?     @map("agent_index")           // On-chain index from event
+
   @@map("agents")
 }
 
