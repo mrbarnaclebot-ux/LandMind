@@ -1,10 +1,16 @@
 /**
  * Write-Behind Persistence
  * Syncs Redis cache state to PostgreSQL periodically
+ * Also updates earnings snapshots and leaderboard on flush
  */
 
 import { prisma } from '../lib/prisma.js';
 import { getAllAgents, cacheAgent, type CachedAgent } from './agentCache.js';
+import {
+  calculateWeightedScore,
+  type ResourceTotals,
+} from '../services/earningsService.js';
+import { updateScoresBatch } from '../services/leaderboardService.js';
 
 /**
  * Load all MINING/RELOCATING agents from PostgreSQL into Redis cache
@@ -62,6 +68,7 @@ export async function loadHotAgentsFromPostgres(): Promise<number> {
 /**
  * Flush all cached agent state to PostgreSQL
  * Called periodically (every 30s) and on shutdown
+ * Also updates earnings snapshots and leaderboard
  */
 export async function flushToPostgres(): Promise<void> {
   const agents = await getAllAgents();
@@ -72,6 +79,30 @@ export async function flushToPostgres(): Promise<void> {
   }
 
   console.log(`Flushing ${agents.length} agents to PostgreSQL...`);
+
+  // Group agents by owner for earnings calculation
+  const ownerResources = new Map<string, { ownerId: string; wallet: string; resources: ResourceTotals }>();
+
+  for (const agent of agents) {
+    const existing = ownerResources.get(agent.ownerId);
+    if (existing) {
+      existing.resources.gold += BigInt(agent.gold);
+      existing.resources.silver += BigInt(agent.silver);
+      existing.resources.copper += BigInt(agent.copper);
+      existing.resources.iron += BigInt(agent.iron);
+    } else {
+      ownerResources.set(agent.ownerId, {
+        ownerId: agent.ownerId,
+        wallet: agent.ownerWallet,
+        resources: {
+          gold: BigInt(agent.gold),
+          silver: BigInt(agent.silver),
+          copper: BigInt(agent.copper),
+          iron: BigInt(agent.iron),
+        },
+      });
+    }
+  }
 
   // Use a transaction for consistency
   await prisma.$transaction(async (tx) => {
@@ -97,9 +128,36 @@ export async function flushToPostgres(): Promise<void> {
         },
       });
     }
+
+    // Update earnings snapshots for each owner
+    for (const { ownerId, resources } of ownerResources.values()) {
+      const weightedScore = calculateWeightedScore(resources);
+
+      await tx.earningsSnapshot.upsert({
+        where: { userId: ownerId },
+        create: {
+          userId: ownerId,
+          weightedScore,
+          totalClaimed: 0n,
+        },
+        update: {
+          weightedScore,
+        },
+      });
+    }
   });
 
-  console.log(`Flushed ${agents.length} agents to PostgreSQL`);
+  // Update leaderboard in Redis (outside transaction, non-critical)
+  const leaderboardUpdates = Array.from(ownerResources.values()).map(({ wallet, resources }) => ({
+    wallet,
+    score: calculateWeightedScore(resources),
+  }));
+
+  if (leaderboardUpdates.length > 0) {
+    await updateScoresBatch(leaderboardUpdates);
+  }
+
+  console.log(`Flushed ${agents.length} agents to PostgreSQL, updated ${ownerResources.size} earnings snapshots`);
 }
 
 /**
