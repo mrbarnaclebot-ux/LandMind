@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 6 of 7 (Economy Distribution)
-Plan: 4 of ? in current phase (06-01, 06-02, 06-03, 06-04 complete)
+Plan: 5 of ? in current phase (06-01 through 06-05 complete)
 Status: In progress
-Last activity: 2026-01-21 - Completed 06-04-PLAN.md (Merkle Proofs & Fee Monitoring)
+Last activity: 2026-01-21 - Completed 06-05-PLAN.md (Claim API)
 
-Progress: [██████████████░] ~86% (31/~36 plans estimated)
+Progress: [██████████████░] ~89% (32/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 31
+- Total plans completed: 32
 - Average duration: ~8 min
-- Total execution time: ~246 min
+- Total execution time: ~249 min
 
 **By Phase:**
 
@@ -32,14 +32,14 @@ Progress: [██████████████░] ~86% (31/~36 plans est
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
-| 06-economy-distribution | 4 | 19 min | 5 min |
+| 06-economy-distribution | 5 | 22 min | 4 min |
 
 **Recent Trend:**
-- Phase 6 progressing - Merkle Proofs & Fee Monitoring (06-04) complete in 4 min
-- Merkle tree service with keccak256 matching smart contract hashing
-- Fee monitoring for treasury (deployments) and PumpFun wallet (optional)
-- Vault initialization script for one-time FeeVaultState setup
-- Next: Claim API implementation
+- Phase 6 progressing - Claim API (06-05) complete in 3 min
+- Earnings routes: GET /api/earnings, POST /claim, POST /confirm
+- Leaderboard route: GET /api/leaderboard with optional auth
+- Socket events for real-time claim feedback
+- Next: Phase 6 completion or Phase 7 planning
 
 *Updated after each plan completion*
 
@@ -128,6 +128,8 @@ Recent decisions affecting current work:
 - **OpenZeppelin sorted hashing** - deterministic Merkle trees regardless of input order
 - **60-second fee monitoring** - balances responsiveness with RPC rate limits
 - **Optional PUMPFUN_FEE_WALLET** - fee monitor works without PumpFun wallet configured
+- **optionalAuth middleware** - sets user context if token valid, otherwise null (for public routes)
+- **Claim instruction data format** - discriminator (8) + amount (u64 LE) + proof (vec of [u8; 32])
 
 ### Pending Todos
 
@@ -142,6 +144,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 06-04-PLAN.md (Merkle Proofs & Fee Monitoring)
+Stopped at: Completed 06-05-PLAN.md (Claim API)
 Resume file: None
-Next: 06-05-PLAN.md (Claim API implementation)
+Next: Phase 6 completion or Phase 7 planning
