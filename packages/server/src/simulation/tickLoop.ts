@@ -60,7 +60,7 @@ async function processTick(): Promise<void> {
       toHexId: number;
       arrivalTick: number;
     }> = [];
-    const arrivals: Array<{ agentId: string; hexId: number }> = [];
+    const arrivals: Array<{ agentId: string; hexId: number; hexQ: number; hexR: number }> = [];
 
     // Process each agent
     for (const agent of agents) {
@@ -219,7 +219,7 @@ async function processRelocatingAgent(
   agent: CachedAgent,
   updates: Array<{ agentId: string; fields: Record<string, string> }>,
   userUpdates: Map<string, AgentUpdate[]>,
-  arrivals: Array<{ agentId: string; hexId: number }>
+  arrivals: Array<{ agentId: string; hexId: number; hexQ: number; hexR: number }>
 ): Promise<void> {
   if (agent.arrivalTick === undefined || agent.targetHexId === undefined) {
     console.warn(`Relocating agent ${agent.agentId} missing arrival data`);
@@ -244,7 +244,12 @@ async function processRelocatingAgent(
       },
     });
 
-    arrivals.push({ agentId: agent.agentId, hexId: agent.targetHexId });
+    arrivals.push({
+      agentId: agent.agentId,
+      hexId: agent.targetHexId,
+      hexQ: agent.targetQ!,
+      hexR: agent.targetR!,
+    });
 
     // Queue user update with new location
     const userUpdate = userUpdates.get(agent.ownerWallet) || [];
