@@ -139,8 +139,9 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-1 todo in `.planning/todos/pending/`:
+2 todos in `.planning/todos/pending/`:
 - **Deploy smart contract to devnet** (contracts) — blocks vault init and claim testing
+- **Add clouds to 3D environment** (ui) — Minecraft-style blocky clouds for atmosphere
 
 ### Blockers/Concerns
 
