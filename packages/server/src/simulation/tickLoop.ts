@@ -164,6 +164,8 @@ async function processMiningAgent(
     userUpdate.push({
       id: agent.agentId,
       hexId: agent.hexId,
+      hexQ: hex.q,
+      hexR: hex.r,
       resources: newResources,
       status: 'MINING',
     });
@@ -249,6 +251,8 @@ async function processRelocatingAgent(
     userUpdate.push({
       id: agent.agentId,
       hexId: agent.targetHexId,
+      hexQ: agent.targetQ!,
+      hexR: agent.targetR!,
       resources: {
         gold: agent.gold,
         silver: agent.silver,
@@ -264,6 +268,8 @@ async function processRelocatingAgent(
     userUpdate.push({
       id: agent.agentId,
       hexId: agent.hexId,
+      hexQ: agent.hexQ,
+      hexR: agent.hexR,
       resources: {
         gold: agent.gold,
         silver: agent.silver,
