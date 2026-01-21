@@ -10,7 +10,7 @@ interface AccountMenuProps {
 }
 
 /**
- * Minecraft inventory-style account dropdown menu.
+ * Minecraft inventory-style account dropdown menu with voxel 3D effects.
  * Shows balance, copy address, explorer link, and disconnect.
  */
 export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconnect, onViewHistory }) => {
@@ -42,73 +42,90 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
 
   return (
     <div style={{ position: 'relative', display: 'inline-block' }} ref={menuRef}>
-      {/* Main button - inventory slot style */}
+      {/* Main button - 3D voxel style */}
       <button
-        className={`pixel-btn ${isOpen ? 'pressed' : ''}`}
+        className={`pixel-btn-3d ${isOpen ? '' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          minWidth: '140px',
+          gap: '10px',
+          minWidth: '150px',
+          padding: '10px 16px',
+          ...(isOpen && {
+            transform: 'translate(2px, 2px)',
+            boxShadow: '2px 2px 0 0 rgba(0, 0, 0, 0.5), inset 0 2px 0 0 rgba(0, 0, 0, 0.2)',
+          }),
         }}
       >
-        <span style={{ color: '#55CDFC' }}>◎</span>
+        {/* Pixel SOL icon */}
+        <span className="pixel-sol" style={{ transform: 'scale(1)' }} />
         <span>{formatAddress(address)}</span>
-        <span style={{
-          fontSize: '6px',
-          marginLeft: 'auto',
-          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-        }}>
-          ▼
-        </span>
+        <span
+          className={`pixel-dropdown-arrow ${isOpen ? 'open' : ''}`}
+          style={{ marginLeft: 'auto' }}
+        />
       </button>
 
-      {/* Dropdown - inventory panel style */}
+      {/* Dropdown - enhanced inventory panel style */}
       {isOpen && (
         <div
-          className="pixel-dropdown"
+          className="pixel-inventory-panel"
           style={{
             position: 'absolute',
             top: 'calc(100% + 8px)',
             right: 0,
-            minWidth: '220px',
+            minWidth: '240px',
             zIndex: 1000,
           }}
         >
-          {/* Balance display - gold text */}
+          {/* Balance display - gold text with slot background */}
           <div
+            className="pixel-slot-enhanced"
             style={{
-              padding: '12px',
-              background: '#2D2D31',
-              marginBottom: '4px',
+              marginBottom: '8px',
+              padding: '14px',
             }}
           >
             <div
               style={{
                 fontFamily: "'Press Start 2P', monospace",
-                fontSize: '8px',
+                fontSize: '7px',
                 color: '#8B8B8B',
-                marginBottom: '8px',
                 textTransform: 'uppercase',
+                marginBottom: '10px',
+                letterSpacing: '0.5px',
               }}
             >
-              Balance
+              BALANCE
             </div>
             <div
-              className="pixel-balance"
               style={{
-                fontSize: '14px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
+                gap: '10px',
               }}
             >
-              <span style={{ color: '#55CDFC' }}>◎</span>
-              <span>
+              <span className="pixel-sol" style={{ transform: 'scale(1.2)' }} />
+              <span
+                className="pixel-balance"
+                style={{
+                  fontSize: '16px',
+                  fontFamily: "'Press Start 2P', monospace",
+                }}
+              >
                 {balance !== null ? `${balance.toFixed(4)}` : '---'}
               </span>
-              <span style={{ fontSize: '10px', color: '#FFAA00' }}>SOL</span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  color: '#FFAA00',
+                  fontFamily: "'Press Start 2P', monospace",
+                  textShadow: '1px 1px 0 #CC8800',
+                }}
+              >
+                SOL
+              </span>
             </div>
           </div>
 
@@ -118,17 +135,36 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
           <div
             className="pixel-dropdown-item"
             onClick={copyAddress}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}
           >
-            <span style={{ marginRight: '8px' }}>📋</span>
-            {copiedFeedback ? '✓ COPIED!' : 'COPY ADDRESS'}
+            {copiedFeedback ? (
+              <>
+                <span className="pixel-check" style={{ transform: 'scale(1)' }} />
+                <span style={{ color: '#5D8C3E' }}>COPIED!</span>
+              </>
+            ) : (
+              <>
+                <span className="pixel-copy" style={{ transform: 'scale(1)' }} />
+                <span>COPY ADDRESS</span>
+              </>
+            )}
           </div>
 
           <div
             className="pixel-dropdown-item"
             onClick={openExplorer}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}
           >
-            <span style={{ marginRight: '8px' }}>🔍</span>
-            EXPLORER
+            <span className="pixel-search" style={{ transform: 'scale(1)' }} />
+            <span>EXPLORER</span>
           </div>
 
           <div
@@ -137,9 +173,14 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
               onViewHistory();
               setIsOpen(false);
             }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}
           >
-            <span style={{ marginRight: '8px' }}>[]</span>
-            VIEW HISTORY
+            <span className="pixel-scroll" style={{ transform: 'scale(1)' }} />
+            <span>VIEW HISTORY</span>
           </div>
 
           <div className="pixel-divider" />
@@ -150,9 +191,14 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
               onDisconnect();
               setIsOpen(false);
             }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+            }}
           >
-            <span style={{ marginRight: '8px' }}>⏻</span>
-            DISCONNECT
+            <span className="pixel-power" style={{ transform: 'scale(1)' }} />
+            <span>DISCONNECT</span>
           </div>
         </div>
       )}

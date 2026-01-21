@@ -12,7 +12,7 @@ import '../../styles/pixel-theme.css';
 const BALANCE_REFRESH_INTERVAL = 30_000; // 30 seconds
 
 /**
- * Minecraft-styled wallet connect button.
+ * Minecraft-styled wallet connect button with voxel 3D effects.
  * Shows blocky 3D button when disconnected, inventory-slot menu when connected.
  */
 export const ConnectButton: FC = () => {
@@ -80,14 +80,25 @@ export const ConnectButton: FC = () => {
     gap: '12px',
   };
 
-  // Loading state - pickaxe mining animation
+  // Loading state - pixel pickaxe mining animation
   if (connecting || isAuthenticating) {
     return (
       <div style={containerStyle}>
         <NetworkBadge network={network} />
-        <button className="pixel-btn" disabled style={{ minWidth: '160px' }}>
-          <span className="pixel-loading">⛏</span>
-          <span>{connecting ? 'CONNECTING' : 'SIGNING'}</span>
+        <button
+          className="pixel-btn-3d"
+          disabled
+          style={{
+            minWidth: '160px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            opacity: 0.8,
+          }}
+        >
+          <span className="pixel-loading-enhanced pixel-pickaxe" style={{ transform: 'scale(1.2)' }} />
+          <span>{connecting ? 'LINKING' : 'SIGNING'}</span>
         </button>
       </div>
     );
@@ -122,24 +133,34 @@ export const ConnectButton: FC = () => {
       <div style={containerStyle}>
         <NetworkBadge network={network} />
         <button
-          className={`pixel-btn ${authError ? 'pixel-btn-danger' : ''}`}
+          className={`pixel-btn-3d ${authError ? 'pixel-btn-3d-danger' : ''}`}
           onClick={authError ? () => authenticate() : undefined}
           title={authError || 'Authenticating...'}
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            gap: '10px',
+            padding: '10px 16px',
           }}
         >
           {authError ? (
             <>
-              <span>⚠</span>
+              <span className="pixel-warning" style={{ transform: 'scale(1.1)' }} />
               <span>{shortAddress}</span>
-              <span style={{ fontSize: '8px' }}>[RETRY]</span>
+              <span
+                style={{
+                  fontSize: '7px',
+                  background: 'rgba(0,0,0,0.3)',
+                  padding: '2px 6px',
+                  marginLeft: '4px',
+                }}
+              >
+                RETRY
+              </span>
             </>
           ) : (
             <>
-              <span className="pixel-loading">⛏</span>
+              <span className="pixel-loading-enhanced pixel-pickaxe" style={{ transform: 'scale(1.1)' }} />
               <span>{shortAddress}</span>
             </>
           )}
@@ -148,20 +169,21 @@ export const ConnectButton: FC = () => {
     );
   }
 
-  // Disconnected - emerald green connect button
+  // Disconnected - emerald green connect button with 3D depth
   return (
     <div style={containerStyle}>
       <NetworkBadge network={network} />
       <button
-        className="pixel-btn pixel-btn-primary"
+        className="pixel-btn-3d pixel-btn-3d-primary"
         onClick={() => setVisible(true)}
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: '10px',
+          padding: '10px 20px',
         }}
       >
-        <span>🔗</span>
+        <span className="pixel-link" style={{ transform: 'scale(1.1)' }} />
         <span>CONNECT</span>
       </button>
     </div>

@@ -8,7 +8,7 @@ interface TransactionCardProps {
 }
 
 /**
- * Minecraft inventory-slot styled transaction card.
+ * Minecraft inventory-slot styled transaction card with voxel 3D effects.
  * Shows transaction type, status, amount, and timestamp.
  * Clickable to open Solana Explorer.
  */
@@ -19,26 +19,27 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
     window.open(getExplorerUrl(signature, 'tx', 'devnet'), '_blank');
   };
 
-  // Transaction type icon mapping (pixel style)
-  const typeIcon = {
-    deploy: '[]',
-    claim: '{}',
-    transfer: '->',
-    unknown: '??'
-  }[type];
-
   // Status colors from pixel theme
   const statusColor = status === 'success' ? '#5D8C3E' : '#FF3333';
-  const statusBg = status === 'success' ? 'rgba(93, 140, 62, 0.2)' : 'rgba(255, 51, 51, 0.2)';
+  const statusBg = status === 'success' ? 'rgba(93, 140, 62, 0.25)' : 'rgba(255, 51, 51, 0.25)';
+
+  // Transaction type display
+  const typeDisplay = {
+    deploy: { icon: 'pixel-sword', label: 'DEPLOY' },
+    claim: { icon: 'pixel-chest', label: 'CLAIM' },
+    transfer: { icon: 'pixel-link', label: 'TRANSFER' },
+    unknown: { icon: 'pixel-search', label: 'TX' }
+  }[type];
 
   return (
     <div
-      className="pixel-slot"
+      className="pixel-slot-enhanced"
       onClick={handleClick}
       style={{
         cursor: 'pointer',
-        marginBottom: '4px',
+        marginBottom: '6px',
         transition: 'none',
+        padding: '12px',
       }}
     >
       {/* Header row: type + status badge */}
@@ -47,31 +48,32 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '8px',
+          marginBottom: '10px',
         }}
       >
         <span
           style={{
             fontFamily: "'Press Start 2P', monospace",
-            fontSize: '10px',
+            fontSize: '9px',
             color: '#FFFFFF',
             textTransform: 'uppercase',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '8px',
           }}
         >
-          <span style={{ color: '#55CDFC' }}>{typeIcon}</span>
-          {type}
+          <span className={typeDisplay.icon} style={{ transform: 'scale(0.9)' }} />
+          {typeDisplay.label}
         </span>
         <span
-          className="pixel-badge"
           style={{
+            fontFamily: "'Press Start 2P', monospace",
             background: statusBg,
             color: statusColor,
-            fontSize: '6px',
-            padding: '2px 6px',
-            boxShadow: `inset -2px -2px 0 0 ${statusColor}40, inset 2px 2px 0 0 ${statusColor}80`,
+            fontSize: '7px',
+            padding: '4px 8px',
+            border: `2px solid ${statusColor}`,
+            boxShadow: `inset 0 1px 0 0 ${status === 'success' ? '#7DB356' : '#FF6666'}`,
           }}
         >
           {status === 'success' ? 'OK' : 'FAIL'}
@@ -93,10 +95,10 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
         </span>
         {amount !== null && (
           <span
-            className="pixel-balance"
             style={{
               fontSize: '8px',
               color: amount >= 0 ? '#5D8C3E' : '#FFAA00',
+              textShadow: amount >= 0 ? '1px 1px 0 #3D5C2E' : '1px 1px 0 #CC8800',
             }}
           >
             {amount >= 0 ? '+' : ''}{amount.toFixed(4)} SOL
@@ -107,11 +109,13 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
       {/* Signature (truncated) */}
       <div
         style={{
-          marginTop: '6px',
-          fontFamily: "monospace",
-          fontSize: '8px',
+          marginTop: '8px',
+          fontFamily: "'Press Start 2P', monospace",
+          fontSize: '6px',
           color: '#5F5F5F',
-          letterSpacing: '-0.5px',
+          letterSpacing: '0.3px',
+          background: 'rgba(0, 0, 0, 0.2)',
+          padding: '4px 6px',
         }}
       >
         {signature.slice(0, 8)}...{signature.slice(-8)}

@@ -8,15 +8,18 @@
  * - HexWorld for terrain rendering
  * - AgentLayer for agent visualization
  * - HexTooltip for hover information
+ * - Camera panning support via store
  */
 
-import { Canvas } from '@react-three/fiber';
+import { useRef } from 'react';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Sky } from '@react-three/drei';
 import * as THREE from 'three';
 import { HexWorld } from './HexWorld';
 import { AgentLayer } from './AgentLayer';
 import { HexTooltip, useHexHover } from './HexTooltip';
 import { useUserAgents } from '../hooks/useUserAgents';
+import { useCameraStore } from '../stores/cameraStore';
 
 /**
  * Scene lighting component - bright and contrasty for Minecraft-style look
@@ -47,11 +50,49 @@ function Lighting() {
 }
 
 /**
- * Camera controls with isometric-friendly settings
+ * Camera controls with isometric-friendly settings and pan-to support
  */
 function CameraControls() {
+  const controlsRef = useRef<any>(null);
+  const { camera } = useThree();
+  const { targetPosition, clearTarget } = useCameraStore();
+
+  // Smoothly pan camera to target position
+  useFrame(() => {
+    if (!controlsRef.current || !targetPosition) return;
+
+    const controls = controlsRef.current;
+    const target = controls.target as THREE.Vector3;
+
+    // Lerp target position
+    const lerpFactor = 0.08;
+    target.x += (targetPosition.x - target.x) * lerpFactor;
+    target.y += (targetPosition.y - target.y) * lerpFactor;
+    target.z += (targetPosition.z - target.z) * lerpFactor;
+
+    // Also move camera to maintain relative position
+    const currentOffset = new THREE.Vector3().subVectors(camera.position, target);
+    const desiredOffset = currentOffset.clone().normalize().multiplyScalar(25); // Fixed distance
+
+    camera.position.x += (targetPosition.x + desiredOffset.x - camera.position.x) * lerpFactor;
+    camera.position.y += (targetPosition.y + desiredOffset.y + 15 - camera.position.y) * lerpFactor;
+    camera.position.z += (targetPosition.z + desiredOffset.z - camera.position.z) * lerpFactor;
+
+    controls.update();
+
+    // Check if close enough to clear target
+    const distance = Math.sqrt(
+      Math.pow(target.x - targetPosition.x, 2) +
+      Math.pow(target.z - targetPosition.z, 2)
+    );
+    if (distance < 0.5) {
+      clearTarget();
+    }
+  });
+
   return (
     <OrbitControls
+      ref={controlsRef}
       // Start at nice isometric-ish angle
       minPolarAngle={Math.PI / 6} // Don't look straight down
       maxPolarAngle={Math.PI / 2.2} // Don't look horizontal
@@ -72,6 +113,34 @@ function CameraControls() {
         RIGHT: THREE.MOUSE.PAN,
       }}
     />
+  );
+}
+
+// Grid radius constant - must match HexWorld's default
+const GRID_RADIUS = 20;
+// Approximate size of grid in world units (hex spacing is ~1.732)
+const GRID_SIZE = GRID_RADIUS * 2 * 1.732 + 5;
+
+/**
+ * Invisible ground plane for capturing pointer events across the entire hex grid
+ */
+function PointerCaptureGround({
+  onPointerMove,
+  onPointerLeave,
+}: {
+  onPointerMove: (e: any) => void;
+  onPointerLeave: () => void;
+}) {
+  return (
+    <mesh
+      position={[0, 0.01, 0]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      onPointerMove={onPointerMove}
+      onPointerLeave={onPointerLeave}
+    >
+      <planeGeometry args={[GRID_SIZE, GRID_SIZE]} />
+      <meshBasicMaterial visible={false} />
+    </mesh>
   );
 }
 
@@ -102,13 +171,14 @@ function SceneContent() {
       {/* Camera controls */}
       <CameraControls />
 
-      {/* Hex world with pointer events for tooltip */}
-      <group
+      {/* Invisible ground for pointer events */}
+      <PointerCaptureGround
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
-      >
-        <HexWorld gridRadius={20} />
-      </group>
+      />
+
+      {/* Hex world terrain */}
+      <HexWorld gridRadius={GRID_RADIUS} />
 
       {/* Agents rendered on hexes */}
       <AgentLayer />

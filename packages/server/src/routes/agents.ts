@@ -10,6 +10,15 @@ import { requireAuth, AuthenticatedRequest } from '../middleware/authMiddleware.
 
 export const agentRouter = Router();
 
+/**
+ * Helper to serialize BigInt values to strings for JSON response
+ */
+function serializeBigInts<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj, (_, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
+}
+
 // Constants
 const DEPLOY_COST_LAMPORTS = 100_000_000; // 0.1 SOL
 const LANDMIND_PROGRAM_ID = new PublicKey('D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ');
@@ -32,7 +41,8 @@ agentRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Respons
       orderBy: { deployedAt: 'desc' },
     });
 
-    res.json({ agents });
+    // Serialize BigInt values to strings for JSON response
+    res.json({ agents: serializeBigInts(agents) });
   } catch (error) {
     console.error('Failed to fetch agents:', error);
     res.status(500).json({ error: 'Failed to fetch agents' });

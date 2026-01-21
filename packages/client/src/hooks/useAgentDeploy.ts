@@ -87,14 +87,19 @@ export function useAgentDeploy(): UseAgentDeployResult {
         throw new Error('Server confirmation failed');
       }
 
-      // 7. Create agent object for store
+      // 7. Create agent object for store (use server response data)
       const newAgent: Agent = {
         id: result.agent.id,
-        hexId: null,
-        status: 'IDLE',
+        hexId: result.agent.hexId ?? null,
+        status: result.agent.hexId ? 'MINING' : 'IDLE',
         deployedAt: new Date().toISOString(),
         agentIndex: result.agent.agentIndex,
         mintAddress: result.agent.mintAddress,
+        hex: result.agent.hexQ != null && result.agent.hexR != null ? {
+          q: result.agent.hexQ,
+          r: result.agent.hexR,
+          resourceType: 'GOLD', // Will be updated via socket
+        } : undefined,
       };
 
       // 8. Update store

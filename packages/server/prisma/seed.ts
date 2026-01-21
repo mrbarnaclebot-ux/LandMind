@@ -29,8 +29,8 @@ async function main() {
   });
   console.log(`Created user: ${user.id}`);
 
-  // Create hexes in a radius-10 hex-shaped region
-  const radius = 10;
+  // Create hexes in a radius-20 hex-shaped region (matching client HexWorld)
+  const radius = 20;
   const resourceTypes = ['GOLD', 'SILVER', 'COPPER', 'IRON'] as const;
   const hexes: Array<{
     q: number;

@@ -40,6 +40,9 @@ export interface ConfirmResponse {
     agentIndex: number;
     mintAddress: string | null;
     mintPending?: boolean;
+    hexId?: number | null;
+    hexQ?: number | null;
+    hexR?: number | null;
   };
   warning?: string;
 }
@@ -48,16 +51,44 @@ export interface ConfirmResponse {
  * Fetch user's agents from server
  */
 export async function fetchUserAgents(): Promise<Agent[]> {
+  console.log('[fetchUserAgents] Fetching agents from API...');
   const response = await fetch(`${API_BASE_URL}/api/agents`, {
     credentials: 'include',
   });
 
   if (!response.ok) {
+    console.error('[fetchUserAgents] API error:', response.status, response.statusText);
     throw new Error('Failed to fetch agents');
   }
 
   const data = await response.json();
-  return data.agents;
+  console.log('[fetchUserAgents] Raw API response:', data);
+
+  // Map server response to client Agent type
+  const mapped = data.agents.map((agent: any) => ({
+    id: agent.id,
+    hexId: agent.hexId,
+    status: agent.status,
+    deployedAt: agent.deployedAt,
+    agentIndex: agent.agentIndex,
+    mintAddress: agent.mintAddress,
+    // Map miningState - convert BigInt strings to strings
+    miningState: agent.miningState ? {
+      gold: String(agent.miningState.gold || '0'),
+      silver: String(agent.miningState.silver || '0'),
+      copper: String(agent.miningState.copper || '0'),
+      iron: String(agent.miningState.iron || '0'),
+    } : undefined,
+    // Map hex relation
+    hex: agent.hex ? {
+      q: agent.hex.q,
+      r: agent.hex.r,
+      resourceType: agent.hex.resourceType,
+    } : undefined,
+  }));
+
+  console.log('[fetchUserAgents] Mapped agents:', mapped);
+  return mapped;
 }
 
 /**

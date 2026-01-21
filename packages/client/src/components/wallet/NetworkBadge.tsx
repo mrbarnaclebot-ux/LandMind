@@ -7,8 +7,8 @@ interface NetworkBadgeProps {
 }
 
 /**
- * Pixel-styled network badge.
- * Shows "DEVNET" or "TESTNET" with Minecraft aesthetic.
+ * Pixel-styled network badge with Minecraft voxel aesthetic.
+ * Shows "DEV" or "TEST" with blocky 3D effects.
  * Hidden on mainnet-beta (production).
  */
 export const NetworkBadge: FC<NetworkBadgeProps> = ({ network }) => {
@@ -21,15 +21,27 @@ export const NetworkBadge: FC<NetworkBadgeProps> = ({ network }) => {
 
   return (
     <span
-      className="pixel-badge"
+      className={`pixel-badge ${isDevnet ? 'pixel-badge-devnet' : 'pixel-badge-testnet'}`}
       style={{
-        background: isDevnet ? '#55CDFC' : '#FFAA00',
-        boxShadow: isDevnet
-          ? 'inset -2px -2px 0 0 #35ADDC, inset 2px 2px 0 0 #85EDFF'
-          : 'inset -2px -2px 0 0 #CC8800, inset 2px 2px 0 0 #FFCC44',
+        fontFamily: "'Press Start 2P', monospace",
+        fontSize: '7px',
+        padding: '6px 10px',
+        color: isDevnet ? '#1D1D21' : '#1D1D21',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        letterSpacing: '0.5px',
       }}
     >
-      {isDevnet ? '⛏ DEV' : '⚗ TEST'}
+      {/* Pixel art pickaxe icon */}
+      <span
+        className="pixel-pickaxe"
+        style={{
+          transform: 'scale(0.9)',
+          marginTop: '-2px',
+        }}
+      />
+      <span>{isDevnet ? 'DEV' : 'TEST'}</span>
     </span>
   );
 };

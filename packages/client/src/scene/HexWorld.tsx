@@ -21,6 +21,7 @@ import { createHexGeometry } from '../hex/hexMesh';
 import { hexToPixel, ELEVATION_STEP } from '../hex/hexMath';
 import { generateHexData, type TerrainSeed } from '../terrain/terrainGenerator';
 import { getBiomeColor, type Biome } from '../terrain/biomes';
+import { useHexStore } from '../stores/hexStore';
 
 export interface HexWorldProps {
   /** Grid radius in hex units (default: 20, ~1261 hexes) */
@@ -104,10 +105,19 @@ function BiomeMesh({ biome, hexes, geometry }: BiomeMeshProps) {
  * of how many hexes are rendered.
  */
 export function HexWorld({ gridRadius = 20, seed }: HexWorldProps) {
+  const { setHexData } = useHexStore();
+
   // Generate hex data - only regenerate on seed/radius change
   const hexes = useMemo(() => {
     return generateHexData(gridRadius, seed);
   }, [gridRadius, seed]);
+
+  // Populate hex store with generated data
+  useEffect(() => {
+    if (hexes.length > 0) {
+      setHexData(hexes);
+    }
+  }, [hexes, setHexData]);
 
   // Create shared geometry for all hexes - solid flat-top prisms
   const geometry = useMemo(() => {

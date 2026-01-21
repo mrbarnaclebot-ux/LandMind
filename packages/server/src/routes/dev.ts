@@ -11,6 +11,15 @@ import { getCurrentTick } from '../simulation/tickLoop.js';
 
 const devRouter = Router();
 
+/**
+ * Helper to serialize BigInt values to strings for JSON response
+ */
+function serializeBigInts<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj, (_, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
+}
+
 // Guard: Only allow in development
 devRouter.use((req: Request, res: Response, next) => {
   if (process.env.NODE_ENV === 'production') {
@@ -144,7 +153,7 @@ devRouter.post('/agents', async (req: Request, res: Response) => {
     lastTick: getCurrentTick(),
   });
 
-  res.json({ agent });
+  res.json({ agent: serializeBigInts(agent) });
 });
 
 /**
@@ -179,7 +188,7 @@ devRouter.get('/agents/:walletPubkey', async (req: Request, res: Response) => {
     return res.status(404).json({ error: 'User not found' });
   }
 
-  res.json({ agents: user.agents });
+  res.json({ agents: serializeBigInts(user.agents) });
 });
 
 /**
@@ -197,6 +206,84 @@ devRouter.delete('/reset', async (req: Request, res: Response) => {
   await prisma.user.deleteMany({});
 
   res.json({ message: 'All data cleared' });
+});
+
+/**
+ * POST /dev/agents/fix-orphans
+ * Fix agents without hex assignments by placing them on available hexes
+ */
+devRouter.post('/agents/fix-orphans', async (req: Request, res: Response) => {
+  // Find all agents without a hex
+  const orphanAgents = await prisma.agent.findMany({
+    where: { hexId: null },
+    include: { owner: true },
+  });
+
+  if (orphanAgents.length === 0) {
+    return res.json({ message: 'No orphan agents found', fixed: 0 });
+  }
+
+  // Find available hexes
+  const availableHexes = await prisma.hex.findMany({
+    where: {
+      resourceAmount: { gt: 0 },
+      resourceType: { not: 'EMPTY' },
+    },
+  });
+
+  if (availableHexes.length === 0) {
+    return res.status(400).json({ error: 'No available hexes. Run seed first.' });
+  }
+
+  const fixed: string[] = [];
+
+  for (const agent of orphanAgents) {
+    // Pick a random hex
+    const randomIndex = Math.floor(Math.random() * availableHexes.length);
+    const selectedHex = availableHexes[randomIndex];
+
+    // Update agent with hex
+    await prisma.agent.update({
+      where: { id: agent.id },
+      data: {
+        hexId: selectedHex.id,
+        status: 'MINING',
+      },
+    });
+
+    // Ensure mining state exists
+    await prisma.miningState.upsert({
+      where: { agentId: agent.id },
+      create: {
+        agentId: agent.id,
+        gold: 0n,
+        silver: 0n,
+        copper: 0n,
+        iron: 0n,
+      },
+      update: {},
+    });
+
+    // Add to Redis cache for tick loop
+    await cacheAgent({
+      agentId: agent.id,
+      ownerId: agent.ownerId,
+      ownerWallet: agent.owner.walletPubkey,
+      hexId: selectedHex.id,
+      hexQ: selectedHex.q,
+      hexR: selectedHex.r,
+      gold: '0',
+      silver: '0',
+      copper: '0',
+      iron: '0',
+      status: 'MINING',
+      lastTick: getCurrentTick(),
+    });
+
+    fixed.push(agent.id);
+  }
+
+  res.json({ message: `Fixed ${fixed.length} orphan agents`, agentIds: fixed });
 });
 
 /**

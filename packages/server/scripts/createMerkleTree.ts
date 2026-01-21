@@ -9,8 +9,9 @@
 import path from 'path';
 import { config } from 'dotenv';
 
-// Load .env from project root (two levels up from packages/server)
-config({ path: path.resolve(process.cwd(), '../../.env') });
+// Load .env from local packages/server directory first, then root
+config(); // loads from packages/server/.env
+config({ path: path.resolve(process.cwd(), '../../.env') }); // also load root .env
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplBubblegum, createTree } from '@metaplex-foundation/mpl-bubblegum';
@@ -53,23 +54,29 @@ async function main() {
   console.log('  canopyDepth: 8 (reduced proof size)');
 
   try {
-    const tx = await createTree(umi, {
+    // createTree is async, returns Promise<TransactionBuilder>
+    // Must await it first, then call sendAndConfirm
+    const builder = await createTree(umi, {
       merkleTree,
       maxDepth: 14,
       maxBufferSize: 64,
       canopyDepth: 8,
-    }).sendAndConfirm(umi);
+    });
+    const { signature } = await builder.sendAndConfirm(umi);
 
     console.log('');
     console.log('Tree created successfully!');
-    console.log('Signature:', bs58.encode(tx.signature));
+    console.log('Signature:', bs58.encode(signature));
     console.log('');
     console.log('=====================================');
     console.log('Add to .env:');
     console.log(`MERKLE_TREE_ADDRESS=${merkleTree.publicKey}`);
     console.log('=====================================');
-  } catch (error) {
-    console.error('Failed to create tree:', error);
+  } catch (error: any) {
+    console.error('Failed to create tree:', error?.message || error);
+    if (error?.logs) {
+      console.error('Logs:', error.logs);
+    }
     process.exit(1);
   }
 }

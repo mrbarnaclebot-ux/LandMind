@@ -3,6 +3,8 @@ import { ThreeScene } from './scene/ThreeScene';
 import { ConnectButton } from './components/wallet/ConnectButton';
 import { DeployButton } from './components/agents/DeployButton';
 import { AgentDashboard } from './components/agents/AgentDashboard';
+import { useCameraStore } from './stores/cameraStore';
+import { hexToPixel } from './hex/hexMath';
 import './styles/pixel-theme.css';
 
 interface HeaderProps {
@@ -149,14 +151,17 @@ function ControlsOverlay() {
 
 function App() {
   const [isAgentDashboardOpen, setIsAgentDashboardOpen] = useState(false);
+  const { panToPosition } = useCameraStore();
 
-  // Camera pan callback - will be passed to ThreeScene
+  // Camera pan callback - pans camera to hex location
   const handleLocateAgent = useCallback((q: number, r: number) => {
-    // TODO: Integrate with camera controls
-    console.log('Locate agent at:', q, r);
+    // Convert hex coordinates to world position
+    const { x, z } = hexToPixel(q, r);
+    // Pan camera to that position (y=0 for ground level)
+    panToPosition(x, 0, z);
     // Close panel after locate
     setIsAgentDashboardOpen(false);
-  }, []);
+  }, [panToPosition]);
 
   return (
     <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}>

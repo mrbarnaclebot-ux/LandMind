@@ -29,7 +29,7 @@ function getErrorMessage(code: string): string {
 }
 
 /**
- * Minecraft inventory-style transaction history list.
+ * Minecraft inventory-style transaction history list with voxel 3D effects.
  * Shows recent transactions with pixel-themed loading/empty states.
  */
 export const TransactionHistory: FC<TransactionHistoryProps> = ({
@@ -98,22 +98,23 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
     fontFamily: "'Press Start 2P', monospace",
     fontSize: '10px',
     color: '#FFFFFF',
-    marginBottom: '12px',
+    marginBottom: '14px',
     textShadow: '2px 2px 0 #3F3F3F',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '10px',
   };
 
-  // Loading state - pickaxe animation
+  // Loading state - pixel pickaxe mining animation
   if (loading) {
     return (
       <div style={containerStyle}>
         <div style={titleStyle}>
-          <span style={{ color: '#55CDFC' }}>[]</span>
-          ACTIVITY
+          <span className="pixel-scroll" style={{ transform: 'scale(1.1)' }} />
+          <span>ACTIVITY</span>
         </div>
         <div
+          className="pixel-slot-enhanced"
           style={{
             textAlign: 'center',
             padding: '32px 16px',
@@ -122,9 +123,14 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
             color: '#8B8B8B',
           }}
         >
-          <span className="pixel-loading" style={{ display: 'block', marginBottom: '8px', fontSize: '16px' }}>
-            []
-          </span>
+          <span
+            className="pixel-loading-enhanced pixel-pickaxe"
+            style={{
+              display: 'block',
+              margin: '0 auto 14px',
+              transform: 'scale(1.4)',
+            }}
+          />
           MINING TX...
         </div>
       </div>
@@ -136,38 +142,34 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
     return (
       <div style={containerStyle}>
         <div style={titleStyle}>
-          <span style={{ color: '#55CDFC' }}>[]</span>
-          ACTIVITY
+          <span className="pixel-scroll" style={{ transform: 'scale(1.1)' }} />
+          <span>ACTIVITY</span>
         </div>
         <div
+          className="pixel-slot-enhanced"
           style={{
             textAlign: 'center',
-            padding: '16px',
+            padding: '20px 16px',
             fontFamily: "'Press Start 2P', monospace",
-            fontSize: '8px',
-            color: '#FF3333',
+            fontSize: '9px',
           }}
         >
-          !! {error.message} !!
+          <span className="pixel-warning" style={{ display: 'block', margin: '0 auto 12px', transform: 'scale(1.3)' }} />
+          <div style={{ color: '#FF3333', marginBottom: '12px' }}>
+            {error.message}
+          </div>
           {error.retryable && (
             <button
               onClick={loadTransactions}
               disabled={loading}
+              className="pixel-btn-3d pixel-btn-3d-primary"
               style={{
-                display: 'block',
-                margin: '12px auto 0',
-                background: 'transparent',
-                border: '2px solid #55FF55',
-                color: '#55FF55',
-                fontFamily: "'Press Start 2P', monospace",
                 fontSize: '8px',
-                padding: '6px 12px',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                padding: '8px 16px',
                 opacity: loading ? 0.5 : 1,
-                imageRendering: 'pixelated',
               }}
             >
-              {loading ? '...' : '[RETRY]'}
+              {loading ? '...' : 'RETRY'}
             </button>
           )}
         </div>
@@ -180,19 +182,20 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
     return (
       <div style={containerStyle}>
         <div style={titleStyle}>
-          <span style={{ color: '#55CDFC' }}>[]</span>
-          ACTIVITY
+          <span className="pixel-scroll" style={{ transform: 'scale(1.1)' }} />
+          <span>ACTIVITY</span>
         </div>
         <div
-          className="pixel-slot"
+          className="pixel-slot-enhanced"
           style={{
             textAlign: 'center',
-            padding: '24px 16px',
+            padding: '28px 16px',
             fontFamily: "'Press Start 2P', monospace",
-            fontSize: '8px',
+            fontSize: '9px',
             color: '#8B8B8B',
           }}
         >
+          <span className="pixel-chest" style={{ display: 'block', margin: '0 auto 12px', transform: 'scale(1.4)' }} />
           {filterLandMind
             ? 'NO LANDMIND TX YET'
             : 'NO TX YET'}
@@ -205,13 +208,21 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
   return (
     <div style={containerStyle}>
       <div style={titleStyle}>
-        <span style={{ color: '#55CDFC' }}>[]</span>
-        ACTIVITY
-        <span style={{ fontSize: '8px', color: '#8B8B8B', marginLeft: 'auto' }}>
+        <span className="pixel-scroll" style={{ transform: 'scale(1.1)' }} />
+        <span>ACTIVITY</span>
+        <span
+          style={{
+            fontSize: '8px',
+            color: '#8B8B8B',
+            marginLeft: 'auto',
+            background: 'rgba(0, 0, 0, 0.3)',
+            padding: '4px 8px',
+          }}
+        >
           [{transactions.length}]
         </span>
       </div>
-      <div className="pixel-inventory-bg" style={{ padding: '4px' }}>
+      <div className="pixel-inventory-panel" style={{ padding: '6px' }}>
         {transactions.map((tx) => (
           <TransactionCard key={tx.signature} transaction={tx} />
         ))}
