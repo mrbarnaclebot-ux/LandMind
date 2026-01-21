@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 6 of 7 (Economy Distribution)
-Plan: 5 of ? in current phase (06-01 through 06-05 complete)
+Plan: 6 of ? in current phase (06-01 through 06-06 complete)
 Status: In progress
-Last activity: 2026-01-21 - Completed 06-05-PLAN.md (Claim API)
+Last activity: 2026-01-21 - Completed 06-06-PLAN.md (Earnings Dashboard UI)
 
-Progress: [██████████████░] ~89% (32/~36 plans estimated)
+Progress: [███████████████░] ~92% (33/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32
+- Total plans completed: 33
 - Average duration: ~8 min
-- Total execution time: ~249 min
+- Total execution time: ~253 min
 
 **By Phase:**
 
@@ -32,13 +32,13 @@ Progress: [██████████████░] ~89% (32/~36 plans est
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
-| 06-economy-distribution | 5 | 22 min | 4 min |
+| 06-economy-distribution | 6 | 26 min | 4 min |
 
 **Recent Trend:**
-- Phase 6 progressing - Claim API (06-05) complete in 3 min
-- Earnings routes: GET /api/earnings, POST /claim, POST /confirm
-- Leaderboard route: GET /api/leaderboard with optional auth
-- Socket events for real-time claim feedback
+- Phase 6 progressing - Earnings Dashboard UI (06-06) complete in 4 min
+- EarningsDashboard slide-in panel with pixel theme
+- ClaimButton with multi-step status tracking
+- useEarnings + useClaimEarnings hooks with socket subscriptions
 - Next: Phase 6 completion or Phase 7 planning
 
 *Updated after each plan completion*
@@ -130,6 +130,9 @@ Recent decisions affecting current work:
 - **Optional PUMPFUN_FEE_WALLET** - fee monitor works without PumpFun wallet configured
 - **optionalAuth middleware** - sets user context if token valid, otherwise null (for public routes)
 - **Claim instruction data format** - discriminator (8) + amount (u64 LE) + proof (vec of [u8; 32])
+- **EarningsDashboard slides from right** - mirrors AgentDashboard from left, balances UI
+- **ClaimStatus enum for flow tracking** - idle/building/signing/sending/confirming/success/error
+- **Parallel API fetch in useEarnings** - earnings + leaderboard fetched together
 
 ### Pending Todos
 
@@ -144,6 +147,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 06-05-PLAN.md (Claim API)
+Stopped at: Completed 06-06-PLAN.md (Earnings Dashboard UI)
 Resume file: None
 Next: Phase 6 completion or Phase 7 planning
