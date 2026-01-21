@@ -100,11 +100,13 @@ export function HeatMapOverlay({ visible, fadeDuration = 0.3 }: HeatMapOverlayPr
   // Create instance matrices and colors
   const { matrices, colors, count } = useMemo(() => {
     if (hexArray.length === 0) {
+      console.log('[HeatMap] No hexes loaded yet, isInitialized:', isInitialized);
       return { matrices: new Float32Array(0), colors: new Float32Array(0), count: 0 };
     }
 
     // Filter out hexes with no resources (NONE type)
     const resourceHexes = hexArray.filter((hex) => hex.resourceType !== 'NONE');
+    console.log(`[HeatMap] Rendering ${resourceHexes.length} resource hexes from ${hexArray.length} total`);
     const count = resourceHexes.length;
 
     const matrices = new Float32Array(count * 16);
@@ -157,7 +159,7 @@ export function HeatMapOverlay({ visible, fadeDuration = 0.3 }: HeatMapOverlayPr
   useFrame((_, delta) => {
     if (!materialRef.current) return;
 
-    const targetOpacity = visible ? 0.7 : 0;
+    const targetOpacity = visible ? 0.85 : 0;
     const speed = 1 / fadeDuration;
 
     if (currentOpacityRef.current !== targetOpacity) {
@@ -185,7 +187,6 @@ export function HeatMapOverlay({ visible, fadeDuration = 0.3 }: HeatMapOverlayPr
         transparent={true}
         opacity={0}
         depthWrite={false}
-        blending={THREE.AdditiveBlending}
         vertexColors={true}
       />
     </instancedMesh>
