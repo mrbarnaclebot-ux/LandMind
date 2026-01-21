@@ -163,8 +163,41 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
               fontSize: '7px',
             }}
           >
-            <div style={{ color: '#8B8B8B', marginBottom: '6px' }}>TOTAL MINED</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '4px', color: '#E0E0E0' }}>
+            <div style={{ color: '#8B8B8B', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>TOTAL MINED</span>
+              {miningAgents > 0 && (
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: '#4CAF50',
+                    fontSize: '6px',
+                  }}
+                >
+                  <span
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: '#4CAF50',
+                      animation: 'pulse 2s infinite',
+                    }}
+                  />
+                  LIVE
+                </span>
+              )}
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '4px',
+                color: '#E0E0E0',
+                transition: 'opacity 0.3s ease-in-out',
+              }}
+            >
               <span><span style={{ color: '#FFD700' }}>Au:</span> {formatNumber(totalMined.gold)}</span>
               <span><span style={{ color: '#C0C0C0' }}>Ag:</span> {formatNumber(totalMined.silver)}</span>
               <span><span style={{ color: '#B87333' }}>Cu:</span> {formatNumber(totalMined.copper)}</span>
