@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 6 IN PROGRESS - Economy/Distribution layer, starting with database schema
+**Current focus:** Phase 6 IN PROGRESS - Economy/Distribution layer, smart contract and schema complete
 
 ## Current Position
 
 Phase: 6 of 7 (Economy Distribution)
-Plan: 1 of ? in current phase (06-01 complete)
+Plan: 2 of ? in current phase (06-01, 06-02 complete)
 Status: In progress
-Last activity: 2026-01-21 - Completed 06-01-PLAN.md (Economy Database Schema)
+Last activity: 2026-01-21 - Completed 06-02-PLAN.md (Fee Vault Smart Contract)
 
-Progress: [█████████████░] ~78% (28/~36 plans estimated)
+Progress: [█████████████░] ~81% (29/~36 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
+- Total plans completed: 29
 - Average duration: ~8 min
-- Total execution time: ~229 min
+- Total execution time: ~235 min
 
 **By Phase:**
 
@@ -32,13 +32,14 @@ Progress: [█████████████░] ~78% (28/~36 plans estima
 | 03-real-time-simulation | 4 | 23.5 min | 6 min |
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
-| 06-economy-distribution | 1 | 2 min | 2 min |
+| 06-economy-distribution | 2 | 8 min | 4 min |
 
 **Recent Trend:**
-- Phase 6 started - Economy Database Schema (06-01) complete in 2 min
-- Added FeeDeposit, Claim, EarningsSnapshot models to Prisma schema
-- Database synced using prisma db push (schema drift workaround)
-- Next: Earnings calculation service (06-02)
+- Phase 6 progressing - Fee Vault Smart Contract (06-02) complete in 6 min
+- Extended Anchor contract with FeeVaultState, claim_earnings with Merkle proofs
+- Admin controls: pause_vault, unpause_vault, update_merkle_root
+- IDL and TypeScript types updated for client/server integration
+- Next: Claim API implementation (06-03)
 
 *Updated after each plan completion*
 
@@ -116,6 +117,10 @@ Recent decisions affecting current work:
 - **FeeSource enum (DEPLOYMENT, PUMPFUN)** - categorize fee deposits by source
 - **EarningsSnapshot as cumulative tracker** - one per user, updated as mining progresses
 - **prisma db push for schema drift** - database had existing tables without migration tracking
+- **FeeVaultState PDA** - seeds=[b"vault_state"], stores merkle_root and paused flag
+- **Merkle proof verification pattern** - hash(pubkey, padded_amount) as leaf, keccak-based tree
+- **MIN_CLAIM of 0.025 SOL** - prevents dust claims and reduces transaction overhead
+- **Authority via has_one constraint** - vault creator is permanent admin
 
 ### Pending Todos
 
@@ -130,6 +135,6 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 06-01-PLAN.md (Economy Database Schema)
+Stopped at: Completed 06-02-PLAN.md (Fee Vault Smart Contract)
 Resume file: None
-Next: 06-02-PLAN.md (Earnings calculation service)
+Next: 06-03-PLAN.md (Claim API implementation)
