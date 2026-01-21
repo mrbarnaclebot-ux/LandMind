@@ -2,6 +2,8 @@
 export interface AgentUpdate {
   id: string;
   hexId: number;
+  hexQ: number;  // Hex q coordinate for rendering
+  hexR: number;  // Hex r coordinate for rendering
   resources: {
     gold: string;   // BigInt as string for JSON
     silver: string;
@@ -21,7 +23,9 @@ export interface ServerToClientEvents {
     toHexId: number;
     arrivalTick: number;
   }) => void;
-  'agent:arrived': (data: { agentId: string; hexId: number }) => void;
+  'agent:arrived': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
+  'agent:deployed': (data: { agent: AgentUpdate & { hexQ: number; hexR: number } }) => void;
+  'agent:placed': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
 }
 
 // Client -> Server events
