@@ -139,7 +139,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+1 todo in `.planning/todos/pending/`:
+- **Deploy smart contract to devnet** (contracts) — blocks vault init and claim testing
 
 ### Blockers/Concerns
 
