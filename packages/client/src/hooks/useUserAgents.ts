@@ -4,14 +4,46 @@
 import { useEffect, useCallback } from 'react';
 import { useWalletStore } from '../stores/walletStore';
 import { useAgentStore } from '../stores/agentStore';
-import { fetchUserAgents, type Agent } from '../lib/agents';
+import { fetchUserAgents } from '../lib/agents';
 import { io, Socket } from 'socket.io-client';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-let socket: Socket | null = null;
+// Socket event types (matching server types)
+interface AgentUpdate {
+  id: string;
+  hexId: number;
+  hexQ: number;
+  hexR: number;
+  resources: {
+    gold: string;
+    silver: string;
+    copper: string;
+    iron: string;
+  };
+  status: 'MINING' | 'RELOCATING' | 'IDLE';
+}
 
-function getSocket(): Socket {
+interface ServerToClientEvents {
+  'mining:update': (data: { agents: AgentUpdate[] }) => void;
+  'agent:relocating': (data: {
+    agentId: string;
+    fromHexId: number;
+    toHexId: number;
+    arrivalTick: number;
+  }) => void;
+  'agent:arrived': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
+  'agent:deployed': (data: { agent: AgentUpdate }) => void;
+  'agent:placed': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
+}
+
+interface ClientToServerEvents {
+  'subscribe': (walletPubkey: string, callback: (ok: boolean) => void) => void;
+}
+
+let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+
+function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
   if (!socket) {
     socket = io(API_BASE_URL, {
       withCredentials: true,

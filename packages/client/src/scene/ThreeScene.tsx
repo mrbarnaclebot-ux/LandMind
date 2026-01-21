@@ -6,12 +6,17 @@
  * - Proper lighting (ambient + directional)
  * - Sky background for visual polish
  * - HexWorld for terrain rendering
+ * - AgentLayer for agent visualization
+ * - HexTooltip for hover information
  */
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Sky } from '@react-three/drei';
 import * as THREE from 'three';
 import { HexWorld } from './HexWorld';
+import { AgentLayer } from './AgentLayer';
+import { HexTooltip, useHexHover } from './HexTooltip';
+import { useUserAgents } from '../hooks/useUserAgents';
 
 /**
  * Scene lighting component - bright and contrasty for Minecraft-style look
@@ -71,6 +76,50 @@ function CameraControls() {
 }
 
 /**
+ * Inner scene content - uses R3F hooks for agents and hover
+ */
+function SceneContent() {
+  // Initialize agent loading and subscription
+  useUserAgents();
+
+  // Hex hover state for tooltip
+  const { hoveredHex, handlePointerMove, handlePointerLeave } = useHexHover();
+
+  return (
+    <>
+      {/* Sky backdrop */}
+      <Sky
+        distance={450000}
+        sunPosition={[50, 80, 30]}
+        inclination={0.6}
+        azimuth={0.25}
+        rayleigh={0.5}
+      />
+
+      {/* Scene lighting */}
+      <Lighting />
+
+      {/* Camera controls */}
+      <CameraControls />
+
+      {/* Hex world with pointer events for tooltip */}
+      <group
+        onPointerMove={handlePointerMove}
+        onPointerLeave={handlePointerLeave}
+      >
+        <HexWorld gridRadius={20} />
+      </group>
+
+      {/* Agents rendered on hexes */}
+      <AgentLayer />
+
+      {/* Tooltip shown on hex hover */}
+      <HexTooltip visible={hoveredHex !== null} hexInfo={hoveredHex} />
+    </>
+  );
+}
+
+/**
  * Main Three.js scene component
  *
  * Provides Canvas with proper defaults and scene setup for the hex world.
@@ -92,23 +141,7 @@ export function ThreeScene() {
       }}
       gl={{ antialias: true }}
     >
-      {/* Sky backdrop */}
-      <Sky
-        distance={450000}
-        sunPosition={[50, 80, 30]}
-        inclination={0.6}
-        azimuth={0.25}
-        rayleigh={0.5}
-      />
-
-      {/* Scene lighting */}
-      <Lighting />
-
-      {/* Camera controls */}
-      <CameraControls />
-
-      {/* The hex world terrain */}
-      <HexWorld gridRadius={20} />
+      <SceneContent />
     </Canvas>
   );
 }
