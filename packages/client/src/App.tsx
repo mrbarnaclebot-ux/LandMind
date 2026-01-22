@@ -229,7 +229,11 @@ function App() {
   if (isMobile) {
     return (
       <>
-        <MobileLayout onLocateAgent={handleLocateAgent}>
+        <MobileLayout
+          onLocateAgent={handleLocateAgent}
+          heatMapVisible={heatMapVisible}
+          onToggleHeatMap={() => setHeatMapVisible((v) => !v)}
+        >
           <ThreeScene heatMapVisible={heatMapVisible} />
         </MobileLayout>
         <TransactionToastContainer />

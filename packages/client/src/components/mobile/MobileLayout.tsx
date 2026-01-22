@@ -9,7 +9,7 @@
  */
 import { ReactNode, useState, useEffect } from 'react';
 import { BottomSheet } from './BottomSheet';
-import { ConnectButton } from '../wallet/ConnectButton';
+import { MobileHeader } from './MobileHeader';
 import { AgentDashboard } from '../agents/AgentDashboard';
 import { Leaderboard } from '../earnings/Leaderboard';
 import '../../styles/mobile.css';
@@ -19,6 +19,10 @@ interface MobileLayoutProps {
   children: ReactNode;
   /** Callback to pan camera to agent location */
   onLocateAgent: (q: number, r: number) => void;
+  /** Whether heat map overlay is visible */
+  heatMapVisible: boolean;
+  /** Toggle heat map visibility */
+  onToggleHeatMap: () => void;
 }
 
 type ActivePanel = 'none' | 'agents' | 'earnings' | 'settings';
@@ -28,22 +32,6 @@ type ActivePanel = 'none' | 'agents' | 'earnings' | 'settings';
  */
 type QualityLevel = 'low' | 'medium' | 'high';
 
-/**
- * Mobile header component
- */
-export function MobileHeader() {
-  return (
-    <header className="mobile-header">
-      <div className="mobile-header-logo">
-        <span style={{ marginRight: '8px' }}>&#x2B21;</span>
-        LANDMIND
-      </div>
-      <div className="mobile-header-actions">
-        <ConnectButton />
-      </div>
-    </header>
-  );
-}
 
 /**
  * Quality settings component for mobile performance control
@@ -86,7 +74,12 @@ function QualitySettings() {
 /**
  * MobileLayout main component
  */
-export function MobileLayout({ children, onLocateAgent }: MobileLayoutProps) {
+export function MobileLayout({
+  children,
+  onLocateAgent,
+  heatMapVisible,
+  onToggleHeatMap,
+}: MobileLayoutProps) {
   const [activePanel, setActivePanel] = useState<ActivePanel>('none');
 
   // Close panel on escape key
@@ -107,7 +100,7 @@ export function MobileLayout({ children, onLocateAgent }: MobileLayoutProps) {
   return (
     <div className="mobile-layout">
       {/* Compact header */}
-      <MobileHeader />
+      <MobileHeader heatMapVisible={heatMapVisible} onToggleHeatMap={onToggleHeatMap} />
 
       {/* Main content (3D scene) - padded for header/nav */}
       <div className="mobile-content">

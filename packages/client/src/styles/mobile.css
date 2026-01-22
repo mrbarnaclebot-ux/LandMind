@@ -86,6 +86,22 @@
   align-items: center;
 }
 
+/* Heat map toggle button for mobile */
+.mobile-heat-toggle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-heat-toggle.active {
+  background: #5D8C3E;
+  border-color: #7DB356;
+}
+
 /* ============================================
    MOBILE NAV BAR - FIXED BOTTOM
    ============================================ */
