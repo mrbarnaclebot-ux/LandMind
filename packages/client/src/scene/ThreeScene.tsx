@@ -5,20 +5,23 @@
  * - OrbitControls for smooth camera navigation
  * - Proper lighting (ambient + directional)
  * - Sky background for visual polish
- * - HexWorld for terrain rendering
+ * - ChunkedHexWorld for scalable terrain rendering (LOD + chunking)
  * - AgentLayer for agent visualization
  * - HexTooltip for hover information
  * - Camera panning support via store
+ * - PerformanceAdapter for adaptive quality
  */
 
 import { useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Sky } from '@react-three/drei';
 import * as THREE from 'three';
-import { HexWorld } from './HexWorld';
+import { ChunkedHexWorld } from '../rendering/ChunkedHexWorld';
+import { PerformanceAdapter } from '../rendering/PerformanceAdapter';
 import { AgentLayer } from './AgentLayer';
 import { HeatMapOverlay } from './HeatMapOverlay';
 import { HexTooltip, useHexHover } from './HexTooltip';
+import { Clouds } from './Clouds';
 import { useUserAgents } from '../hooks/useUserAgents';
 import { useCameraStore } from '../stores/cameraStore';
 
@@ -102,9 +105,9 @@ function CameraControls() {
       // Start at nice isometric-ish angle
       minPolarAngle={Math.PI / 6} // Don't look straight down
       maxPolarAngle={Math.PI / 2.2} // Don't look horizontal
-      // Zoom limits
+      // Zoom limits - extended for large worlds
       minDistance={10}
-      maxDistance={100}
+      maxDistance={500}
       // Smooth damping
       enableDamping={true}
       dampingFactor={0.1}
@@ -122,8 +125,8 @@ function CameraControls() {
   );
 }
 
-// Grid radius constant - must match HexWorld's default
-const GRID_RADIUS = 20;
+// Grid radius from env var (default 500 for ~1M hexes, use 20 for dev)
+const GRID_RADIUS = parseInt(import.meta.env.VITE_HEX_GRID_RADIUS || '20', 10);
 // Approximate size of grid in world units (hex spacing is ~1.732)
 const GRID_SIZE = GRID_RADIUS * 2 * 1.732 + 5;
 
@@ -171,6 +174,9 @@ function SceneContent({ heatMapVisible = false }: { heatMapVisible?: boolean }) 
         rayleigh={0.5}
       />
 
+      {/* Minecraft-style blocky clouds */}
+      <Clouds count={18} height={55} spread={90} speed={0.8} />
+
       {/* Scene lighting */}
       <Lighting />
 
@@ -183,8 +189,8 @@ function SceneContent({ heatMapVisible = false }: { heatMapVisible?: boolean }) 
         onPointerLeave={handlePointerLeave}
       />
 
-      {/* Hex world terrain */}
-      <HexWorld gridRadius={GRID_RADIUS} />
+      {/* Hex world terrain - chunked for scalability */}
+      <ChunkedHexWorld gridRadius={GRID_RADIUS} />
 
       {/* Heat map overlay for resource visualization */}
       <HeatMapOverlay visible={heatMapVisible} />
@@ -202,15 +208,21 @@ function SceneContent({ heatMapVisible = false }: { heatMapVisible?: boolean }) 
  * Main Three.js scene component
  *
  * Provides Canvas with proper defaults and scene setup for the hex world.
+ * Wraps content with PerformanceAdapter for adaptive quality.
  */
 export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
+  // Get DPR from performance settings (updated by PerformanceAdapter)
+  const dpr = typeof window !== 'undefined'
+    ? Math.min(window.devicePixelRatio, 2)
+    : 1;
+
   return (
     <Canvas
       camera={{
         position: [30, 40, 30],
         fov: 50,
         near: 0.1,
-        far: 1000,
+        far: 2000, // Increased for larger world
       }}
       style={{
         width: '100%',
@@ -219,8 +231,11 @@ export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
         display: 'block',
       }}
       gl={{ antialias: true }}
+      dpr={dpr}
     >
-      <SceneContent heatMapVisible={heatMapVisible} />
+      <PerformanceAdapter>
+        <SceneContent heatMapVisible={heatMapVisible} />
+      </PerformanceAdapter>
     </Canvas>
   );
 }
