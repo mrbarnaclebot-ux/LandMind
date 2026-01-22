@@ -17,7 +17,7 @@ interface BottomSheetProps {
   children: ReactNode;
   /** Optional title shown in header */
   title?: string;
-  /** Snap points as fractions of viewport height. Default: [0.9, 0.5, 0.25] */
+  /** Snap points as fractions of viewport height (ascending order, starting with 0). Default: [0, 0.25, 0.5, 0.9] */
   snapPoints?: number[];
 }
 
@@ -29,14 +29,14 @@ export function BottomSheet({
   onClose,
   children,
   title,
-  snapPoints = [0.9, 0.5, 0.25],
+  snapPoints = [0, 0.25, 0.5, 0.9],
 }: BottomSheetProps) {
   return (
     <Sheet
       isOpen={isOpen}
       onClose={onClose}
       snapPoints={snapPoints}
-      initialSnap={1} // Start at middle snap (0.5)
+      initialSnap={2} // Start at 0.5 (50% height)
     >
       <Sheet.Container className="bottom-sheet-container">
         <Sheet.Header className="bottom-sheet-header">
