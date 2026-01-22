@@ -1,19 +1,14 @@
 ---
-status: testing
+status: complete
 phase: 07-scale-launch
 source: [07-01-SUMMARY.md, 07-02-SUMMARY.md, 07-03-SUMMARY.md, 07-05-SUMMARY.md, 07-06-SUMMARY.md]
 started: 2026-01-22T08:48:00Z
-updated: 2026-01-22T09:15:00Z
+updated: 2026-01-22T09:25:00Z
 ---
 
 ## Current Test
-<!-- OVERWRITE each test - shows where we are -->
 
-number: 8
-name: Admin dashboard accessible for admin wallet
-expected: |
-  If your wallet is configured as admin (ADMIN_WALLET_1 in server .env), after connecting you should see an Admin button in the header. Clicking it opens the admin dashboard with tabs: Metrics, Users, Economy.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
@@ -51,35 +46,41 @@ result: pass
 
 ### 8. Admin dashboard accessible for admin wallet
 expected: If your wallet is configured as admin (ADMIN_WALLET_1 in server .env), after connecting you should see an Admin button in the header. Clicking it opens the admin dashboard with tabs: Metrics, Users, Economy.
-result: [pending]
+result: issue
+reported: "this is the dev wallet 2qaYB64KpD1yNbmgVSytCBcSpF2hJUd2fmXpa7P5cF7f but I dont see the admin button"
+severity: major
 
 ### 9. Admin metrics show real-time data
 expected: In admin dashboard Metrics tab, you should see cards showing: Total Users, Total Agents, Total Mined (resources), Total Fees, API Latency. Values update every 2 seconds without page refresh.
-result: [pending]
+result: skipped
+reason: Blocked by test 8 (admin dashboard not accessible)
 
 ### 10. Admin user management works
 expected: In admin dashboard Users tab, you should see a table of users with wallet addresses, roles, agent counts, and join dates. Search box filters the list. Pagination works if many users.
-result: [pending]
+result: skipped
+reason: Blocked by test 8 (admin dashboard not accessible)
 
 ### 11. Admin economy controls visible
 expected: In admin dashboard Economy tab, you should see: Emergency Pause section with status indicator, Resource Weights editor (Gold, Silver, Copper, Iron), and Minimum Claim display.
-result: [pending]
+result: skipped
+reason: Blocked by test 8 (admin dashboard not accessible)
 
 ### 12. Emergency pause confirmation
 expected: Click "Emergency Pause" button in Economy tab. A confirmation dialog should appear asking to confirm. Cancel should dismiss. Confirm should change status to PAUSED (red pulsing indicator).
-result: [pending]
+result: skipped
+reason: Blocked by test 8 (admin dashboard not accessible)
 
 ### 13. Transaction toast notifications appear
 expected: Perform any blockchain transaction (deploy agent or claim earnings). Toast notifications should appear in corner showing transaction status: processing, success with Solscan link, or error details.
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 13
-passed: 5
-issues: 2
-pending: 6
-skipped: 0
+passed: 6
+issues: 3
+pending: 0
+skipped: 4
 
 ## Gaps
 
@@ -98,6 +99,16 @@ skipped: 0
   reason: "User reported: pass but the sizing of the sheet isnt fitting to mobile view"
   severity: minor
   test: 5
+  root_cause: ""
+  artifacts: []
+  missing: []
+  debug_session: ""
+
+- truth: "Admin button visible for configured admin wallet"
+  status: failed
+  reason: "User reported: this is the dev wallet 2qaYB64KpD1yNbmgVSytCBcSpF2hJUd2fmXpa7P5cF7f but I dont see the admin button"
+  severity: major
+  test: 8
   root_cause: ""
   artifacts: []
   missing: []
