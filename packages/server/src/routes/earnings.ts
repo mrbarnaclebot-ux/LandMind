@@ -7,6 +7,7 @@ import { PublicKey, Connection, Transaction, TransactionInstruction } from '@sol
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { getEarningsForUser } from '../services/earningsService.js';
+import { isClaimsPaused } from '../services/economyService.js';
 import {
   generateMerkleTree,
   generateProof,
@@ -81,6 +82,14 @@ earningsRouter.get('/', requireAuth, async (req: AuthenticatedRequest, res: Resp
  */
 earningsRouter.post('/claim', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
+    // Check if claims are paused (emergency pause)
+    if (await isClaimsPaused()) {
+      return res.status(503).json({
+        error: 'Claims are currently paused',
+        message: 'The platform has temporarily paused claims. Please try again later.',
+      });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
     });

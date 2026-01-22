@@ -125,3 +125,18 @@ model EarningsSnapshot {
 
   @@map("earnings_snapshots")
 }
+
+model EconomyConfig {
+  id              String    @id @default("default")
+  minClaimAmount  BigInt    @default(25000000) @map("min_claim_amount")  // 0.025 SOL
+  goldWeight      Int       @default(4000) @map("gold_weight")
+  silverWeight    Int       @default(2000) @map("silver_weight")
+  copperWeight    Int       @default(1500) @map("copper_weight")
+  ironWeight      Int       @default(1000) @map("iron_weight")
+  isPaused        Boolean   @default(false) @map("is_paused")
+  pausedAt        DateTime? @map("paused_at")
+  pausedBy        String?   @map("paused_by")  // Admin wallet who paused
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("economy_config")
+}

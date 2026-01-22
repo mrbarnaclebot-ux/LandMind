@@ -5,14 +5,16 @@
  * From PROJECT.md:
  * - Virtual resources (Gold, Silver, Copper, Iron) are fee-weighting mechanism
  * - 50/50 fee split between platform and user rewards
- * - Resource weights: Gold 4x, Silver 2x, Copper 1.5x, Iron 1x
+ * - Resource weights: Gold 4x, Silver 2x, Copper 1.5x, Iron 1x (configurable via admin)
  */
 
 import { prisma } from '../lib/prisma.js';
+import { getResourceWeights } from './economyService.js';
 
 /**
- * Resource weight multipliers (scaled by 1000 to avoid floats)
+ * Default resource weight multipliers (scaled by 1000 to avoid floats)
  * Gold: 4x (4000/1000), Silver: 2x (2000/1000), Copper: 1.5x (1500/1000), Iron: 1x (1000/1000)
+ * Note: These are fallback defaults. Use getResourceWeights() for live config.
  */
 export const RESOURCE_WEIGHTS = {
   GOLD: 4000n,
@@ -46,7 +48,7 @@ export interface EarningsData {
 }
 
 /**
- * Calculate weighted score from resources
+ * Calculate weighted score from resources using default weights
  * Formula: (gold * 4 + silver * 2 + copper * 1.5 + iron * 1)
  *
  * @param resources - Resource totals
@@ -57,6 +59,27 @@ export function calculateWeightedScore(resources: ResourceTotals): bigint {
   const silverScore = resources.silver * RESOURCE_WEIGHTS.SILVER;
   const copperScore = resources.copper * RESOURCE_WEIGHTS.COPPER;
   const ironScore = resources.iron * RESOURCE_WEIGHTS.IRON;
+
+  // Divide by WEIGHT_DIVISOR to get actual weighted value
+  return (goldScore + silverScore + copperScore + ironScore) / WEIGHT_DIVISOR;
+}
+
+/**
+ * Calculate weighted score from resources using configurable weights from admin
+ * Formula: (gold * goldWeight + silver * silverWeight + copper * copperWeight + iron * ironWeight) / 1000
+ *
+ * @param resources - Resource totals
+ * @returns Weighted score (scaled by WEIGHT_DIVISOR internally, returns unscaled)
+ */
+export async function calculateWeightedScoreWithConfig(
+  resources: ResourceTotals
+): Promise<bigint> {
+  const weights = await getResourceWeights();
+
+  const goldScore = resources.gold * weights.gold;
+  const silverScore = resources.silver * weights.silver;
+  const copperScore = resources.copper * weights.copper;
+  const ironScore = resources.iron * weights.iron;
 
   // Divide by WEIGHT_DIVISOR to get actual weighted value
   return (goldScore + silverScore + copperScore + ironScore) / WEIGHT_DIVISOR;
