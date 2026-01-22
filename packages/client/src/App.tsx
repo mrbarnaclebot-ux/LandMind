@@ -6,6 +6,8 @@ import { AgentDashboard } from './components/agents/AgentDashboard';
 import { Leaderboard } from './components/earnings/Leaderboard';
 import { TransactionToastContainer } from './components/ui/TransactionStatus';
 import { MobileLayout } from './components/mobile/MobileLayout';
+import { AdminDashboard } from './admin/AdminDashboard';
+import { useAdminCheck } from './admin/hooks/useAdminCheck';
 import { useMobile } from './hooks/useMobile';
 import { useCameraStore } from './stores/cameraStore';
 import { hexToPixel } from './hex/hexMath';
@@ -17,6 +19,8 @@ interface HeaderProps {
   heatMapVisible: boolean;
   onToggleEarnings: () => void;
   earningsVisible: boolean;
+  onOpenAdmin?: () => void;
+  isAdmin?: boolean;
 }
 
 /**
@@ -28,6 +32,8 @@ function Header({
   heatMapVisible,
   onToggleEarnings,
   earningsVisible,
+  onOpenAdmin,
+  isAdmin,
 }: HeaderProps) {
   return (
     <header
@@ -66,6 +72,21 @@ function Header({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {isAdmin && onOpenAdmin && (
+          <button
+            onClick={onOpenAdmin}
+            className="pixel-btn"
+            style={{
+              padding: '8px 12px',
+              fontSize: '10px',
+              opacity: 0.9,
+              background: '#5D8C3E',
+              borderColor: '#7DB356',
+            }}
+          >
+            ADMIN
+          </button>
+        )}
         <button
           onClick={onToggleEarnings}
           className={`pixel-btn ${earningsVisible ? 'pixel-btn-gold' : ''}`}
@@ -187,7 +208,9 @@ function ControlsOverlay() {
 
 function App() {
   const { isMobile } = useMobile();
+  const { isAdmin } = useAdminCheck();
   const [isAgentDashboardOpen, setIsAgentDashboardOpen] = useState(false);
+  const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
   const [heatMapVisible, setHeatMapVisible] = useState(false);
   const [earningsVisible, setEarningsVisible] = useState(false);
   const { panToPosition } = useCameraStore();
@@ -223,6 +246,8 @@ function App() {
         heatMapVisible={heatMapVisible}
         onToggleEarnings={() => setEarningsVisible((v) => !v)}
         earningsVisible={earningsVisible}
+        onOpenAdmin={() => setIsAdminDashboardOpen(true)}
+        isAdmin={isAdmin}
       />
       <ThreeScene heatMapVisible={heatMapVisible} />
       <ControlsOverlay />
@@ -243,6 +268,10 @@ function App() {
         >
           <Leaderboard />
         </div>
+      )}
+      {/* Admin Dashboard */}
+      {isAdminDashboardOpen && (
+        <AdminDashboard onClose={() => setIsAdminDashboardOpen(false)} />
       )}
       {/* Transaction status toasts */}
       <TransactionToastContainer />

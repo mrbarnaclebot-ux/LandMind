@@ -8,6 +8,7 @@ import type {
   InterServerEvents,
   SocketData
 } from '../events/types.js';
+import { gatherMetrics } from '../services/metricsService.js';
 
 // Typed Socket.io server instance
 export type TypedServer = Server<
@@ -25,6 +26,10 @@ export type TypedSocket = Socket<
 >;
 
 let io: TypedServer;
+
+// Track admin sockets for metrics broadcasting
+const adminSockets = new Set<string>();
+let metricsInterval: NodeJS.Timeout | null = null;
 
 export function setupSocket(httpServer: HttpServer): TypedServer {
   io = new Server<
@@ -52,10 +57,39 @@ export function setupSocket(httpServer: HttpServer): TypedServer {
       callback(true);
     });
 
+    // Admin subscribes to metrics updates
+    // Note: Admin role verification happens server-side via API
+    socket.on('admin:subscribe' as keyof ClientToServerEvents, () => {
+      adminSockets.add(socket.id);
+      console.log(`Socket ${socket.id} subscribed to admin metrics`);
+    });
+
+    socket.on('admin:unsubscribe' as keyof ClientToServerEvents, () => {
+      adminSockets.delete(socket.id);
+      console.log(`Socket ${socket.id} unsubscribed from admin metrics`);
+    });
+
     socket.on('disconnect', () => {
       console.log(`Client disconnected: ${socket.id}`);
+      adminSockets.delete(socket.id);
     });
   });
+
+  // Start admin metrics broadcast (every 2 seconds)
+  if (!metricsInterval) {
+    metricsInterval = setInterval(async () => {
+      if (adminSockets.size > 0) {
+        try {
+          const metrics = await gatherMetrics();
+          for (const socketId of adminSockets) {
+            io.to(socketId).emit('admin:metrics' as keyof ServerToClientEvents, metrics as never);
+          }
+        } catch (error) {
+          console.error('Failed to broadcast admin metrics:', error);
+        }
+      }
+    }, 2000);
+  }
 
   return io;
 }
