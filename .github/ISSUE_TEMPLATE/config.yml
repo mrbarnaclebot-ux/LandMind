@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Documentation
+    url: https://github.com/mrbarnaclebot-ux/LandMind#readme
+    about: Check out the README for setup instructions and documentation
+  - name: Discussions
+    url: https://github.com/mrbarnaclebot-ux/LandMind/discussions
+    about: Ask questions and share ideas in GitHub Discussions
