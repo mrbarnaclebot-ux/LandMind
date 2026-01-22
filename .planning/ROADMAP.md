@@ -151,13 +151,15 @@ Plans:
   3. Frontend works on mobile phone browsers (responsive design)
   4. Smart contracts pass external security audit with all HIGH/CRITICAL findings fixed
   5. Admin can view metrics dashboard and manage users, economy, and emergency pause
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
-- [ ] 07-03: TBD
-- [ ] 07-04: TBD
+- [ ] 07-01-PLAN.md — Chunked LOD rendering for 1M hexes at 60 FPS (PERF-01)
+- [ ] 07-02-PLAN.md — Solana transaction retry with priority fees (PERF-02)
+- [ ] 07-03-PLAN.md — Mobile responsive UI with bottom sheets (PERF-03)
+- [ ] 07-04-PLAN.md — Smart contract security hardening and audit prep (CONTRACT-03)
+- [ ] 07-05-PLAN.md — Admin dashboard with real-time metrics (ADMIN-01, ADMIN-02)
+- [ ] 07-06-PLAN.md — Economy controls and emergency pause (ADMIN-03, ADMIN-04)
 
 ## Progress
 
@@ -172,7 +174,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 4. Wallet Integration | 6/6 | ✓ Complete | 2026-01-20 |
 | 5. Agent Deployment | 8/8 | ✓ Complete | 2026-01-21 |
 | 6. Economy & Distribution | 8/8 | ✓ Complete | 2026-01-21 |
-| 7. Scale & Launch | 0/TBD | Not started | - |
+| 7. Scale & Launch | 0/6 | Not started | - |
 
 ## Requirement Coverage
 
@@ -200,4 +202,4 @@ All 34 v1 requirements mapped to exactly one phase.
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-21 (Phase 6 complete - Economy & Distribution)*
+*Last updated: 2026-01-22 (Phase 7 planned - Scale & Launch)*
