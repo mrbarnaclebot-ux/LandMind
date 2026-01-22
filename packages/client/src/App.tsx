@@ -5,6 +5,8 @@ import { DeployButton } from './components/agents/DeployButton';
 import { AgentDashboard } from './components/agents/AgentDashboard';
 import { Leaderboard } from './components/earnings/Leaderboard';
 import { TransactionToastContainer } from './components/ui/TransactionStatus';
+import { MobileLayout } from './components/mobile/MobileLayout';
+import { useMobile } from './hooks/useMobile';
 import { useCameraStore } from './stores/cameraStore';
 import { hexToPixel } from './hex/hexMath';
 import './styles/pixel-theme.css';
@@ -18,7 +20,7 @@ interface HeaderProps {
 }
 
 /**
- * Minecraft-style header with pixel aesthetics
+ * Minecraft-style header with pixel aesthetics (desktop only)
  */
 function Header({
   onOpenAgentDashboard,
@@ -105,12 +107,12 @@ function Header({
 }
 
 /**
- * Minecraft inventory-style controls overlay
+ * Minecraft inventory-style controls overlay (desktop only)
  */
 function ControlsOverlay() {
   return (
     <div
-      className="pixel-inventory-bg"
+      className="pixel-inventory-bg desktop-only"
       style={{
         position: 'absolute',
         bottom: '16px',
@@ -184,6 +186,7 @@ function ControlsOverlay() {
 }
 
 function App() {
+  const { isMobile } = useMobile();
   const [isAgentDashboardOpen, setIsAgentDashboardOpen] = useState(false);
   const [heatMapVisible, setHeatMapVisible] = useState(false);
   const [earningsVisible, setEarningsVisible] = useState(false);
@@ -199,6 +202,19 @@ function App() {
     setIsAgentDashboardOpen(false);
   }, [panToPosition]);
 
+  // Mobile layout with bottom sheets
+  if (isMobile) {
+    return (
+      <>
+        <MobileLayout onLocateAgent={handleLocateAgent}>
+          <ThreeScene heatMapVisible={heatMapVisible} />
+        </MobileLayout>
+        <TransactionToastContainer />
+      </>
+    );
+  }
+
+  // Desktop layout
   return (
     <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh' }}>
       <Header
