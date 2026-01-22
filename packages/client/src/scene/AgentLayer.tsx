@@ -1,13 +1,18 @@
 /**
  * AgentLayer - Renders all agents as Minecraft-style voxel robots
  * Features body + head blocks with mining animation and glow effects
+ *
+ * Includes distance-based clustering for performance:
+ * - Agents within threshold render individually with animations
+ * - Distant agents cluster into golden sphere markers with count
  */
 import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useAgentStore } from '../stores/agentStore';
 import { useHexStore } from '../stores/hexStore';
 import { hexToPixel, ELEVATION_STEP } from '../hex/hexMath';
+import { useAgentClusters, ClusterMarker } from '../rendering/AgentCluster';
 
 // Agent visual config - more visible sizes
 const BODY_WIDTH = 0.4;
@@ -144,18 +149,25 @@ function VoxelAgent({ position, status, index }: {
 // Hex tile geometry constants (match HexWorld)
 const HEX_TILE_HEIGHT = 0.35;
 
+// Distance threshold for clustering (agents beyond this are clustered)
+const CLUSTER_THRESHOLD = 100;
+
 export function AgentLayer() {
   const { agents } = useAgentStore();
   const { getHexInfo, isInitialized } = useHexStore();
+  const { camera } = useThree();
 
-  console.log('[AgentLayer] Rendering with agents:', agents.length, agents);
+  // Use agent clustering based on camera distance
+  const { individualAgents, clusters } = useAgentClusters(
+    agents,
+    camera.position,
+    CLUSTER_THRESHOLD
+  );
 
-  // Convert agents to render data with positions
+  // Convert individual agents to render data with positions
   const agentData: AgentData[] = useMemo(() => {
-    console.log('[AgentLayer] Processing agents, total:', agents.length);
-    const filtered = agents.filter((agent) => agent.hex);
-    console.log('[AgentLayer] Agents with hex:', filtered.length);
-    return filtered // Only agents with positions
+    return individualAgents
+      .filter((agent) => agent.hex)
       .map((agent) => {
         const { x, z } = hexToPixel(agent.hex!.q, agent.hex!.r);
 
@@ -175,14 +187,15 @@ export function AgentLayer() {
           status: agent.status,
         };
       });
-  }, [agents, getHexInfo, isInitialized]);
+  }, [individualAgents, getHexInfo, isInitialized]);
 
-  if (agentData.length === 0) {
+  if (agentData.length === 0 && clusters.length === 0) {
     return null;
   }
 
   return (
     <group name="agentLayer">
+      {/* Individual agents rendered with full detail and animation */}
       {agentData.map((agent, index) => (
         <VoxelAgent
           key={agent.id}
@@ -190,6 +203,11 @@ export function AgentLayer() {
           status={agent.status}
           index={index}
         />
+      ))}
+
+      {/* Clustered agents rendered as golden sphere markers */}
+      {clusters.map((cluster) => (
+        <ClusterMarker key={cluster.key} cluster={cluster} />
       ))}
     </group>
   );
