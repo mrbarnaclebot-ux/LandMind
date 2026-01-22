@@ -1,0 +1,242 @@
+/**
+ * Mobile-specific styles for LandMind
+ * Responsive layouts, bottom sheets, and touch optimization
+ */
+
+/* ============================================
+   TOUCH ACTION FOR 3D CANVAS
+   ============================================ */
+
+/* Prevent browser zoom/scroll on canvas - touch controls handle everything */
+.mobile-canvas {
+  touch-action: none;
+}
+
+/* ============================================
+   BOTTOM SHEET STYLING - PIXEL THEME
+   ============================================ */
+
+.bottom-sheet-container {
+  background: linear-gradient(180deg, #2A2A2A 0%, #1A1A1A 100%) !important;
+  border-top: 4px solid #4A4A4A !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+.bottom-sheet-header {
+  padding: 12px 16px;
+  border-bottom: 2px solid #3A3A3A;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.bottom-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #5A5A5A;
+  border-radius: 2px;
+}
+
+.bottom-sheet-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #FFAA00;
+  text-shadow: 2px 2px 0 #CC8800;
+  text-align: center;
+}
+
+.bottom-sheet-content {
+  padding: 16px;
+  color: white;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  overflow-y: auto;
+}
+
+/* ============================================
+   MOBILE HEADER - COMPACT
+   ============================================ */
+
+.mobile-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.85) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  z-index: 100;
+  border-bottom: 2px solid #3A3A3A;
+}
+
+.mobile-header-logo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: #5D8C3E;
+  text-shadow: 2px 2px 0 #3D5C2E;
+}
+
+.mobile-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ============================================
+   MOBILE NAV BAR - FIXED BOTTOM
+   ============================================ */
+
+.mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.9) 100%);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+  z-index: 100;
+  border-top: 2px solid #3A3A3A;
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #8B8B8B;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.95);
+}
+
+.mobile-nav-item.active {
+  color: #FFAA00;
+}
+
+.mobile-nav-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* ============================================
+   QUALITY SETTINGS PANEL
+   ============================================ */
+
+.quality-panel {
+  padding: 12px;
+}
+
+.quality-panel-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #8B8B8B;
+  margin-bottom: 12px;
+}
+
+.quality-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: #2A2A2A;
+  border: 2px solid #3A3A3A;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: none;
+}
+
+.quality-option:active {
+  transform: scale(0.98);
+}
+
+.quality-option.selected {
+  border-color: #5D8C3E;
+  background: #3A4A3A;
+}
+
+.quality-option-check {
+  color: #5D8C3E;
+  font-size: 12px;
+}
+
+.quality-hint {
+  margin-top: 12px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 6px;
+  color: #5A5A5A;
+  text-align: center;
+}
+
+/* ============================================
+   RESPONSIVE VISIBILITY UTILITIES
+   ============================================ */
+
+/* Hide desktop-only elements on mobile */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Hide mobile-only elements on desktop */
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+/* ============================================
+   MOBILE LAYOUT ADJUSTMENTS
+   ============================================ */
+
+/* Mobile layout wrapper */
+.mobile-layout {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Main content area with padding for header/nav */
+.mobile-content {
+  padding-top: 56px;
+  padding-bottom: 64px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ============================================
+   MOBILE PANEL CONTENT OVERRIDES
+   ============================================ */
+
+/* Make dashboard content fit bottom sheet */
+.bottom-sheet-content .agent-list {
+  max-height: none;
+}
+
+/* Compact card styling in bottom sheets */
+.bottom-sheet-content .pixel-inventory-bg {
+  margin: 0;
+  border: none;
+  box-shadow: none;
+}
