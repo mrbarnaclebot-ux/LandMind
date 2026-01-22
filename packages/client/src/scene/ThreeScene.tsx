@@ -10,9 +10,10 @@
  * - HexTooltip for hover information
  * - Camera panning support via store
  * - PerformanceAdapter for adaptive quality
+ * - Mobile touch controls and optimizations
  */
 
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Sky } from '@react-three/drei';
 import * as THREE from 'three';
@@ -24,10 +25,50 @@ import { HexTooltip, useHexHover } from './HexTooltip';
 import { Clouds } from './Clouds';
 import { useUserAgents } from '../hooks/useUserAgents';
 import { useCameraStore } from '../stores/cameraStore';
+import { useMobile } from '../hooks/useMobile';
 
 interface ThreeSceneProps {
   /** Whether the heat map overlay is visible */
   heatMapVisible?: boolean;
+}
+
+/**
+ * Quality level type - synced with MobileLayout QualitySettings
+ */
+type QualityLevel = 'low' | 'medium' | 'high';
+
+/**
+ * Get quality settings based on level
+ */
+function getQualitySettings(level: QualityLevel, isMobile: boolean) {
+  const baseDpr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+
+  switch (level) {
+    case 'low':
+      return {
+        dpr: Math.min(baseDpr, 1),
+        antialias: false,
+        cloudsEnabled: false,
+      };
+    case 'medium':
+      return {
+        dpr: Math.min(baseDpr, isMobile ? 1.5 : 2),
+        antialias: !isMobile,
+        cloudsEnabled: true,
+      };
+    case 'high':
+      return {
+        dpr: Math.min(baseDpr, 2),
+        antialias: true,
+        cloudsEnabled: true,
+      };
+    default:
+      return {
+        dpr: Math.min(baseDpr, isMobile ? 1.5 : 2),
+        antialias: !isMobile,
+        cloudsEnabled: true,
+      };
+  }
 }
 
 /**
@@ -59,9 +100,9 @@ function Lighting() {
 }
 
 /**
- * Camera controls with isometric-friendly settings and pan-to support
+ * Camera controls with isometric-friendly settings, pan-to support, and mobile touch
  */
-function CameraControls() {
+function CameraControls({ isMobile }: { isMobile: boolean }) {
   const controlsRef = useRef<any>(null);
   const { camera } = useThree();
   const { targetPosition, clearTarget } = useCameraStore();
@@ -104,7 +145,7 @@ function CameraControls() {
       ref={controlsRef}
       // Start at nice isometric-ish angle
       minPolarAngle={Math.PI / 6} // Don't look straight down
-      maxPolarAngle={Math.PI / 2.2} // Don't look horizontal
+      maxPolarAngle={isMobile ? Math.PI / 2.1 : Math.PI / 2.2} // Slightly higher on mobile
       // Zoom limits - extended for large worlds
       minDistance={10}
       maxDistance={500}
@@ -120,6 +161,11 @@ function CameraControls() {
         LEFT: THREE.MOUSE.ROTATE,
         MIDDLE: THREE.MOUSE.DOLLY,
         RIGHT: THREE.MOUSE.PAN,
+      }}
+      // Touch settings: single finger rotate, two fingers zoom/pan
+      touches={{
+        ONE: THREE.TOUCH.ROTATE,
+        TWO: THREE.TOUCH.DOLLY_PAN,
       }}
     />
   );
@@ -156,7 +202,15 @@ function PointerCaptureGround({
 /**
  * Inner scene content - uses R3F hooks for agents and hover
  */
-function SceneContent({ heatMapVisible = false }: { heatMapVisible?: boolean }) {
+function SceneContent({
+  heatMapVisible = false,
+  isMobile,
+  cloudsEnabled,
+}: {
+  heatMapVisible?: boolean;
+  isMobile: boolean;
+  cloudsEnabled: boolean;
+}) {
   // Initialize agent loading and subscription
   useUserAgents();
 
@@ -174,14 +228,16 @@ function SceneContent({ heatMapVisible = false }: { heatMapVisible?: boolean }) 
         rayleigh={0.5}
       />
 
-      {/* Minecraft-style blocky clouds */}
-      <Clouds count={18} height={55} spread={90} speed={0.8} />
+      {/* Minecraft-style blocky clouds - disabled on low quality */}
+      {cloudsEnabled && (
+        <Clouds count={isMobile ? 12 : 18} height={55} spread={90} speed={0.8} />
+      )}
 
       {/* Scene lighting */}
       <Lighting />
 
-      {/* Camera controls */}
-      <CameraControls />
+      {/* Camera controls with mobile touch support */}
+      <CameraControls isMobile={isMobile} />
 
       {/* Invisible ground for pointer events */}
       <PointerCaptureGround
@@ -209,12 +265,29 @@ function SceneContent({ heatMapVisible = false }: { heatMapVisible?: boolean }) 
  *
  * Provides Canvas with proper defaults and scene setup for the hex world.
  * Wraps content with PerformanceAdapter for adaptive quality.
+ * Includes mobile optimizations and user-selectable quality settings.
  */
 export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
-  // Get DPR from performance settings (updated by PerformanceAdapter)
-  const dpr = typeof window !== 'undefined'
-    ? Math.min(window.devicePixelRatio, 2)
-    : 1;
+  const { isMobile } = useMobile();
+
+  // Quality state from localStorage or default
+  const [quality, setQuality] = useState<QualityLevel>(() => {
+    const stored = localStorage.getItem('qualityLevel');
+    return (stored as QualityLevel) || 'medium';
+  });
+
+  // Listen for quality change events from settings panel
+  useEffect(() => {
+    const handleQualityChange = (e: CustomEvent<QualityLevel>) => {
+      setQuality(e.detail);
+    };
+
+    window.addEventListener('qualityChange', handleQualityChange as EventListener);
+    return () => window.removeEventListener('qualityChange', handleQualityChange as EventListener);
+  }, []);
+
+  // Get quality settings
+  const settings = getQualitySettings(quality, isMobile);
 
   return (
     <Canvas
@@ -229,12 +302,21 @@ export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
         height: '100%',
         background: '#1a2533',
         display: 'block',
+        touchAction: isMobile ? 'none' : 'auto', // Prevent browser gestures on mobile
       }}
-      gl={{ antialias: true }}
-      dpr={dpr}
+      gl={{
+        antialias: settings.antialias,
+        powerPreference: isMobile ? 'default' : 'high-performance',
+      }}
+      dpr={settings.dpr}
+      className={isMobile ? 'mobile-canvas' : ''}
     >
       <PerformanceAdapter>
-        <SceneContent heatMapVisible={heatMapVisible} />
+        <SceneContent
+          heatMapVisible={heatMapVisible}
+          isMobile={isMobile}
+          cloudsEnabled={settings.cloudsEnabled}
+        />
       </PerformanceAdapter>
     </Canvas>
   );
