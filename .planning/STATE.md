@@ -163,19 +163,27 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-2 todos in `.planning/todos/pending/`:
-- **Deploy smart contract to devnet** (contracts) — blocks vault init and claim testing
-- **Add clouds to 3D environment** (ui) — Minecraft-style blocky clouds for atmosphere
+0 todos in `.planning/todos/pending/` — all deployment infrastructure ready
 
-### Blockers/Concerns
+### Resolved Concerns
 
-- Anchor IDL generation requires workaround (--no-idl flag + manual IDL)
-- Solana platform-tools cargo version (1.84.0) limits some dependency versions
-- Merkle tree must be created before minting (one-time setup with SERVER_WALLET_SECRET)
+- **Anchor IDL generation** — RESOLVED: IDL generated successfully at `target/idl/landmind.json`
+- **Smart contract deployment** — READY: Compiled .so exists, deployment guide at `docs/DEPLOYMENT.md`
+- **Merkle tree setup** — READY: Script at `packages/server/scripts/createMerkleTree.ts`
+- **Vault initialization** — READY: Script at `packages/server/scripts/initVault.ts`
+- **Clouds** — IMPLEMENTED: Minecraft-style blocky clouds in `packages/client/src/scene/Clouds.tsx`
+
+### Remaining Manual Steps
+
+To complete deployment (requires devnet SOL):
+1. Get 2+ devnet SOL from https://faucet.solana.com
+2. Run `anchor deploy --provider.cluster devnet` in packages/contracts
+3. Run `npx tsx scripts/createMerkleTree.ts` in packages/server
+4. Run `npx tsx scripts/initVault.ts` in packages/server
 
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 07-07-PLAN.md (Mobile UI Gap Closure) - UAT GAPS CLOSED
+Stopped at: All blockers resolved, documentation complete
 Resume file: None
-Next: Project complete! UAT gaps closed. Remaining: deploy contract, add clouds, verify admin button (config/restart)
+Next: Project ready for deployment! Get devnet SOL and run deployment scripts (see docs/DEPLOYMENT.md)
