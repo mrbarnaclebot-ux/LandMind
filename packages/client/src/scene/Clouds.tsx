@@ -3,13 +3,13 @@
  *
  * Features:
  * - Blocky voxel-style cloud shapes using box geometries
- * - White/light gray with subtle transparency
+ * - Flat bottom, uneven top like Minecraft clouds
+ * - Soft white with subtle shading from lighting
  * - Slow horizontal drift animation
- * - Multiple cloud layers at different heights
  * - InstancedMesh for performance
  */
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -24,20 +24,21 @@ interface CloudsProps {
   speed?: number;
 }
 
-/** Single cloud block dimensions */
-const BLOCK_SIZE = { x: 4, y: 1.5, z: 3 };
+/** Single cloud block dimensions - Minecraft clouds are flat and wide */
+const BLOCK_SIZE = { x: 6, y: 2, z: 6 };
 
-/** Cloud material - white with transparency */
-const cloudMaterial = new THREE.MeshBasicMaterial({
-  color: 0xffffff,
+/** Cloud material - soft white with lighting response */
+const cloudMaterial = new THREE.MeshLambertMaterial({
+  color: 0xfafafa,
   transparent: true,
-  opacity: 0.85,
-  side: THREE.DoubleSide,
+  opacity: 0.92,
+  emissive: 0xffffff,
+  emissiveIntensity: 0.1,
 });
 
 /**
  * Generate a Minecraft-style cloud cluster shape
- * Each cluster is made of overlapping blocks
+ * Flat bottom layer with blocks stacked on top for variation
  */
 function generateCloudCluster(
   baseX: number,
@@ -48,33 +49,35 @@ function generateCloudCluster(
   const matrices: THREE.Matrix4[] = [];
   const random = seedRandom(seed);
 
-  // Number of blocks in this cluster (3-8)
-  const blockCount = Math.floor(random() * 6) + 3;
+  // Grid size for base layer (2x2 to 4x4)
+  const gridX = Math.floor(random() * 3) + 2;
+  const gridZ = Math.floor(random() * 3) + 2;
 
-  for (let i = 0; i < blockCount; i++) {
-    const matrix = new THREE.Matrix4();
+  // Create flat base layer - this gives the Minecraft look
+  for (let gx = 0; gx < gridX; gx++) {
+    for (let gz = 0; gz < gridZ; gz++) {
+      const matrix = new THREE.Matrix4();
+      const offsetX = (gx - gridX / 2) * BLOCK_SIZE.x;
+      const offsetZ = (gz - gridZ / 2) * BLOCK_SIZE.z;
 
-    // Offset from cluster center
-    const offsetX = (random() - 0.5) * BLOCK_SIZE.x * 2;
-    const offsetY = (random() - 0.5) * BLOCK_SIZE.y * 0.5;
-    const offsetZ = (random() - 0.5) * BLOCK_SIZE.z * 1.5;
+      matrix.compose(
+        new THREE.Vector3(baseX + offsetX, baseY, baseZ + offsetZ),
+        new THREE.Quaternion(),
+        new THREE.Vector3(BLOCK_SIZE.x, BLOCK_SIZE.y, BLOCK_SIZE.z)
+      );
+      matrices.push(matrix);
 
-    // Slight scale variation
-    const scaleX = 0.8 + random() * 0.6;
-    const scaleY = 0.7 + random() * 0.4;
-    const scaleZ = 0.8 + random() * 0.5;
-
-    matrix.compose(
-      new THREE.Vector3(baseX + offsetX, baseY + offsetY, baseZ + offsetZ),
-      new THREE.Quaternion(),
-      new THREE.Vector3(
-        BLOCK_SIZE.x * scaleX,
-        BLOCK_SIZE.y * scaleY,
-        BLOCK_SIZE.z * scaleZ
-      )
-    );
-
-    matrices.push(matrix);
+      // Randomly add blocks on top (30% chance) for uneven top surface
+      if (random() > 0.7) {
+        const topMatrix = new THREE.Matrix4();
+        topMatrix.compose(
+          new THREE.Vector3(baseX + offsetX, baseY + BLOCK_SIZE.y, baseZ + offsetZ),
+          new THREE.Quaternion(),
+          new THREE.Vector3(BLOCK_SIZE.x, BLOCK_SIZE.y * 0.6, BLOCK_SIZE.z)
+        );
+        matrices.push(topMatrix);
+      }
+    }
   }
 
   return matrices;
@@ -96,8 +99,8 @@ function seedRandom(seed: number): () => number {
  */
 export function Clouds({
   count = 15,
-  height = 60,
-  spread = 80,
+  height = 45,
+  spread = 100,
   speed = 1,
 }: CloudsProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -132,8 +135,8 @@ export function Clouds({
     };
   }, [count, height, spread]);
 
-  // Set initial matrices on mount
-  useMemo(() => {
+  // Set initial matrices on mount - useEffect because ref isn't available during render
+  useEffect(() => {
     if (meshRef.current) {
       matrices.forEach((matrix, i) => {
         meshRef.current!.setMatrixAt(i, matrix);

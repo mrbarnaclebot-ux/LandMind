@@ -230,7 +230,7 @@ function SceneContent({
 
       {/* Minecraft-style blocky clouds - disabled on low quality */}
       {cloudsEnabled && (
-        <Clouds count={isMobile ? 12 : 18} height={55} spread={90} speed={0.8} />
+        <Clouds count={isMobile ? 10 : 20} height={40} spread={120} speed={0.6} />
       )}
 
       {/* Scene lighting */}
