@@ -4,6 +4,7 @@ import { ConnectButton } from './components/wallet/ConnectButton';
 import { DeployButton } from './components/agents/DeployButton';
 import { AgentDashboard } from './components/agents/AgentDashboard';
 import { Leaderboard } from './components/earnings/Leaderboard';
+import { TransactionToastContainer } from './components/ui/TransactionStatus';
 import { useCameraStore } from './stores/cameraStore';
 import { hexToPixel } from './hex/hexMath';
 import './styles/pixel-theme.css';
@@ -227,6 +228,8 @@ function App() {
           <Leaderboard />
         </div>
       )}
+      {/* Transaction status toasts */}
+      <TransactionToastContainer />
     </div>
   );
 }
