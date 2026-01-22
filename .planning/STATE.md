@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 6 IN PROGRESS - Economy/Distribution layer, smart contract and schema complete
+**Current focus:** Phase 7 IN PROGRESS - Scale & Launch, transaction retry and mobile support complete
 
 ## Current Position
 
-Phase: 6 of 7 (Economy Distribution)
-Plan: 7 of 8 in current phase (06-01 through 06-07 complete)
+Phase: 7 of 7 (Scale & Launch)
+Plan: 2 of 6 in current phase (07-01 through 07-02 complete)
 Status: In progress
-Last activity: 2026-01-21 - Completed 06-07-PLAN.md (Leaderboard & Heat Map)
+Last activity: 2026-01-22 - Completed 07-02-PLAN.md (Transaction Retry with Priority Fees)
 
-Progress: [████████████████░] ~94% (34/~36 plans estimated)
+Progress: [█████████████████░] ~97% (36/~37 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 34
+- Total plans completed: 36
 - Average duration: ~8 min
-- Total execution time: ~257 min
+- Total execution time: ~273 min
 
 **By Phase:**
 
@@ -33,13 +33,14 @@ Progress: [████████████████░] ~94% (34/~36 pla
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
 | 06-economy-distribution | 7 | 30 min | 4 min |
+| 07-scale-launch | 2 | 16 min | 8 min |
 
 **Recent Trend:**
-- Phase 6 progressing - Leaderboard & Heat Map (06-07) complete in 4 min
-- useLeaderboard hook with 30-second auto-refresh
-- HeatMapOverlay with InstancedMesh per-instance colors
-- EARNINGS and HEAT MAP toggle buttons in header
-- Next: 06-08 or Phase 6 completion
+- Phase 7 progressing - Transaction Retry (07-02) complete in 8 min
+- sendTransactionWithRetry with exponential fee escalation
+- Toast notifications for transaction status
+- Blockhash expiration tracking via lastValidBlockHeight
+- Next: 07-03 (Mobile Support) or 07-04 (Network Status)
 
 *Updated after each plan completion*
 
@@ -136,6 +137,9 @@ Recent decisions affecting current work:
 - **30-second leaderboard refresh** - auto-refresh interval matching earnings
 - **Heat map additive blending** - glow effect for resource visualization
 - **Heat colors blue-cyan-green-yellow-red** - cold to hot gradient based on resource value
+- **Exponential fee escalation** - BASE_PRIORITY_FEE (1000) * 2^attempt, capped at 1M microLamports
+- **Max 5 retries** - with exponential backoff (500ms base)
+- **Transaction toast auto-hide** - Success 5s, warning 3s, error 8s, expired 5s
 
 ### Pending Todos
 
@@ -151,7 +155,7 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-01-21
-Stopped at: Completed 06-07-PLAN.md (Leaderboard & Heat Map)
+Last session: 2026-01-22
+Stopped at: Completed 07-02-PLAN.md (Transaction Retry with Priority Fees)
 Resume file: None
-Next: 06-08 or Phase 6 completion
+Next: 07-03 (Mobile Support) or continue with remaining Phase 7 plans
