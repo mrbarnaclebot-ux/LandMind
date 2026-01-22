@@ -44,9 +44,14 @@ pub mod landmind {
         // Get current timestamp
         let clock = Clock::get()?;
 
-        // Generate agent index from treasury lamports (simple incrementing approach)
+        // Generate agent index from treasury lamports using checked arithmetic
         // Each agent adds 0.1 SOL, so we can derive index from balance
-        let agent_index = ctx.accounts.treasury.lamports() / DEPLOY_COST;
+        let agent_index = ctx
+            .accounts
+            .treasury
+            .lamports()
+            .checked_div(DEPLOY_COST)
+            .ok_or(LandMindError::Overflow)?;
 
         // Emit event for backend to process and mint cNFT
         emit!(AgentDeployedEvent {
@@ -97,6 +102,19 @@ pub mod landmind {
         // Check minimum claim
         require!(amount >= MIN_CLAIM, LandMindError::BelowMinimumClaim);
 
+        // Verify merkle root is not empty (prevents claims before initialization)
+        require!(
+            vault_state.merkle_root != [0u8; 32],
+            LandMindError::EmptyMerkleRoot
+        );
+
+        // Verify treasury has sufficient balance
+        let treasury_balance = ctx.accounts.treasury.lamports();
+        require!(
+            treasury_balance >= amount,
+            LandMindError::InsufficientTreasuryBalance
+        );
+
         // Verify Merkle proof - hash pubkey (32 bytes) + amount (8 bytes, padded to 32)
         let mut amount_bytes = [0u8; 32];
         amount_bytes[..8].copy_from_slice(&amount.to_le_bytes());
@@ -125,9 +143,12 @@ pub mod landmind {
         );
         transfer(cpi_context, amount)?;
 
-        // Update total distributed
+        // Update total distributed using checked arithmetic
         let vault_state = &mut ctx.accounts.vault_state;
-        vault_state.total_distributed = vault_state.total_distributed.checked_add(amount).unwrap();
+        vault_state.total_distributed = vault_state
+            .total_distributed
+            .checked_add(amount)
+            .ok_or(LandMindError::Overflow)?;
 
         emit!(ClaimEvent {
             claimer: ctx.accounts.claimer.key(),
@@ -141,6 +162,9 @@ pub mod landmind {
 
     /// Pause the vault (admin only)
     pub fn pause_vault(ctx: Context<AdminAction>) -> Result<()> {
+        // Check vault is not already paused
+        require!(!ctx.accounts.vault_state.paused, LandMindError::VaultPaused);
+
         ctx.accounts.vault_state.paused = true;
         emit!(VaultPausedEvent {
             authority: ctx.accounts.authority.key(),
@@ -152,6 +176,9 @@ pub mod landmind {
 
     /// Unpause the vault (admin only)
     pub fn unpause_vault(ctx: Context<AdminAction>) -> Result<()> {
+        // Check vault is actually paused
+        require!(ctx.accounts.vault_state.paused, LandMindError::VaultNotPaused);
+
         ctx.accounts.vault_state.paused = false;
         emit!(VaultUnpausedEvent {
             authority: ctx.accounts.authority.key(),
@@ -163,17 +190,27 @@ pub mod landmind {
 
     /// Update the Merkle root (admin only)
     pub fn update_merkle_root(ctx: Context<AdminAction>, new_root: [u8; 32]) -> Result<()> {
+        let old_root = ctx.accounts.vault_state.merkle_root;
         ctx.accounts.vault_state.merkle_root = new_root;
+
+        emit!(MerkleRootUpdatedEvent {
+            authority: ctx.accounts.authority.key(),
+            old_root,
+            new_root,
+            timestamp: Clock::get()?.unix_timestamp,
+        });
+
         msg!("Merkle root updated by {}", ctx.accounts.authority.key());
         Ok(())
     }
 }
 
-/// Verify Merkle proof (OpenZeppelin pattern)
+/// Verify Merkle proof (OpenZeppelin pattern with sorted hashing)
 fn verify_proof(proof: &[[u8; 32]], root: [u8; 32], leaf: [u8; 32]) -> bool {
     let mut computed_hash = leaf;
 
     for proof_element in proof.iter() {
+        // OpenZeppelin sorted hashing - smaller hash first for deterministic ordering
         if computed_hash <= *proof_element {
             computed_hash = keccak::hashv(&[&computed_hash, proof_element]).0;
         } else {
@@ -238,7 +275,7 @@ pub struct ClaimEarnings<'info> {
     )]
     pub vault_state: Account<'info, FeeVaultState>,
 
-    /// CHECK: Treasury PDA that holds fees
+    /// CHECK: Treasury PDA that holds fees - validated by seeds constraint
     #[account(
         mut,
         seeds = [b"treasury"],

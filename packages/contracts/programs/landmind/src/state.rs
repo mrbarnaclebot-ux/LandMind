@@ -48,8 +48,9 @@ pub struct FeeVaultState {
 }
 
 impl FeeVaultState {
-    // 8 discriminator + 32 authority + 32 merkle_root + 8 total_distributed + 1 paused + 1 bump
-    pub const SIZE: usize = 8 + 32 + 32 + 8 + 1 + 1;
+    // Account discriminator (8) + pubkey (32) + merkle_root (32) + u64 (8) + bool (1) + u8 (1) = 82
+    // Add padding for safety = 128
+    pub const SIZE: usize = 8 + 32 + 32 + 8 + 1 + 1 + 46;
 }
 
 /// Event emitted when the vault is initialized
@@ -78,5 +79,14 @@ pub struct VaultPausedEvent {
 #[event]
 pub struct VaultUnpausedEvent {
     pub authority: Pubkey,
+    pub timestamp: i64,
+}
+
+/// Event emitted when the merkle root is updated
+#[event]
+pub struct MerkleRootUpdatedEvent {
+    pub authority: Pubkey,
+    pub old_root: [u8; 32],
+    pub new_root: [u8; 32],
     pub timestamp: i64,
 }
