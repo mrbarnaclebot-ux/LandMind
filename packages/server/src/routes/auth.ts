@@ -4,6 +4,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { redis } from '../lib/redis.js';
 import { verifySignature } from '../lib/solana.js';
 import { prisma } from '../lib/prisma.js';
+import { isAdminWallet } from '../middleware/adminAuth.js';
 
 const router = Router();
 const NONCE_TTL = 300; // 5 minutes
@@ -83,13 +84,21 @@ router.post('/verify', async (req: Request, res: Response) => {
   }
 
   // 4. Create or get user in database
-  const user = await prisma.user.upsert({
+  let user = await prisma.user.upsert({
     where: { walletPubkey: address },
     update: { updatedAt: new Date() },
     create: { walletPubkey: address }
   });
 
-  // 5. Issue JWT
+  // 5. Auto-promote admin wallets
+  if (isAdminWallet(address) && user.role !== 'ADMIN') {
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { role: 'ADMIN' },
+    });
+  }
+
+  // 6. Issue JWT
   const now = Math.floor(Date.now() / 1000);
   const accessToken = await new SignJWT({
     sub: address,
@@ -100,7 +109,7 @@ router.post('/verify', async (req: Request, res: Response) => {
     .setExpirationTime(SESSION_DURATION)
     .sign(JWT_SECRET);
 
-  // 6. Set httpOnly cookie
+  // 7. Set httpOnly cookie
   res.cookie('session', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

@@ -1,0 +1,52 @@
+import { Response, NextFunction } from 'express';
+import { prisma } from '../lib/prisma.js';
+import { AuthenticatedRequest } from './authMiddleware.js';
+
+/**
+ * Middleware that requires admin role.
+ * Must be used after requireAuth middleware.
+ */
+export async function requireAdmin(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    // Fetch user with role from database
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== 'ADMIN') {
+      res.status(403).json({ error: 'Admin access required' });
+      return;
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin auth error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * List of admin wallet pubkeys from environment variables.
+ * These wallets are auto-promoted to ADMIN on first login.
+ */
+export const ADMIN_WALLETS: string[] = [
+  process.env.ADMIN_WALLET_1,
+  process.env.ADMIN_WALLET_2,
+].filter((w): w is string => Boolean(w));
+
+/**
+ * Check if wallet should be auto-promoted to admin.
+ */
+export function isAdminWallet(walletPubkey: string): boolean {
+  return ADMIN_WALLETS.includes(walletPubkey);
+}

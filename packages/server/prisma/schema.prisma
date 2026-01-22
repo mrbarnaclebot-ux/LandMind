@@ -13,6 +13,7 @@ datasource db {
 model User {
   id        String   @id @default(uuid())
   walletPubkey String @unique @map("wallet_pubkey")
+  role      UserRole @default(USER)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   agents    Agent[]
@@ -20,6 +21,11 @@ model User {
   earningsSnapshot EarningsSnapshot?
 
   @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 model Agent {
