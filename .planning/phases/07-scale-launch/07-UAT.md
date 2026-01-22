@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 07-scale-launch
 source: [07-01-SUMMARY.md, 07-02-SUMMARY.md, 07-03-SUMMARY.md, 07-05-SUMMARY.md, 07-06-SUMMARY.md]
 started: 2026-01-22T08:48:00Z
@@ -89,27 +89,45 @@ skipped: 4
   reason: "User reported: resizing works but I do not see the deploy agent button and heat map button"
   severity: major
   test: 4
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "MobileLayout component never includes DeployButton or heat map toggle - these only exist in desktop Header component"
+  artifacts:
+    - path: "packages/client/src/App.tsx"
+      issue: "Mobile branch (lines 229-238) renders MobileLayout without action buttons; heatMapVisible not passed to mobile ThreeScene"
+    - path: "packages/client/src/components/mobile/MobileLayout.tsx"
+      issue: "No DeployButton import/component, no heat map toggle state or UI element"
+  missing:
+    - "DeployButton needs to be added to MobileLayout (in header, FAB, or nav area)"
+    - "Heat map toggle needs to be added (nav item, settings panel, or FAB)"
+    - "heatMapVisible state + toggle needs to be passed from App.tsx to MobileLayout to ThreeScene"
+  debug_session: ".planning/debug/mobile-buttons-missing.md"
 
 - truth: "Bottom sheet sizing fits mobile viewport"
   status: failed
   reason: "User reported: pass but the sizing of the sheet isnt fitting to mobile view"
   severity: minor
   test: 5
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "snapPoints prop incorrectly configured - values [0.9, 0.5, 0.25] not in ascending order, missing 0 (closed) and 1 (fully open)"
+  artifacts:
+    - path: "packages/client/src/components/mobile/BottomSheet.tsx"
+      issue: "snapPoints default value violates library requirements: must be ascending, first=0, last=1"
+  missing:
+    - "snapPoints should be in ascending order: [0, 0.25, 0.5, 0.9]"
+    - "initialSnap should be updated to correct index after reordering"
+    - "CSS may need height adjustments for safe-area-inset-bottom (nav bar)"
+  debug_session: ".planning/debug/bottom-sheet-sizing.md"
 
 - truth: "Admin button visible for configured admin wallet"
   status: failed
   reason: "User reported: this is the dev wallet 2qaYB64KpD1yNbmgVSytCBcSpF2hJUd2fmXpa7P5cF7f but I dont see the admin button"
   severity: major
   test: 8
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Configuration timing issue - server restart and user re-login required after adding ADMIN_WALLET_1 env var (not a code bug)"
+  artifacts:
+    - path: "packages/server/.env"
+      issue: "None - ADMIN_WALLET_1 is correctly configured"
+    - path: "packages/server/src/middleware/adminAuth.ts"
+      issue: "ADMIN_WALLETS evaluated at module load time (design, not bug)"
+  missing:
+    - "Server restart (to reload env vars into ADMIN_WALLETS)"
+    - "User logout + login (to trigger auto-promotion in /auth/verify)"
+  debug_session: ".planning/debug/admin-button-not-visible.md"
