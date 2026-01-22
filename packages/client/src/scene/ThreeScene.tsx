@@ -143,6 +143,11 @@ function CameraControls({ isMobile }: { isMobile: boolean }) {
   return (
     <OrbitControls
       ref={controlsRef}
+      // Explicitly enable all controls
+      enabled={true}
+      enableRotate={true}
+      enableZoom={true}
+      enablePan={true}
       // Start at nice isometric-ish angle
       minPolarAngle={Math.PI / 6} // Don't look straight down
       maxPolarAngle={isMobile ? Math.PI / 2.1 : Math.PI / 2.2} // Slightly higher on mobile
@@ -152,9 +157,9 @@ function CameraControls({ isMobile }: { isMobile: boolean }) {
       // Smooth damping
       enableDamping={true}
       dampingFactor={0.1}
-      // Pan settings
-      enablePan={true}
+      // Pan/rotate speeds
       panSpeed={1.5}
+      rotateSpeed={0.8}
       screenSpacePanning={true}
       // Mouse buttons: left=rotate, right=pan, middle=zoom
       mouseButtons={{
@@ -167,6 +172,8 @@ function CameraControls({ isMobile }: { isMobile: boolean }) {
         ONE: THREE.TOUCH.ROTATE,
         TWO: THREE.TOUCH.DOLLY_PAN,
       }}
+      // Make sure controls handle events properly
+      makeDefault
     />
   );
 }
@@ -178,6 +185,7 @@ const GRID_SIZE = GRID_RADIUS * 2 * 1.732 + 5;
 
 /**
  * Invisible ground plane for capturing pointer events across the entire hex grid
+ * Only captures hover events - pointer-events-type="listener" prevents blocking OrbitControls
  */
 function PointerCaptureGround({
   onPointerMove,
