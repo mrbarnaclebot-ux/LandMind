@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Users earn passive income from PumpFun trading fees proportional to how much their agents have mined
-**Current focus:** Phase 7 IN PROGRESS - Scale & Launch, mobile responsive UI complete
+**Current focus:** Phase 7 IN PROGRESS - Scale & Launch, admin dashboard complete
 
 ## Current Position
 
 Phase: 7 of 7 (Scale & Launch)
-Plan: 3 of 6 in current phase (07-01 through 07-03 complete)
+Plan: 5 of 6 in current phase (07-01 through 07-05 complete)
 Status: In progress
-Last activity: 2026-01-22 - Completed 07-03-PLAN.md (Mobile Responsive UI)
+Last activity: 2026-01-22 - Completed 07-05-PLAN.md (Admin Dashboard)
 
-Progress: [██████████████████] ~97% (37/~38 plans estimated)
+Progress: [███████████████████] ~98% (39/~40 plans estimated)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37
+- Total plans completed: 39
 - Average duration: ~8 min
-- Total execution time: ~278 min
+- Total execution time: ~292 min
 
 **By Phase:**
 
@@ -33,15 +33,16 @@ Progress: [██████████████████] ~97% (37/~38 
 | 04-wallet-integration | 5 | ~31 min | 6 min |
 | 05-agent-deployment | 8 | 24 min | 3 min |
 | 06-economy-distribution | 7 | 30 min | 4 min |
-| 07-scale-launch | 3 | 28 min | 9 min |
+| 07-scale-launch | 5 | 42 min | 8 min |
 
 **Recent Trend:**
-- Phase 7 progressing - Mobile Responsive UI (07-03) complete in 5 min
-- useMobile hook with isMobile/isTablet/isTouchDevice detection
-- Bottom sheets for mobile panels (AGENTS, EARNINGS, SETTINGS)
-- Touch controls: single finger rotate, two finger zoom/pan
-- Quality settings: Low/Medium/High with localStorage persistence
-- Next: 07-04 or remaining Phase 7 plans
+- Phase 7 progressing - Admin Dashboard (07-05) complete in 7 min
+- UserRole enum with USER/ADMIN for role-based access
+- Platform metrics service with parallel queries
+- Real-time 2-second metrics broadcast via Socket.io
+- User management with pagination and search
+- ADMIN_WALLETS from env for auto-promotion
+- Next: 07-06 Economy Controls
 
 *Updated after each plan completion*
 
@@ -151,6 +152,11 @@ Recent decisions affecting current work:
 - **CustomEvent for quality settings** - decoupled settings communication between components
 - **DPR 1.5 cap on mobile** - balance visual quality with GPU performance
 - **Touch gestures ONE=ROTATE, TWO=DOLLY_PAN** - intuitive mobile camera controls
+- **UserRole enum with USER/ADMIN** - simple role system for admin access
+- **ADMIN_WALLETS from env vars** - auto-promote configured wallets to admin
+- **2-second metrics broadcast** - real-time admin dashboard updates via Socket.io
+- **requireAdmin middleware** - role gating after requireAuth
+- **Admin check via API probe** - fresh role verification without client state
 
 ### Pending Todos
 
@@ -167,6 +173,6 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed 07-03-PLAN.md (Mobile Responsive UI)
+Stopped at: Completed 07-05-PLAN.md (Admin Dashboard)
 Resume file: None
-Next: 07-04 or continue with remaining Phase 7 plans
+Next: 07-06 Economy Controls (final plan in Phase 7)
