@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { MetricsPanel } from './MetricsPanel';
 import { UserManagement } from './UserManagement';
+import { EconomyControls } from './EconomyControls';
 import './admin.css';
 
 type AdminTab = 'metrics' | 'users' | 'economy';
@@ -44,12 +45,7 @@ export function AdminDashboard({ onClose }: AdminDashboardProps) {
         <main className="admin-content">
           {activeTab === 'metrics' && <MetricsPanel />}
           {activeTab === 'users' && <UserManagement />}
-          {activeTab === 'economy' && (
-            <div className="admin-panel">
-              <h2>Economy Controls</h2>
-              <p className="coming-soon">Economy controls coming in Plan 07-06</p>
-            </div>
-          )}
+          {activeTab === 'economy' && <EconomyControls />}
         </main>
       </div>
     </div>
