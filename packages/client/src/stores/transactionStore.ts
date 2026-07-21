@@ -12,6 +12,22 @@ import { create } from 'zustand';
 export type ToastType = 'info' | 'success' | 'warning' | 'error';
 
 /**
+ * Default auto-hide durations (ms) by toast type.
+ *
+ * Applied centrally in addToast when a toast does not explicitly set autoHide.
+ * QA found success/info toasts dismissed too fast to read; these give the user
+ * enough time to notice, scaling up for higher-severity messages.
+ *
+ * Pass `autoHide: null` to a toast to opt out entirely (manual dismiss only).
+ */
+export const DEFAULT_TOAST_DURATION: Record<ToastType, number> = {
+  info: 6500,
+  success: 6500,
+  warning: 8000,
+  error: 10000,
+};
+
+/**
  * Toast notification data
  */
 export interface TransactionToast {
@@ -25,8 +41,13 @@ export interface TransactionToast {
   message: string;
   /** Optional transaction signature for Solscan link */
   signature?: string;
-  /** Auto-hide delay in ms. Undefined = manual dismiss only */
-  autoHide?: number;
+  /**
+   * Auto-hide delay in ms.
+   * - Omitted (undefined) => a type-based default from DEFAULT_TOAST_DURATION is applied.
+   * - `null` => manual dismiss only (sticky until closed).
+   * - A number => that exact delay.
+   */
+  autoHide?: number | null;
 }
 
 /**
@@ -50,11 +71,17 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
 
   addToast: (toast) => {
     const id = crypto.randomUUID();
-    set((state) => ({ toasts: [...state.toasts, { ...toast, id }] }));
 
-    // Auto-hide if specified
-    if (toast.autoHide) {
-      setTimeout(() => get().removeToast(id), toast.autoHide);
+    // Resolve auto-hide: explicit number wins; `null` means sticky (manual
+    // dismiss only); `undefined` falls back to the type-based central default.
+    const autoHide =
+      toast.autoHide === undefined ? DEFAULT_TOAST_DURATION[toast.type] : toast.autoHide;
+
+    set((state) => ({ toasts: [...state.toasts, { ...toast, id, autoHide }] }));
+
+    // Auto-hide unless sticky (null/0).
+    if (autoHide) {
+      setTimeout(() => get().removeToast(id), autoHide);
     }
 
     return id;

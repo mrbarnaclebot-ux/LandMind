@@ -14,7 +14,9 @@
 import { FC, useEffect } from 'react';
 import { useWalletStore } from '../../stores/walletStore';
 
-const AUTO_DISMISS_MS = 6000;
+// Warning-severity notice: matches the standardized warning toast duration
+// (see DEFAULT_TOAST_DURATION in transactionStore). Click-to-dismiss remains.
+const AUTO_DISMISS_MS = 8000;
 
 export const SessionExpiredToast: FC = () => {
   const sessionExpiredNotice = useWalletStore((s) => s.sessionExpiredNotice);

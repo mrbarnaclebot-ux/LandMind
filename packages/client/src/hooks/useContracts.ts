@@ -83,7 +83,7 @@ export function useContracts(): void {
         type: 'success',
         title: 'CONTRACT COMPLETE',
         message: `Daily contract done — ×${boost} until 00:00 UTC · streak ${data.streak}`,
-        autoHide: 6000,
+        // Inherits central success default (6500ms).
       });
     };
 

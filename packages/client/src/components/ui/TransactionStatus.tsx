@@ -230,7 +230,10 @@ export function TransactionToastContainer() {
         position: 'fixed',
         bottom: '16px',
         right: '16px',
-        zIndex: 1000,
+        // Above the full HUD stack (RelocationBanner 3200, PhaseClock 3000,
+        // SessionExpiredToast 3000, DeployButton menu 2000) so bottom/side
+        // strips never cover toasts.
+        zIndex: 3300,
         display: 'flex',
         flexDirection: 'column-reverse', // Newest at bottom
       }}
@@ -258,6 +261,8 @@ export function useTransactionToast() {
       type: 'info',
       title: 'Sending',
       message: 'Sending transaction...',
+      // Transaction-flow status toast: sticky, replaced by the flow.
+      autoHide: null,
     });
   }, [addToast]);
 
@@ -276,6 +281,8 @@ export function useTransactionToast() {
         title: 'Confirming',
         message: 'Waiting for confirmation...',
         signature,
+        // Transaction-flow status toast: sticky, replaced by the flow.
+        autoHide: null,
       });
     },
     [addToast, updateToast]
@@ -303,7 +310,7 @@ export function useTransactionToast() {
         title: 'Confirmed',
         message: 'Transaction confirmed!',
         signature,
-        autoHide: 5000,
+        // Inherits central success default (6500ms).
       });
     },
     [addToast, removeToast]
@@ -318,7 +325,7 @@ export function useTransactionToast() {
         type: 'error',
         title: 'Failed',
         message: error,
-        autoHide: 8000,
+        // Inherits central error default (10000ms).
       });
     },
     [addToast, removeToast]
@@ -333,7 +340,7 @@ export function useTransactionToast() {
         type: 'error',
         title: 'Expired',
         message: 'Transaction expired. Please try again.',
-        autoHide: 5000,
+        // Inherits central error default (10000ms).
       });
     },
     [addToast, removeToast]

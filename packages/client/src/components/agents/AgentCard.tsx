@@ -174,7 +174,7 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
         type: 'success',
         title: 'EQUIPMENT REPAIRED',
         message: `Agent ${label} restored to full efficiency`,
-        autoHide: 3500,
+        // Inherits central success default (6500ms).
       });
     } catch (err) {
       handleHazardError(err, 'REPAIR');
@@ -197,7 +197,7 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
         type: 'success',
         title: 'AGENT RESCUED',
         message: `Agent ${label} is back to mining`,
-        autoHide: 3500,
+        // Inherits central success default (6500ms).
       });
     } catch (err) {
       handleHazardError(err, 'RESCUE');
@@ -213,7 +213,7 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
         type: 'info',
         title: `${action} UNAVAILABLE`,
         message: 'Available after contract deployment',
-        autoHide: 4000,
+        // Inherits central info default (6500ms).
       });
       return;
     }
@@ -221,7 +221,7 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
       type: 'error',
       title: `${action} FAILED`,
       message: err instanceof Error ? err.message : `${action} failed`,
-      autoHide: 4000,
+      // Inherits central error default (10000ms).
     });
   }
 

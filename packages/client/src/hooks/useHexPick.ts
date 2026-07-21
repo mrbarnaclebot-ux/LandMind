@@ -70,7 +70,7 @@ async function submitRelocation(agentId: string, q: number, r: number): Promise<
       type: 'success',
       title: 'AGENT MOVED',
       message: `Agent ${label} relocated to (${q}, ${r})`,
-      autoHide: 3500,
+      // Inherits central success default (6500ms).
     });
     reloc.cancelRelocation();
   } catch (err) {
@@ -88,14 +88,14 @@ async function submitRelocation(agentId: string, q: number, r: number): Promise<
         type: err.status === 429 ? 'warning' : 'error',
         title: err.status === 429 ? 'ON COOLDOWN' : 'MOVE FAILED',
         message: err.message,
-        autoHide: 4000,
+        // Inherits central default (warning 8000ms / error 10000ms).
       });
     } else {
       toasts.addToast({
         type: 'error',
         title: 'MOVE FAILED',
         message: err instanceof Error ? err.message : 'Relocation failed',
-        autoHide: 4000,
+        // Inherits central error default (10000ms).
       });
     }
     // Leave MOVE mode on a hard failure so the banner clears; keep it open only

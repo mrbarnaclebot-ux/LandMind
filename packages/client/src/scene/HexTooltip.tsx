@@ -96,7 +96,7 @@ async function submitSurvey(q: number, r: number): Promise<void> {
       type: 'info',
       title: 'CONNECT TO SURVEY',
       message: 'Connect a wallet to prospect hexes',
-      autoHide: 3000,
+      // Inherits central info default (6500ms).
     });
     return;
   }
@@ -112,7 +112,7 @@ async function submitSurvey(q: number, r: number): Promise<void> {
       type: 'success',
       title: 'HEX SURVEYED',
       message: `(${hex.q}, ${hex.r}) — ${Number(hex.resourceAmount).toLocaleString()} ${hex.resourceType} remaining`,
-      autoHide: 3500,
+      // Inherits central success default (6500ms).
     });
   } catch (err) {
     if (err instanceof SurveyError && err.status === 429 && err.retryAfterMs != null) {
@@ -120,14 +120,14 @@ async function submitSurvey(q: number, r: number): Promise<void> {
         type: 'warning',
         title: 'SURVEY ON COOLDOWN',
         message: `Ready in ${fmtCooldown(err.retryAfterMs)}`,
-        autoHide: 4000,
+        // Inherits central warning default (8000ms).
       });
     } else {
       toasts.addToast({
         type: 'error',
         title: 'SURVEY FAILED',
         message: err instanceof Error ? err.message : 'Survey failed',
-        autoHide: 4000,
+        // Inherits central error default (10000ms).
       });
     }
   } finally {

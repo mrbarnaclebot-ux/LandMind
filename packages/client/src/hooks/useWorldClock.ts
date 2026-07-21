@@ -74,7 +74,7 @@ export function useWorldClock(): void {
         type: 'success',
         title: 'RICH VEIN STRUCK',
         message: `×${data.multiplier} ${resourceLabel(data.resourceType)} at (${data.q}, ${data.r}) — ${remaining} remaining`,
-        autoHide: 6000,
+        // Inherits central success default (6500ms).
       });
     };
     const onVeinExpired = (data: VeinExpiredEvent) => applyVeinExpired(data);
@@ -91,7 +91,7 @@ export function useWorldClock(): void {
           type: 'success',
           title: 'GOLD RUSH ACHIEVED',
           message: `Community goal met — ×1.15 for ${hoursText}`,
-          autoHide: 6000,
+          // Inherits central success default (6500ms).
         });
       }
       prevAchieved = data.achieved;
