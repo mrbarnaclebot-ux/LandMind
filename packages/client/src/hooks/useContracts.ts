@@ -64,6 +64,10 @@ export function useContracts(): void {
 
     // Re-join the owner room on (re)connect + reconcile any missed state.
     const subscribe = () => {
+      // Skip if not actually authenticated at emit time — `isAuthenticated` may
+      // be stale/persisted on a fresh load, and 'connect' can fire mid-reconnect
+      // during logout. Avoids a pointless unauthenticated subscribe.
+      if (!useWalletStore.getState().isAuthenticated) return;
       sock.emit('subscribe', walletAddress, (ack) => {
         const ok = typeof ack === 'boolean' ? ack : ack?.ok;
         if (ok) void load();

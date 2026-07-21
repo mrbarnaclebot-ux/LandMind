@@ -53,6 +53,12 @@ export function useUserAgents() {
     // the fresh cookie, so this is the point at which the server will actually
     // let us join our room.
     const subscribe = () => {
+      // Guard against emitting an unauthenticated subscribe. `isAuthenticated`
+      // can be a stale, persisted value on a fresh page load (localStorage says
+      // authed but the session cookie is gone), and the socket 'connect' event
+      // can fire during a logout-triggered reconnect. Re-check the live store at
+      // emit time so we never fire a pointless unauthenticated subscribe.
+      if (!useWalletStore.getState().isAuthenticated) return;
       sock.emit('subscribe', walletAddress, (ack) => {
         // Backwards/forwards compatible: old server sent a boolean, new server
         // sends { ok, reason }.
@@ -60,7 +66,13 @@ export function useUserAgents() {
         if (!ok) {
           const reason =
             ack && typeof ack === 'object' && 'reason' in ack ? ack.reason : undefined;
-          console.error('Failed to subscribe to updates', reason ?? '');
+          if (reason === 'unauthenticated') {
+            // Expected race during logout/reconnect (or stale persisted auth) —
+            // the handshake cookie just isn't valid yet. Not an error.
+            console.debug('[useUserAgents] subscribe skipped: unauthenticated');
+          } else {
+            console.error('Failed to subscribe to updates', reason ?? '');
+          }
         } else {
           // Refetch on (re)subscribe to reconcile any updates missed while the
           // socket was disconnected / unauthenticated.

@@ -131,12 +131,24 @@ export function useEarnings() {
     // anonymously pre-login and only authenticates after a reconnect carries the
     // session cookie.
     const subscribe = () => {
+      // Guard against emitting an unauthenticated subscribe. `isAuthenticated`
+      // can be a stale, persisted value on a fresh page load (localStorage says
+      // authed but the session cookie is gone), and the socket 'connect' event
+      // can fire during a logout-triggered reconnect. Re-check the live store at
+      // emit time so we never fire a pointless unauthenticated subscribe.
+      if (!useWalletStore.getState().isAuthenticated) return;
       sock.emit('subscribe', walletAddress, (ack) => {
         const ok = typeof ack === 'boolean' ? ack : ack?.ok;
         if (!ok) {
           const reason =
             ack && typeof ack === 'object' && 'reason' in ack ? ack.reason : undefined;
-          console.error('[useEarnings] Failed to subscribe to updates', reason ?? '');
+          if (reason === 'unauthenticated') {
+            // Expected race during logout/reconnect (or stale persisted auth) —
+            // the handshake cookie just isn't valid yet. Not an error.
+            console.debug('[useEarnings] subscribe skipped: unauthenticated');
+          } else {
+            console.error('[useEarnings] Failed to subscribe to updates', reason ?? '');
+          }
         } else {
           // Reconcile any earnings changes missed while disconnected.
           loadEarnings();
