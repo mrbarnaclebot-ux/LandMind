@@ -7,6 +7,8 @@ import { SessionExpiredToast } from './components/ui/SessionExpiredToast';
 import { MobileLayout } from './components/mobile/MobileLayout';
 import { Header } from './components/layout/Header';
 import { ControlsOverlay } from './components/layout/ControlsOverlay';
+import { PhaseClockContainer } from './components/layout/PhaseClockContainer';
+import { useWorldClock } from './hooks/useWorldClock';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { useAdminCheck } from './admin/hooks/useAdminCheck';
 import { useMobile } from './hooks/useMobile';
@@ -20,6 +22,10 @@ function App() {
   const { isMobile } = useMobile();
   const { isAdmin } = useAdminCheck();
   const loadConfig = useConfigStore((s) => s.loadConfig);
+
+  // World Clock (System 1): seed from GET /api/world + subscribe to the public
+  // world:update broadcast. Public/no-auth, so it runs for anonymous visitors.
+  useWorldClock();
 
   // On mount: fetch the public server config (drives fake-SOL test mode) and
   // open the shared socket connection. The socket connects even for anonymous
@@ -75,6 +81,13 @@ function App() {
         isAdmin={isAdmin}
       />
       <ThreeScene heatMapVisible={heatMapVisible} />
+      {/* World Clock phase widget — top-left, just under the 64px header. */}
+      <div
+        className="desktop-only"
+        style={{ position: 'absolute', top: '76px', left: '16px', zIndex: 100 }}
+      >
+        <PhaseClockContainer />
+      </div>
       <ControlsOverlay />
       <AgentDashboard
         isOpen={isAgentDashboardOpen}

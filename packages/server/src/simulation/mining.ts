@@ -27,11 +27,15 @@ const BASE_RATES: Record<ResourceType, number> = {
  *
  * @param hexResourceType - The type of resource in the hex
  * @param hexResourceAmount - Current amount remaining in hex (BigInt)
+ * @param modifier - World-clock phase yield multiplier (default 1.0). Resolved
+ *   via getPhaseModifier(currentPhase, hex.isDeep). golden_hour 1.25x; night
+ *   deep 1.2x / surface 0.9x; else 1.0x.
  * @returns MiningYield with amount mined and resource type
  */
 export function calculateMiningYield(
   hexResourceType: ResourceType,
-  hexResourceAmount: bigint
+  hexResourceAmount: bigint,
+  modifier: number = 1.0
 ): MiningYield {
   const baseRate = BASE_RATES[hexResourceType];
 
@@ -39,8 +43,12 @@ export function calculateMiningYield(
     return { amount: 0n, resourceType: hexResourceType };
   }
 
-  // Mine up to base rate, but not more than available
-  const mineAmount = BigInt(baseRate);
+  // Apply the phase modifier to the base rate, then floor to an integer amount.
+  // floor (not round) keeps the modifier from ever inventing resources at the
+  // low end; the >0 clamp below preserves at least the base trickle.
+  const modifiedRate = Math.max(0, Math.floor(baseRate * modifier));
+  // Mine up to the modified rate, but never more than what remains in the hex.
+  const mineAmount = BigInt(modifiedRate);
   const actualAmount = mineAmount < hexResourceAmount ? mineAmount : hexResourceAmount;
 
   return {

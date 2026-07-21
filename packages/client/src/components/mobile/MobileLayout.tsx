@@ -12,6 +12,7 @@ import { BottomSheet } from './BottomSheet';
 import { MobileHeader } from './MobileHeader';
 import { AgentDashboard } from '../agents/AgentDashboard';
 import { Leaderboard } from '../earnings/Leaderboard';
+import { PhaseClockContainer } from '../layout/PhaseClockContainer';
 import '../../styles/mobile.css';
 
 interface MobileLayoutProps {
@@ -101,6 +102,20 @@ export function MobileLayout({
     <div className="mobile-layout">
       {/* Compact header */}
       <MobileHeader heatMapVisible={heatMapVisible} onToggleHeatMap={onToggleHeatMap} />
+
+      {/* World Clock phase widget — top area, below the mobile header. */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '60px',
+          left: '8px',
+          zIndex: 90,
+          transform: 'scale(0.92)',
+          transformOrigin: 'top left',
+        }}
+      >
+        <PhaseClockContainer />
+      </div>
 
       {/* Main content (3D scene) - padded for header/nav */}
       <div className="mobile-content">

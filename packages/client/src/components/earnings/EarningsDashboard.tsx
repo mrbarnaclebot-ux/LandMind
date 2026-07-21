@@ -9,6 +9,7 @@ import { useWalletStore } from '../../stores/walletStore';
 import { ClaimButton } from './ClaimButton';
 import { ClaimConfirmDialog } from './ClaimConfirmDialog';
 import { getExplorerUrl } from '../../lib/solana';
+import { ModifierChip } from '../layout/ModifierChip';
 import '../../styles/pixel-theme.css';
 
 interface EarningsDashboardProps {
@@ -275,6 +276,10 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                       }}
                     />
                     LIVE
+                  </span>
+                  {/* Active World Clock yield modifier (only shows off-neutral) */}
+                  <span style={{ marginLeft: 'auto' }}>
+                    <ModifierChip />
                   </span>
                 </div>
                 <div

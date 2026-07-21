@@ -12,6 +12,10 @@ export interface HexWithResources {
   r: number;
   resourceType: string;
   resourceAmount: bigint;
+  /** Visual terrain tier 0..6 (from the terrain sync). */
+  elevation: number;
+  /** Pit/cave-adjacent hex — gets the night 1.2x "deep" modifier. */
+  isDeep: boolean;
 }
 
 /**
@@ -42,6 +46,8 @@ export async function findNearestHexWithResources(
       r: true,
       resourceType: true,
       resourceAmount: true,
+      elevation: true,
+      isDeep: true,
     },
   });
 
@@ -83,6 +89,8 @@ export async function getHexById(hexId: number): Promise<HexWithResources | null
       r: true,
       resourceType: true,
       resourceAmount: true,
+      elevation: true,
+      isDeep: true,
     },
   });
 

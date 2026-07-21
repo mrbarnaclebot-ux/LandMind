@@ -1,3 +1,10 @@
+import type { WorldState } from '../simulation/worldClock.js';
+
+// World-clock update (System 1). Broadcast publicly every tick (5s) to ALL
+// sockets. Payload is the pinned WorldState shape:
+//   { phase, cycleT, phaseProgress, nextPhaseAt, modifiers: { surface, deep } }
+export type WorldUpdateData = WorldState;
+
 // Mining update sent to user's agents
 export interface AgentUpdate {
   id: string;
@@ -46,6 +53,8 @@ export interface ClaimErrorData {
 
 // Server -> Client events
 export interface ServerToClientEvents {
+  // Public world-clock broadcast (System 1) — every tick, to all sockets.
+  'world:update': (data: WorldUpdateData) => void;
   'mining:update': (data: { agents: AgentUpdate[] }) => void;
   'hex:depleted': (data: { hexId: number; q: number; r: number }) => void;
   'agent:relocating': (data: {

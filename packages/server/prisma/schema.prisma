@@ -53,6 +53,8 @@ model Hex {
   r              Int      // Axial coordinate
   resourceType   ResourceType @map("resource_type")
   resourceAmount BigInt   @default(1000000) @map("resource_amount")
+  elevation      Int      @default(0)   // Visual terrain tier 0..6 (from client terrain generator)
+  isDeep         Boolean  @default(false) // Pit floor OR cave-mouth-adjacent hex — "deep" night real estate
   currentAgent   Agent[]
 
   @@unique([q, r])

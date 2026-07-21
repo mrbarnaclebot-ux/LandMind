@@ -11,7 +11,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "init-vault": "tsx scripts/initVault.ts"
+    "init-vault": "tsx scripts/initVault.ts",
+    "sync-terrain": "tsx scripts/syncTerrain.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

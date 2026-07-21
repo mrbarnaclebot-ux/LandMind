@@ -35,6 +35,8 @@ import { Clouds } from './Clouds';
 import { useUserAgents } from '../hooks/useUserAgents';
 import { useCameraStore } from '../stores/cameraStore';
 import { useMobile } from '../hooks/useMobile';
+import { useWorldStore } from '../stores/worldStore';
+import { sampleSky, makeSkyTarget } from './worldPhases';
 
 interface ThreeSceneProps {
   /** Whether the heat map overlay is visible */
@@ -85,41 +87,93 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
 }
 
 /**
- * Scene lighting — "Golden-Hour Dusk" (ART-DIRECTION.md).
- *  - low warm sun #FFB86B intensity 2.4 at ~22° elevation (long cool shadows)
- *  - cool ambient #4A5A78 0.45 (no black shadows)
- *  - PCFSoft shadows, frustum ±80, mapSize 2048, bias -0.0005, normalBias 0.02
+ * WorldSky — phase-keyframed sky / lighting / fog driver (GAMEPLAY System 1).
+ *
+ * Replaces the former static DuskEnvironment + Lighting. Each frame it samples
+ * the interpolated keyframe at the store's SMOOTH cycleT and writes:
+ *   - directional sun color / intensity / elevation-driven position
+ *   - ambient color / intensity
+ *   - scene.fog color (== horizon, anti-slop rule) and background
+ * All transitions lerp over the real phase boundaries with no pops. The shadow
+ * frustum is unchanged from the ART-DIRECTION spec (frustum ±80, mapSize 2048,
+ * bias -0.0005, normalBias 0.02). GL tone mapping / color space / shadow map
+ * are configured once on mount.
+ *
+ * `dusk` is the live anchor keyframe; if the world store never becomes ready the
+ * dev override / anchor clock still yields a valid dusk-family look.
  */
-function Lighting({ shadows }: { shadows: boolean }) {
+function WorldSky({ shadows }: { shadows: boolean }) {
+  const { gl, scene } = useThree();
   const sunRef = useRef<THREE.DirectionalLight>(null);
+  const ambientRef = useRef<THREE.AmbientLight>(null);
+  const skyState = useRef(makeSkyTarget());
 
-  // ~22° elevation warm sun. Distance chosen so the ortho frustum ±80 covers the
-  // near world while keeping long shadows.
-  const sunDist = 120;
-  const elevRad = (22 * Math.PI) / 180;
-  const sunPos: [number, number, number] = [
-    Math.cos(elevRad) * sunDist * 0.8,
-    Math.sin(elevRad) * sunDist,
-    Math.cos(elevRad) * sunDist * 0.6,
-  ];
+  // Mutable fog/background so we mutate colors in-place each frame (no realloc).
+  const fogRef = useRef<THREE.Fog>(new THREE.Fog('#E8A26B', 50, 320));
+  const bgRef = useRef<THREE.Color>(new THREE.Color('#E8A26B'));
 
+  // One-time GL + scene setup (matches the old DuskEnvironment).
   useEffect(() => {
+    gl.toneMapping = THREE.NeutralToneMapping;
+    gl.toneMappingExposure = 0.95;
+    gl.outputColorSpace = THREE.SRGBColorSpace;
+    gl.shadowMap.enabled = shadows;
+    gl.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    scene.fog = fogRef.current;
+    scene.background = bgRef.current;
+
     const sun = sunRef.current;
-    if (!sun) return;
-    sun.shadow.bias = -0.0005;
-    sun.shadow.normalBias = 0.02;
-    sun.shadow.camera.updateProjectionMatrix();
-  }, []);
+    if (sun) {
+      sun.shadow.bias = -0.0005;
+      sun.shadow.normalBias = 0.02;
+      sun.shadow.camera.updateProjectionMatrix();
+    }
+
+    return () => {
+      scene.fog = null;
+    };
+  }, [gl, scene, shadows]);
+
+  // Per-frame lerp between phase keyframes at the smooth cycleT.
+  useFrame(() => {
+    const cycleT = useWorldStore.getState().getSmoothCycleT();
+    const s = sampleSky(cycleT, skyState.current);
+
+    const sun = sunRef.current;
+    if (sun) {
+      sun.color.copy(s.sun);
+      sun.intensity = s.sunIntensity;
+      // Keyframed elevation; azimuth held constant so shadows stay coherent.
+      const dist = 120;
+      const elev = (s.sunElevationDeg * Math.PI) / 180;
+      sun.position.set(
+        Math.cos(elev) * dist * 0.8,
+        Math.max(6, Math.sin(elev) * dist),
+        Math.cos(elev) * dist * 0.6,
+      );
+    }
+
+    const amb = ambientRef.current;
+    if (amb) {
+      amb.color.copy(s.ambient);
+      amb.intensity = s.ambientIntensity;
+    }
+
+    // Fog color === horizon (anti-slop). Background matches the fog band.
+    fogRef.current.color.copy(s.fog);
+    bgRef.current.copy(s.horizon);
+  });
 
   return (
     <>
       {/* Cool ambient fill so crevices stay indigo, never black. */}
-      <ambientLight intensity={0.45} color="#4A5A78" />
+      <ambientLight ref={ambientRef} intensity={0.45} color="#4A5A78" />
 
-      {/* Low warm sun. */}
+      {/* Sun / moon — color, intensity and elevation keyframed per phase. */}
       <directionalLight
         ref={sunRef}
-        position={sunPos}
+        position={[80, 45, 60]}
         intensity={2.4}
         color="#FFB86B"
         castShadow={shadows}
@@ -134,33 +188,6 @@ function Lighting({ shadows }: { shadows: boolean }) {
       />
     </>
   );
-}
-
-/**
- * DuskEnvironment — sets NeutralToneMapping + exposure, SRGB output, PCFSoft
- * shadow map, and the warm horizon fog. Fog color MUST equal the sky horizon
- * band (#E8A26B), linear 50 → 320.
- */
-function DuskEnvironment({ shadows }: { shadows: boolean }) {
-  const { gl, scene } = useThree();
-
-  useEffect(() => {
-    // three r182 supports NeutralToneMapping.
-    gl.toneMapping = THREE.NeutralToneMapping;
-    gl.toneMappingExposure = 0.95;
-    gl.outputColorSpace = THREE.SRGBColorSpace;
-    gl.shadowMap.enabled = shadows;
-    gl.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    scene.fog = new THREE.Fog('#E8A26B', 50, 320);
-    scene.background = new THREE.Color('#E8A26B');
-
-    return () => {
-      scene.fog = null;
-    };
-  }, [gl, scene, shadows]);
-
-  return null;
 }
 
 /**
@@ -295,10 +322,13 @@ function SceneContent({
 
   return (
     <>
-      {/* Dusk tone mapping, fog, shadow map config */}
-      <DuskEnvironment shadows={shadows} />
+      {/* Phase-keyframed sky / lighting / fog (World Clock, System 1).
+          Sets tone mapping, shadow map, fog, and drives sun + ambient + fog
+          color by lerping between phase keyframes at the smooth cycleT. */}
+      <WorldSky shadows={shadows} />
 
-      {/* Dusk sky: low warm sun near the horizon, zenith deep indigo. */}
+      {/* Dusk sky dome: mostly masked by scene.background (which is driven by
+          WorldSky per-phase), kept for the horizon sun disc + Rayleigh feel. */}
       <Sky
         distance={450000}
         sunPosition={[80, 18, 40]}
@@ -314,9 +344,6 @@ function SceneContent({
       {cloudsEnabled && (
         <Clouds count={isMobile ? 10 : 20} height={40} spread={120} speed={0.6} />
       )}
-
-      {/* Scene lighting */}
-      <Lighting shadows={shadows} />
 
       {/* Camera controls with mobile touch support */}
       <CameraControls isMobile={isMobile} />

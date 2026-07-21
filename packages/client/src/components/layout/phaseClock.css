@@ -1,0 +1,188 @@
+/**
+ * PhaseClock widget styling — dusk tokens, flat fills + hard bevels only.
+ * Anti-slop: no gradients, no blur/glass, no gaussian shadows. The golden-hour
+ * pulse is a HARD-STEPPED amber glow (layered solid box-shadow steps).
+ */
+
+.phase-clock {
+  width: 240px;
+  padding: 8px 10px;
+  background: var(--dusk-panel);
+  position: relative;
+  font-family: var(--font-body);
+  /* 9-slice-feel panel: 1px amber top edge + hard bevel */
+  box-shadow:
+    inset 0 1px 0 0 var(--amber),
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo);
+}
+
+/* Golden-hour flourish — hard-stepped amber bloom, stepped pulse (no gaussian). */
+.phase-clock--golden {
+  animation: phase-clock-golden 0.6s steps(2, end) 4;
+}
+
+@keyframes phase-clock-golden {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 0 var(--amber),
+      inset 2px 2px 0 0 var(--dusk-panel-hi),
+      inset -2px -2px 0 0 var(--dusk-panel-lo),
+      0 0 0 2px var(--dusk-panel-lo),
+      0 0 0 3px rgba(240, 166, 60, 0.55),
+      0 0 0 5px rgba(240, 166, 60, 0.25);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 0 var(--amber-light),
+      inset 2px 2px 0 0 var(--dusk-panel-hi),
+      inset -2px -2px 0 0 var(--dusk-panel-lo),
+      0 0 0 2px var(--amber),
+      0 0 0 4px rgba(240, 166, 60, 0.85),
+      0 0 0 6px rgba(240, 166, 60, 0.4);
+  }
+}
+
+.phase-clock__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0 0 6px 0;
+  cursor: pointer;
+  text-align: left;
+  color: var(--dusk-text);
+}
+
+.phase-clock__icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Phase NAME — the ONLY pixel-font element in the widget. */
+.phase-clock__name {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--dusk-text);
+  text-shadow: 1px 1px 0 var(--dusk-text-shadow);
+  flex: 1;
+  white-space: nowrap;
+}
+
+.phase-clock__countdown {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--amber-light);
+  white-space: nowrap;
+}
+
+.phase-clock__countdown-label {
+  color: var(--dusk-text-faint);
+  font-weight: 400;
+  font-size: 11px;
+}
+
+/* Segmented bar — 5 flat segments with hard dividers, plus a position marker. */
+.phase-clock__bar {
+  position: relative;
+  display: flex;
+  height: 8px;
+  gap: 2px;
+  background: var(--dusk-panel-lo);
+  box-shadow: inset 1px 1px 0 0 var(--dusk-panel-lo);
+}
+
+.phase-clock__seg {
+  height: 100%;
+  background: var(--dusk-panel-3);
+  box-shadow: inset 1px 1px 0 0 var(--dusk-panel-hi);
+}
+
+.phase-clock__seg--active {
+  background: var(--amber-dark);
+  box-shadow: inset 1px 1px 0 0 var(--amber);
+}
+
+/* Marker — a hard 2px amber tick, no glow blur. */
+.phase-clock__marker {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 12px;
+  margin-left: -1px;
+  background: var(--amber);
+  box-shadow: 0 0 0 1px var(--dusk-panel-lo);
+}
+
+.phase-clock__mod {
+  margin-top: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Popover — reuses .pixel-dropdown panel look; positioned below the widget. */
+.phase-clock__popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  z-index: 200;
+  padding: 8px;
+}
+
+.phase-clock__popover-title {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--amber);
+  text-shadow: 1px 1px 0 var(--amber-dark);
+  margin-bottom: 8px;
+}
+
+.phase-clock__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+.phase-clock__table th {
+  text-align: left;
+  color: var(--dusk-text-faint);
+  font-weight: 700;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--dusk-line);
+}
+
+.phase-clock__table td {
+  padding: 3px 4px;
+  color: var(--dusk-text);
+  border-bottom: 1px solid var(--dusk-panel-lo);
+}
+
+.phase-clock__table th:not(:first-child),
+.phase-clock__table td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase-clock__table-active td {
+  color: var(--amber-light);
+  background: var(--dusk-panel-2);
+}
+
+.phase-clock__popover-foot {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--dusk-text-faint);
+}

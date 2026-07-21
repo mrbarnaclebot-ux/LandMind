@@ -22,6 +22,7 @@ import {
 } from './relocation.js';
 import { flushToPostgres, loadHotAgentsFromPostgres } from '../cache/persistence.js';
 import { getEarningsForUser } from '../services/earningsService.js';
+import { getWorldState, getPhaseModifier, type WorldPhase } from './worldClock.js';
 import type { AgentUpdate, EarningsUpdateData } from '../events/types.js';
 
 const TICK_INTERVAL = 5000; // 5 seconds
@@ -45,13 +46,21 @@ async function processTick(): Promise<void> {
   currentTick++;
 
   try {
+    const io = getIO();
+
+    // --- World clock (System 1) -------------------------------------------
+    // Pure function of wall-clock time. Broadcast to EVERYONE every tick
+    // (public, independent of whether any agents are active) so all clients
+    // stay phase-synced. Also drives the per-agent yield modifier below.
+    const worldState = getWorldState(startTime);
+    const currentPhase: WorldPhase = worldState.phase;
+    io.emit('world:update', worldState);
+
     const agents = await getAllAgents();
 
     if (agents.length === 0) {
-      return; // No agents to process
+      return; // No agents to process (world:update already broadcast above)
     }
-
-    const io = getIO();
     const updates: Array<{ agentId: string; fields: Record<string, string> }> = [];
     const userUpdates: Map<string, AgentUpdate[]> = new Map();
     const hexDepletions: Array<{ hexId: number; q: number; r: number }> = [];
@@ -66,7 +75,7 @@ async function processTick(): Promise<void> {
     // Process each agent
     for (const agent of agents) {
       if (agent.status === 'MINING') {
-        await processMiningAgent(agent, updates, userUpdates, hexDepletions, relocations);
+        await processMiningAgent(agent, currentPhase, updates, userUpdates, hexDepletions, relocations);
       } else if (agent.status === 'RELOCATING') {
         await processRelocatingAgent(agent, updates, userUpdates, arrivals);
       }
@@ -150,20 +159,25 @@ async function processTick(): Promise<void> {
  */
 async function processMiningAgent(
   agent: CachedAgent,
+  currentPhase: WorldPhase,
   updates: Array<{ agentId: string; fields: Record<string, string> }>,
   userUpdates: Map<string, AgentUpdate[]>,
   hexDepletions: Array<{ hexId: number; q: number; r: number }>,
   relocations: Array<{ agentId: string; fromHexId: number; toHexId: number; arrivalTick: number }>
 ): Promise<void> {
-  // Get hex data
+  // Get hex data (carries elevation + isDeep from the terrain sync)
   const hex = await getHexById(agent.hexId);
   if (!hex) {
     console.warn(`Agent ${agent.agentId} has invalid hexId ${agent.hexId}`);
     return;
   }
 
-  // Calculate mining yield
-  const yield_ = calculateMiningYield(hex.resourceType as any, hex.resourceAmount);
+  // World-clock modifier: golden_hour 1.25x; night deep 1.2x / surface 0.9x;
+  // else 1.0x. `isDeep` reaches us via the hex row (see relocation.getHexById).
+  const modifier = getPhaseModifier(currentPhase, hex.isDeep);
+
+  // Calculate mining yield (with phase modifier applied)
+  const yield_ = calculateMiningYield(hex.resourceType as any, hex.resourceAmount, modifier);
 
   if (yield_.amount > 0n) {
     // Deduct from hex

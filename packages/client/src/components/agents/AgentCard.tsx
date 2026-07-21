@@ -4,6 +4,7 @@
  */
 import { FC } from 'react';
 import type { Agent } from '../../lib/agents';
+import { ModifierChip } from '../layout/ModifierChip';
 import '../../styles/pixel-theme.css';
 
 interface AgentCardProps {
@@ -68,6 +69,13 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
           {agent.status}
         </span>
       </div>
+
+      {/* Active World Clock yield modifier — only when mining and off-neutral. */}
+      {agent.status === 'MINING' && (
+        <div style={{ marginBottom: '8px' }}>
+          <ModifierChip />
+        </div>
+      )}
 
       {/* Location */}
       <div

@@ -20,6 +20,7 @@ import { agentRouter } from './routes/agents.js';
 import { earningsRouter } from './routes/earnings.js';
 import { leaderboardRouter } from './routes/leaderboard.js';
 import { adminRouter } from './routes/admin.js';
+import worldRouter from './routes/world.js';
 import { setupSocket } from './lib/socket.js';
 import { assertJwtSecret } from './lib/jwtSecret.js';
 import { isFakeSolMode, logFakeSolModeWarning } from './lib/testMode.js';
@@ -144,6 +145,8 @@ app.use('/api/earnings/claim', sensitiveLimiter);
 app.use('/api/agents', sensitiveLimiter, agentRouter);
 app.use('/api/earnings', earningsRouter);
 app.use('/api/leaderboard', leaderboardRouter);
+// Public world clock — no auth, cheap pure function. Used for initial HUD load.
+app.use('/api/world', worldRouter);
 app.use('/admin', adminRouter);
 
 // Dev routes (development only) — never mounted in production.
