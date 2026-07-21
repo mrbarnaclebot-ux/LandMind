@@ -272,7 +272,9 @@ export function Leaderboard() {
       className="pixel-inventory-bg"
       style={{
         padding: '12px',
+        width: '100%',
         minWidth: '200px',
+        boxSizing: 'border-box',
       }}
     >
       {/* Header */}

@@ -91,7 +91,8 @@ function App() {
         isAdmin={isAdmin}
       />
       <ThreeScene heatMapVisible={heatMapVisible} />
-      {/* World Clock phase widget — top-left, just under the 64px header. */}
+      {/* Unified World rail — top-left, just under the 64px header. Stays below
+          the toast/banner layers (z 3000+); expanded by default on desktop. */}
       <div
         className="desktop-only"
         style={{ position: 'absolute', top: '76px', left: '16px', zIndex: 100 }}
@@ -104,13 +105,15 @@ function App() {
         onClose={() => setIsAgentDashboardOpen(false)}
         onLocateAgent={handleLocateAgent}
       />
-      {/* Earnings/Leaderboard panel */}
+      {/* Earnings/Leaderboard panel — top offset + width aligned to the World
+          rail on the left so the two side panels read as one system. */}
       {earningsVisible && (
         <div
           style={{
             position: 'absolute',
-            top: '80px',
+            top: '76px',
             right: '16px',
+            width: '268px',
             zIndex: 100,
           }}
         >

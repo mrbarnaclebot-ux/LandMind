@@ -12,10 +12,16 @@ import { WeatherForecast } from './WeatherForecast';
 import { VeinStrip } from './VeinStrip';
 import { GoldRushStrip } from './GoldRushStrip';
 import { ContractCard } from './ContractCard';
+import { WorldRail } from './WorldRail';
 
 const TOAST_MS = 3600;
 
-export const PhaseClockContainer: FC = () => {
+interface PhaseClockContainerProps {
+  /** Start the rail collapsed (true on mobile, false on desktop). */
+  defaultCollapsed?: boolean;
+}
+
+export const PhaseClockContainer: FC<PhaseClockContainerProps> = ({ defaultCollapsed = false }) => {
   const [toast, setToast] = useState(false);
 
   const onEnterGoldenHour = useCallback(() => {
@@ -25,19 +31,25 @@ export const PhaseClockContainer: FC = () => {
 
   return (
     <>
-      <PhaseClock onEnterGoldenHour={onEnterGoldenHour} />
+      {/* Unified, collapsible left rail. Sections share one width + bevel and an
+          8px vertical rhythm; each section widget still owns its own store
+          subscription and renders null when its system is inactive. */}
+      <WorldRail defaultCollapsed={defaultCollapsed}>
+        {/* System 1: World Clock phase widget. */}
+        <PhaseClock onEnterGoldenHour={onEnterGoldenHour} />
 
-      {/* System 2: active-weather forecast strip, stacked under the phase clock. */}
-      <WeatherForecast />
+        {/* System 2: active-weather forecast strip. */}
+        <WeatherForecast />
 
-      {/* System 3: active rich-vein strikes with countdowns, stacked below. */}
-      <VeinStrip />
+        {/* System 3: active rich-vein strikes with countdowns. */}
+        <VeinStrip />
 
-      {/* System 4: Gold Rush community event strip (only while active). */}
-      <GoldRushStrip />
+        {/* System 4: Gold Rush community event strip (only while active). */}
+        <GoldRushStrip />
 
-      {/* System 4: daily contract card (only when authed + contract loaded). */}
-      <ContractCard />
+        {/* System 4: daily contract card (only when authed + contract loaded). */}
+        <ContractCard />
+      </WorldRail>
 
       {toast && (
         <div

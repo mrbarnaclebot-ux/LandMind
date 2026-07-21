@@ -164,7 +164,7 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
             }}
           >
             <p style={{ marginBottom: '8px' }}>
-              This will transfer SOL from the LandMind treasury to your wallet.
+              This will transfer SOL from the MINERUSH treasury to your wallet.
             </p>
             <p style={{ color: 'var(--amber)' }}>
               Transaction fee: ~0.000005 SOL

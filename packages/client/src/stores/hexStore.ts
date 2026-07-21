@@ -48,6 +48,13 @@ interface HexStore {
   /** Get info for a specific hex */
   getHexInfo: (q: number, r: number) => HexInfo | null;
 
+  /**
+   * Authoritative existence check for a hex. True only for hexes that are part
+   * of the generated radius-N world (i.e. present in the `hexes` map). Used to
+   * reject hover/pick events that land beyond the world edge.
+   */
+  hasHex: (q: number, r: number) => boolean;
+
   /** Check if store is initialized */
   isInitialized: boolean;
 }
@@ -90,5 +97,9 @@ export const useHexStore = create<HexStore>((set, get) => ({
 
   getHexInfo: (q: number, r: number) => {
     return get().hexes.get(hexKey(q, r)) || null;
+  },
+
+  hasHex: (q: number, r: number) => {
+    return get().hexes.has(hexKey(q, r));
   },
 }));

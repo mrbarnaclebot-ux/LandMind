@@ -114,7 +114,9 @@ export function MobileLayout({
           transformOrigin: 'top left',
         }}
       >
-        <PhaseClockContainer />
+        {/* Rail starts COLLAPSED on mobile so the 3D world + bottom sheet stay
+            unobstructed; users expand it on demand via the WORLD tab. */}
+        <PhaseClockContainer defaultCollapsed />
       </div>
 
       {/* Main content (3D scene) - padded for header/nav */}

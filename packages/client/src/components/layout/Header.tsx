@@ -88,23 +88,30 @@ export function Header({
         zIndex: 100,
       }}
     >
-      {/* Logo - amber pixel brand, hard pixel shadow (no gaussian glow) */}
+      {/* Logo - MINERUSH wordmark (hex emblem + pixel wordmark). The PNG has
+          generous transparent margins, so we oversize + clip to land the
+          visible mark at ~40px tall. Crisp pixels: no smoothing. */}
       <div
         style={{
-          fontFamily: "var(--font-pixel)",
-          fontSize: '16px',
-          color: 'var(--amber)',
-          textShadow: `
-            2px 2px 0 var(--amber-dark),
-            -1px -1px 0 var(--amber-light)
-          `,
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
+          height: '64px',
+          overflow: 'hidden',
         }}
       >
-        <span style={{ fontSize: '20px' }}>⬡</span>
-        <span>LANDMIND</span>
+        <img
+          src="/brand/minerush-wordmark.png"
+          alt="MINERUSH"
+          style={{
+            height: '96px',
+            width: 'auto',
+            margin: '-28px 0 -28px -14px',
+            objectFit: 'contain',
+            imageRendering: 'pixelated',
+            userSelect: 'none',
+            pointerEvents: 'none',
+          }}
+        />
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

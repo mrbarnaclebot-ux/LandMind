@@ -362,7 +362,7 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
  */
 export function useHexHover() {
   const [hoveredHex, setHoveredHex] = useState<HexInfo | null>(null);
-  const { getHexInfo } = useHexStore();
+  const { getHexInfo, hasHex } = useHexStore();
   const { agents } = useAgentStore();
 
   const handlePointerMove = useCallback((event: ThreeEvent<PointerEvent>) => {
@@ -371,6 +371,15 @@ export function useHexHover() {
 
     // Convert to hex coordinates
     const { q, r } = pixelToHex(point.x, point.z);
+
+    // Bounds guard: the pointer-capture ground plane extends past the actual
+    // radius-N hex world, so a resolved (q,r) can land on a non-existent hex.
+    // hexStore is authoritative — if the hex isn't in the world, show nothing
+    // (no phantom tooltip on empty tiles beyond the edge).
+    if (!hasHex(q, r)) {
+      setHoveredHex(null);
+      return;
+    }
 
     // Get pixel position for tooltip
     const { x, z } = hexToPixel(q, r);
@@ -393,7 +402,7 @@ export function useHexHover() {
       elevation: hexData?.elevation,
       agentCount: agentCount > 0 ? agentCount : undefined,
     });
-  }, [getHexInfo, agents]);
+  }, [getHexInfo, hasHex, agents]);
 
   const handlePointerLeave = useCallback(() => {
     setHoveredHex(null);

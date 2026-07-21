@@ -22,6 +22,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import { pixelToHex } from '../hex/hexMath';
 import { useRelocationStore } from '../stores/relocationStore';
 import { useAgentStore } from '../stores/agentStore';
+import { useHexStore } from '../stores/hexStore';
 import { useTransactionStore } from '../stores/transactionStore';
 import { relocateAgent, RelocateError } from '../lib/agents';
 
@@ -34,6 +35,19 @@ export function useHexPick(): (event: ThreeEvent<MouseEvent>) => void {
     // Resolve the clicked hex (same conversion as the hover tooltip).
     const point = event.point;
     const { q, r } = pixelToHex(point.x, point.z);
+
+    // Bounds guard: the ground plane extends past the radius-N hex world, so a
+    // click can resolve to a non-existent hex. hexStore is authoritative — a
+    // relocation there would be a guaranteed server 400, so don't even send it.
+    // Show a subtle OUT OF BOUNDS note and stay in MOVE mode for a retry.
+    if (!useHexStore.getState().hasHex(q, r)) {
+      useTransactionStore.getState().addToast({
+        type: 'info',
+        title: 'OUT OF BOUNDS',
+        message: 'Pick a hex inside the map',
+      });
+      return;
+    }
 
     void submitRelocation(agentId, q, r);
   }, []);

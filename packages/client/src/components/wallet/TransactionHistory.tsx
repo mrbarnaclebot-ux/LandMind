@@ -200,7 +200,7 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
         >
           <span className="pixel-chest" style={{ display: 'block', margin: '0 auto 12px', transform: 'scale(1.4)' }} />
           {filterLandMind
-            ? 'NO LANDMIND TX YET'
+            ? 'NO MINERUSH TX YET'
             : 'NO TX YET'}
         </div>
       </div>

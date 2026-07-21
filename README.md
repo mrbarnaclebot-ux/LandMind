@@ -1,6 +1,6 @@
 <div align="center">
 
-# LandMind
+# MINERUSH (LandMind)
 
 ### Autonomous Mining Agents on Solana
 

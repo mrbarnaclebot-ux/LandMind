@@ -25,8 +25,19 @@ export function MobileHeader({ heatMapVisible, onToggleHeatMap }: MobileHeaderPr
   return (
     <header className="mobile-header">
       <div className="mobile-header-logo">
-        <span style={{ marginRight: '8px' }}>&#x2B21;</span>
-        LANDMIND
+        <img
+          src="/brand/minerush-icon.png"
+          alt=""
+          aria-hidden="true"
+          style={{
+            height: '32px',
+            width: '32px',
+            marginRight: '8px',
+            imageRendering: 'pixelated',
+            verticalAlign: 'middle',
+          }}
+        />
+        MINERUSH
       </div>
       <div className="mobile-header-actions">
         {/* Heat map toggle */}

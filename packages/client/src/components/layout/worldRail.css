@@ -1,0 +1,167 @@
+/**
+ * WorldRail — unified collapsible left HUD rail (World systems 1–4).
+ *
+ * One cohesive column at a single fixed width; dusk tokens, one bevel treatment.
+ * The rail owns the outer frame + collapse toggle; the inner section widgets
+ * (PhaseClock / WeatherForecast / VeinStrip / GoldRushStrip / ContractCard)
+ * render inside and are stretched to 100% width so the stack reads as one
+ * system with a consistent 8px vertical rhythm.
+ *
+ * Anti-slop: flat fills + hard bevels only, no gradients / blur / glass /
+ * gaussian shadow. The only "glow" is the earned hard-stepped amber on alerts.
+ */
+
+:root {
+  --rail-width: 268px;
+}
+
+/* ---- Outer rail frame ----------------------------------------------------- */
+
+.world-rail {
+  width: var(--rail-width);
+  font-family: var(--font-body);
+  /* animate transform/opacity only — never width/height (anti-slop motion). */
+  transition: opacity 0.18s ease-out;
+}
+
+/* Toggle tab — a slim 'WORLD' bar with a chevron. Flat + hard bevel. */
+.world-rail__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 10px;
+  margin: 0 0 8px 0;
+  background: var(--dusk-panel);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--dusk-text);
+  box-shadow:
+    inset 0 1px 0 0 var(--amber),
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo);
+}
+
+.world-rail__toggle:hover {
+  background: var(--dusk-panel-2);
+}
+
+.world-rail__toggle-label {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  text-shadow: 1px 1px 0 var(--amber-dark);
+  flex: 1;
+}
+
+.world-rail__chevron {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--dusk-text-dim);
+}
+
+/* ---- Expanded body: unify inner widgets ----------------------------------- */
+
+.world-rail__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Stretch every inner section to the rail width and drop their ad-hoc
+   widths / top-margins so the shared 8px gap owns the vertical rhythm. */
+.world-rail__body .phase-clock,
+.world-rail__body .wx-forecast,
+.world-rail__body .contract-card,
+.world-rail__body .goldrush-strip {
+  width: 100%;
+  margin-top: 0;
+}
+
+/* ---- Collapsed strip ------------------------------------------------------ */
+
+.world-rail--collapsed .world-rail__toggle {
+  margin-bottom: 8px;
+}
+
+.world-rail__mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--dusk-panel);
+  box-shadow:
+    inset 0 1px 0 0 var(--amber),
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo);
+}
+
+.world-rail__mini-icon {
+  font-size: 15px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.world-rail__mini-countdown {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--amber-light);
+  white-space: nowrap;
+}
+
+/* Alert dots — one per active World system, colored by semantics. Matte, hard
+   1px pixel ring; the amber ones get a single earned hard-stepped bloom step. */
+.world-rail__dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+}
+
+.world-rail__dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  box-shadow: inset 1px 1px 0 0 rgba(255, 255, 255, 0.3), 0 0 0 1px var(--dusk-panel-lo);
+}
+
+.world-rail__dot--weather {
+  background: var(--teal);
+}
+
+.world-rail__dot--vein {
+  background: var(--amber);
+  box-shadow:
+    inset 1px 1px 0 0 var(--amber-light),
+    0 0 0 1px var(--amber-dark),
+    0 0 0 2px rgba(240, 166, 60, 0.35);
+}
+
+.world-rail__dot--goldrush {
+  background: var(--amber);
+  box-shadow:
+    inset 1px 1px 0 0 var(--amber-light),
+    0 0 0 1px var(--amber-dark),
+    0 0 0 2px rgba(240, 166, 60, 0.35);
+}
+
+.world-rail__dot--contract {
+  background: var(--amber-dark);
+  box-shadow: inset 1px 1px 0 0 var(--amber), 0 0 0 1px var(--dusk-panel-lo);
+}
+
+.world-rail__dot--contract-done {
+  background: var(--amber);
+  box-shadow:
+    inset 1px 1px 0 0 var(--amber-light),
+    0 0 0 1px var(--amber-dark),
+    0 0 0 2px rgba(240, 166, 60, 0.35);
+}
