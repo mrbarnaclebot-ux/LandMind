@@ -19,6 +19,7 @@ import {
 import { useAgentStore } from '../stores/agentStore';
 import { useWalletStore } from '../stores/walletStore';
 import { useConfigStore } from '../stores/configStore';
+import { useTransactionStore } from '../stores/transactionStore';
 import { useSendAndConfirm, instructionsFromBase64, type SendStatus } from './useSendAndConfirm';
 import { useTransactionFlowToast } from './useTransactionFlowToast';
 
@@ -99,6 +100,11 @@ export function useAgentDeploy(): UseAgentDeployResult {
     setFlowError(null);
     send.reset();
 
+    // Tracks whether we took the fake-SOL branch: the real path drives error
+    // toasts via useTransactionFlowToast, but the fake path short-circuits it,
+    // so the catch below must emit its own error toast only for fake deploys.
+    let fakeDeploy = false;
+
     try {
       // 1. Request the deploy transaction from the server.
       setRequesting(true);
@@ -111,6 +117,9 @@ export function useAgentDeploy(): UseAgentDeployResult {
       // real transaction. Skip all wallet signing / on-chain send and confirm
       // directly with the fake signature.
       if (deployData.fake || deployData.deployTxSig) {
+        // Fake path short-circuits before the send flow's status machine, so
+        // useTransactionFlowToast never fires. Emit toasts directly here.
+        fakeDeploy = true;
         setRequesting(false);
         const signature = deployData.deployTxSig;
         if (!signature) {
@@ -122,6 +131,14 @@ export function useAgentDeploy(): UseAgentDeployResult {
         }
         const newAgent = buildDeployedAgent(confirmation);
         addAgent(newAgent);
+        const idx = newAgent.agentIndex ?? '?';
+        const coords = newAgent.hex ? `(${newAgent.hex.q}, ${newAgent.hex.r})` : '(?, ?)';
+        useTransactionStore.getState().addToast({
+          type: 'success',
+          title: 'AGENT DEPLOYED',
+          message: `Agent #${idx} placed at ${coords}`,
+          // Inherits central success default (6500ms).
+        });
         return newAgent;
       }
 
@@ -162,6 +179,16 @@ export function useAgentDeploy(): UseAgentDeployResult {
       const message = err instanceof Error ? err.message : 'Deployment failed';
       setFlowError(message);
       console.error('Deploy error:', err);
+      // The real path's error toast comes from useTransactionFlowToast; the fake
+      // branch bypasses it, so emit the error toast here for fake deploys only.
+      if (fakeDeploy) {
+        useTransactionStore.getState().addToast({
+          type: 'error',
+          title: 'DEPLOY FAILED',
+          message,
+          // Inherits central error default (10000ms).
+        });
+      }
       return null;
     } finally {
       setRequesting(false);
