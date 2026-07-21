@@ -7,12 +7,21 @@ import { apiFetch } from './apiFetch';
 export interface Agent {
   id: string;
   hexId: number | null;
-  status: 'IDLE' | 'MINING' | 'RELOCATING';
+  status: 'IDLE' | 'MINING' | 'RELOCATING' | 'TRAPPED';
   deployedAt: string;
   agentIndex: number | null;
   mintAddress: string | null;
   /** Epoch ms of the agent's last player-initiated relocation (System 2). */
   lastRelocatedAt?: number | null;
+  /**
+   * Equipment wear 0..1 (System 3). Accrues only while mining; efficiency =
+   * 1 - 0.3×wear (floor 70%). Repair resets it. Undefined ≈ 0.
+   */
+  wear?: number;
+  /** Epoch ms at which a TRAPPED agent auto-frees itself (self-dig timer). */
+  selfDigAt?: number | null;
+  /** Epoch ms at which the agent got trapped (System 3). */
+  trappedAt?: number | null;
   miningState?: {
     gold: string;
     silver: string;
@@ -75,6 +84,10 @@ export async function fetchUserAgents(): Promise<Agent[]> {
     mintAddress: agent.mintAddress,
     lastRelocatedAt:
       agent.lastRelocatedAt != null ? Number(new Date(agent.lastRelocatedAt).getTime()) : null,
+    // System 3 (hazards): wear + trapped state.
+    wear: typeof agent.wear === 'number' ? agent.wear : undefined,
+    selfDigAt: agent.selfDigAt != null ? new Date(agent.selfDigAt).getTime() : null,
+    trappedAt: agent.trappedAt != null ? new Date(agent.trappedAt).getTime() : null,
     // Map miningState - convert BigInt strings to strings
     miningState: agent.miningState ? {
       gold: String(agent.miningState.gold || '0'),
@@ -209,6 +222,105 @@ export async function relocateAgent(
           : undefined,
   };
   return { agent };
+}
+
+/**
+ * Error thrown by rescue/repair on a non-2xx response. `notImplemented` is set
+ * for the 501 real-mode case so callers can show the "available after contract
+ * deployment" toast instead of a hard error.
+ */
+export class HazardActionError extends Error {
+  status: number;
+  notImplemented: boolean;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'HazardActionError';
+    this.status = status;
+    this.notImplemented = status === 501;
+  }
+}
+
+/** Map a raw server agent object into the client Agent shape (partial-tolerant). */
+function mapAgent(raw: any): Agent {
+  return {
+    id: raw.id,
+    hexId: raw.hexId ?? null,
+    status: raw.status ?? 'MINING',
+    deployedAt: raw.deployedAt ?? new Date().toISOString(),
+    agentIndex: raw.agentIndex ?? null,
+    mintAddress: raw.mintAddress ?? null,
+    lastRelocatedAt:
+      raw.lastRelocatedAt != null ? new Date(raw.lastRelocatedAt).getTime() : null,
+    wear: typeof raw.wear === 'number' ? raw.wear : undefined,
+    selfDigAt: raw.selfDigAt != null ? new Date(raw.selfDigAt).getTime() : null,
+    trappedAt: raw.trappedAt != null ? new Date(raw.trappedAt).getTime() : null,
+    miningState: raw.miningState
+      ? {
+          gold: String(raw.miningState.gold || '0'),
+          silver: String(raw.miningState.silver || '0'),
+          copper: String(raw.miningState.copper || '0'),
+          iron: String(raw.miningState.iron || '0'),
+        }
+      : undefined,
+    hex: raw.hex
+      ? { q: raw.hex.q, r: raw.hex.r, resourceType: raw.hex.resourceType }
+      : raw.hexQ != null && raw.hexR != null
+        ? { q: raw.hexQ, r: raw.hexR, resourceType: 'GOLD' }
+        : undefined,
+  };
+}
+
+/**
+ * POST /api/agents/:id/rescue — free a TRAPPED agent (SOL fee → treasury).
+ * In fake mode succeeds instantly with the updated agent; real mode may 501
+ * ('available after contract deployment'). Throws HazardActionError on failure.
+ */
+export async function rescueAgent(agentId: string): Promise<Agent> {
+  const response = await apiFetch(`${API_URL}/api/agents/${agentId}/rescue`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    let body: any = {};
+    try {
+      body = await response.json();
+    } catch {
+      /* no JSON body */
+    }
+    const message =
+      response.status === 501
+        ? body.error || body.message || 'Rescue available after contract deployment'
+        : body.error || body.message || `Rescue failed (${response.status})`;
+    throw new HazardActionError(message, response.status);
+  }
+  const data = await response.json();
+  return mapAgent(data.agent ?? data);
+}
+
+/**
+ * POST /api/agents/:id/repair — restore worn equipment (SOL fee → treasury).
+ * Same fake/real-mode contract as rescue. Throws HazardActionError on failure.
+ */
+export async function repairAgent(agentId: string): Promise<Agent> {
+  const response = await apiFetch(`${API_URL}/api/agents/${agentId}/repair`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  if (!response.ok) {
+    let body: any = {};
+    try {
+      body = await response.json();
+    } catch {
+      /* no JSON body */
+    }
+    const message =
+      response.status === 501
+        ? body.error || body.message || 'Repair available after contract deployment'
+        : body.error || body.message || `Repair failed (${response.status})`;
+    throw new HazardActionError(message, response.status);
+  }
+  const data = await response.json();
+  return mapAgent(data.agent ?? data);
 }
 
 /**

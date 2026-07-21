@@ -44,7 +44,81 @@ export interface AgentUpdate {
     copper: string;
     iron: string;
   };
-  status: 'MINING' | 'RELOCATING' | 'IDLE';
+  status: 'MINING' | 'RELOCATING' | 'IDLE' | 'TRAPPED';
+}
+
+// ---------------------------------------------------------------------------
+// Hazard events (System 3 — cave-ins, rescues, rich veins)
+// ---------------------------------------------------------------------------
+
+/**
+ * An agent got trapped by a cave-in (deep deploy risk). Emitted into the owner's
+ * room only. The agent stops mining until the owner taps Rescue (SOL fee) or the
+ * `selfDigAt` timer elapses (~4h). Carries the hex so the world can dust-puff it.
+ */
+export interface AgentTrappedEvent {
+  agentId: string;
+  hexId: number;
+  hexQ: number;
+  hexR: number;
+  /** Epoch ms at which the agent auto-frees itself (the self-dig timer). */
+  selfDigAt: number;
+}
+
+/** An agent was freed (rescue paid or self-dig elapsed). Owner room. */
+export interface AgentRescuedEvent {
+  agentId: string;
+}
+
+/**
+ * A hex temporarily upgraded to a ×N rich vein. Broadcast to everyone for the
+ * land-rush ping. Additive-only; expires at `expiresAt`.
+ */
+export interface VeinSpawnedEvent {
+  hexId: number;
+  q: number;
+  r: number;
+  /** Resource type struck (e.g. 'GOLD'). */
+  resourceType: string;
+  /** Yield multiplier while active (pinned default: 3). */
+  multiplier: number;
+  /** Epoch ms at which the vein reverts. */
+  expiresAt: number;
+}
+
+/** A rich vein reverted. Broadcast. */
+export interface VeinExpiredEvent {
+  hexId: number;
+}
+
+/** An active rich vein as carried in GET /api/world `veins`. */
+export interface Vein {
+  hexId: number;
+  q: number;
+  r: number;
+  resourceType: string;
+  multiplier: number;
+  expiresAt: number;
+}
+
+/**
+ * Published hazard odds (System 3). Returned by GET /api/world as `hazardTable`.
+ * Shape is intentionally permissive (server owns the exact contents); the HUD
+ * renders whatever fields are present, falling back to the pinned defaults.
+ */
+export interface HazardTable {
+  caveIn: {
+    baseChancePerHour: number;
+    emberMultiplier: number;
+    selfDigHours: number;
+    rescueCostLamports: number;
+    deepYieldBonus: number;
+  };
+  wear: {
+    fullWearMiningDays: number;
+    efficiencyFloor: number;
+    repairCostLamports: number;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +171,13 @@ export interface WorldUpdateEvent {
    */
   fronts?: WeatherFront[];
   weatherTable?: WeatherTable;
+  /**
+   * System 3 (additive): GET /api/world now also returns the live rich veins and
+   * the published hazard odds table. Both optional so an older server / the
+   * socket-only world:update payload is tolerated.
+   */
+  veins?: Vein[];
+  hazardTable?: HazardTable;
 }
 
 // ---------------------------------------------------------------------------
@@ -219,6 +300,16 @@ export interface ServerToClientEvents {
 
   // Weather fronts (System 2 — public broadcast, every ~5s)
   'weather:update': (data: WeatherUpdateEvent) => void;
+
+  // Hazards (System 3)
+  /** Owner room: an agent got trapped by a cave-in. */
+  'agent:trapped': (data: AgentTrappedEvent) => void;
+  /** Owner room: an agent was freed (rescue or self-dig). */
+  'agent:rescued': (data: AgentRescuedEvent) => void;
+  /** Broadcast: a hex struck a temporary ×N rich vein. */
+  'vein:spawned': (data: VeinSpawnedEvent) => void;
+  /** Broadcast: a rich vein reverted. */
+  'vein:expired': (data: VeinExpiredEvent) => void;
 }
 
 /**

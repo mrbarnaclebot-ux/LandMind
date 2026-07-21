@@ -23,7 +23,17 @@ import {
 import { flushToPostgres, loadHotAgentsFromPostgres } from '../cache/persistence.js';
 import { getEarningsForUser } from '../services/earningsService.js';
 import { getWorldState, getPhaseModifier, type WorldPhase } from './worldClock.js';
-import { tickWeather, getWeatherModifierAt, rehydrateWeather } from './weatherService.js';
+import { tickWeather, getWeatherModifierAt, getFrontAt, rehydrateWeather } from './weatherService.js';
+import { tickVeins, getVeinModifierAt, rehydrateVeins } from './veinService.js';
+import {
+  caveInChancePerTick,
+  wearEfficiency,
+  accrueWear,
+  HAZARD_TABLE,
+  SELF_DIG_MS,
+  OFFLINE_GRACE_MS,
+} from './hazardService.js';
+import { prisma } from '../lib/prisma.js';
 import type { AgentUpdate, EarningsUpdateData } from '../events/types.js';
 
 const TICK_INTERVAL = 5000; // 5 seconds
@@ -65,6 +75,24 @@ async function processTick(): Promise<void> {
     const activeFronts = await tickWeather(startTime);
     io.emit('weather:update', { fronts: activeFronts });
 
+    // --- Rich veins (System 3) --------------------------------------------
+    // Advance the single-active-vein sim (spawn/expire), persist to Redis, and
+    // broadcast the land-rush ping to ALL sockets. Runs independently of agents.
+    // The per-agent vein modifier below reads the same active vein.
+    const veinResult = await tickVeins(startTime);
+    if (veinResult.changed === 'spawned') {
+      io.emit('vein:spawned', {
+        hexId: veinResult.vein.hexId,
+        q: veinResult.vein.q,
+        r: veinResult.vein.r,
+        resourceType: veinResult.vein.resourceType,
+        multiplier: veinResult.vein.multiplier,
+        expiresAt: veinResult.vein.expiresAt,
+      });
+    } else if (veinResult.changed === 'expired') {
+      io.emit('vein:expired', { hexId: veinResult.hexId });
+    }
+
     const agents = await getAllAgents();
 
     if (agents.length === 0) {
@@ -80,13 +108,51 @@ async function processTick(): Promise<void> {
       arrivalTick: number;
     }> = [];
     const arrivals: Array<{ agentId: string; hexId: number; hexQ: number; hexR: number }> = [];
+    // Phase C (Hazards): cave-in trap + auto-rescue events, routed to owner rooms.
+    const trapped: Array<{
+      agentId: string;
+      hexId: number;
+      hexQ: number;
+      hexR: number;
+      selfDigAt: number;
+    }> = [];
+    const rescued: Array<{ agentId: string }> = [];
+
+    // Phase C: load each owner's lastActiveAt once per tick for the offline-grace
+    // rule (cave-ins only fire on agents whose owner was active within 60 min).
+    // One query for the distinct owners in this batch — cheap and avoids N reads.
+    const ownerIds = Array.from(new Set(agents.map((a) => a.ownerId)));
+    const ownerActiveAt = new Map<string, number | null>();
+    if (ownerIds.length > 0) {
+      const owners = await prisma.user.findMany({
+        where: { id: { in: ownerIds } },
+        select: { id: true, lastActiveAt: true },
+      });
+      for (const o of owners) {
+        ownerActiveAt.set(o.id, o.lastActiveAt ? o.lastActiveAt.getTime() : null);
+      }
+    }
 
     // Process each agent
     for (const agent of agents) {
       if (agent.status === 'MINING') {
-        await processMiningAgent(agent, currentPhase, startTime, updates, userUpdates, hexDepletions, relocations);
+        await processMiningAgent(
+          agent,
+          currentPhase,
+          startTime,
+          ownerActiveAt.get(agent.ownerId) ?? null,
+          updates,
+          userUpdates,
+          hexDepletions,
+          relocations,
+          trapped
+        );
       } else if (agent.status === 'RELOCATING') {
         await processRelocatingAgent(agent, updates, userUpdates, arrivals);
+      } else if (agent.status === 'TRAPPED') {
+        // Auto-rescue when the 4-hour self-dig timer has passed. Wear unchanged;
+        // resources kept (never confiscatory). Back to MINING.
+        await processTrappedAgent(agent, startTime, updates, rescued);
       }
     }
 
@@ -147,6 +213,22 @@ async function processTick(): Promise<void> {
       }
     }
 
+    // 5. Cave-in trap events (System 3) — to the owner's room.
+    for (const t of trapped) {
+      const agent = agents.find((a) => a.agentId === t.agentId);
+      if (agent) {
+        io.to(`user:${agent.ownerWallet}`).emit('agent:trapped', t);
+      }
+    }
+
+    // 6. Auto-rescue events (System 3) — to the owner's room.
+    for (const r of rescued) {
+      const agent = agents.find((a) => a.agentId === r.agentId);
+      if (agent) {
+        io.to(`user:${agent.ownerWallet}`).emit('agent:rescued', r);
+      }
+    }
+
     // Flush to PostgreSQL every FLUSH_INTERVAL ticks
     if (currentTick % FLUSH_INTERVAL === 0) {
       await flushToPostgres();
@@ -164,22 +246,92 @@ async function processTick(): Promise<void> {
 }
 
 /**
- * Process a mining agent for one tick
+ * Process a mining agent for one tick.
+ *
+ * Yield product (System 3): base × phaseMod × weatherMod × deepBonus ×
+ * wearEfficiency × veinMod. Wear accrues one tick per active mine. Deep-hex
+ * agents whose owner is active (< 60 min) also roll for a cave-in this tick.
+ *
+ * @param ownerActiveAtMs owner's lastActiveAt (epoch ms) or null if never seen.
  */
 async function processMiningAgent(
   agent: CachedAgent,
   currentPhase: WorldPhase,
   nowMs: number,
+  ownerActiveAtMs: number | null,
   updates: Array<{ agentId: string; fields: Record<string, string> }>,
   userUpdates: Map<string, AgentUpdate[]>,
   hexDepletions: Array<{ hexId: number; q: number; r: number }>,
-  relocations: Array<{ agentId: string; fromHexId: number; toHexId: number; arrivalTick: number }>
+  relocations: Array<{ agentId: string; fromHexId: number; toHexId: number; arrivalTick: number }>,
+  trapped: Array<{ agentId: string; hexId: number; hexQ: number; hexR: number; selfDigAt: number }>
 ): Promise<void> {
   // Get hex data (carries elevation + isDeep + biome from the terrain sync)
   const hex = await getHexById(agent.hexId);
   if (!hex) {
     console.warn(`Agent ${agent.agentId} has invalid hexId ${agent.hexId}`);
     return;
+  }
+
+  // --- Cave-in roll (System 3) ------------------------------------------------
+  // Only on deep hexes, and only when the owner is within the offline-grace
+  // window (active < 60 min). Absent players' agents never cave in — their yield
+  // simply stays at the safe baseline (design anti-pattern rule 1). Ember front
+  // over the hex multiplies the per-hour chance ×3.
+  const ownerActive =
+    ownerActiveAtMs !== null && nowMs - ownerActiveAtMs <= OFFLINE_GRACE_MS;
+  if (hex.isDeep && ownerActive) {
+    const ember = getFrontAt(hex.q, hex.r, hex.biome, nowMs)?.front.type === 'ember';
+    const pCaveIn = caveInChancePerTick(ember);
+    const roll = Math.random();
+    if (roll < pCaveIn) {
+      // TRAP the agent: stop mining, set the 4-hour self-dig timer. Persist to
+      // DB directly (trappedAt/selfDigAt/status) so a restart restores it; also
+      // update the Redis cache so the tick loop stops mining it immediately.
+      const selfDigAt = nowMs + SELF_DIG_MS;
+      // TODO(VRF): Math.random cave-in roll — migrate to verifiable VRF on-chain.
+      console.log(
+        `[cave-in] TRAPPED agent=${agent.agentId} hex=${hex.id} ` +
+          `(q=${hex.q},r=${hex.r}) deep=true ember=${ember} ` +
+          `roll=${roll.toFixed(8)} p=${pCaveIn.toExponential(3)} selfDigAt=${selfDigAt}`
+      );
+
+      updates.push({
+        agentId: agent.agentId,
+        fields: {
+          status: 'TRAPPED',
+          selfDigAt: String(selfDigAt),
+          // Clear any in-flight relocation fields (shouldn't be set while MINING).
+          targetHexId: '',
+          targetQ: '',
+          targetR: '',
+          arrivalTick: '',
+        },
+      });
+
+      // Persist trapped state to DB immediately (don't wait for the 30s flush) so
+      // a restart within that window doesn't resurrect a mining agent.
+      await prisma.agent
+        .update({
+          where: { id: agent.agentId },
+          data: {
+            status: 'TRAPPED',
+            trappedAt: new Date(nowMs),
+            selfDigAt: new Date(selfDigAt),
+          },
+        })
+        .catch((err) => console.error(`Failed to persist trap for ${agent.agentId}:`, err));
+
+      trapped.push({
+        agentId: agent.agentId,
+        hexId: hex.id,
+        hexQ: hex.q,
+        hexR: hex.r,
+        selfDigAt,
+      });
+
+      // Trapped agents skip mining entirely this tick (and until freed).
+      return;
+    }
   }
 
   // World-clock modifier: golden_hour 1.25x; night deep 1.2x / surface 0.9x;
@@ -190,10 +342,24 @@ async function processMiningAgent(
   // O(fronts) per agent (≤3 fronts). 1.0 when no front covers this hex.
   const weatherMod = getWeatherModifierAt(hex.q, hex.r, hex.biome, nowMs);
 
-  // Combined yield multiplier: base × phaseMod × weatherMod.
-  const modifier = phaseMod * weatherMod;
+  // Deep-deploy standing bonus (System 3): +25% on pit/cave-adjacent hexes.
+  const deepBonus = hex.isDeep ? HAZARD_TABLE.caveIn.deepYieldBonus : 1.0;
 
-  // Calculate mining yield (with combined phase + weather modifier applied)
+  // Wear efficiency (System 3): 1 - 0.3*wear, floored at 0.7.
+  const currentWear = agent.wear ?? 0;
+  const wearEff = wearEfficiency(currentWear);
+
+  // Rich-vein modifier (System 3): ×3 when the active vein covers this hex.
+  const veinMod = getVeinModifierAt(hex.q, hex.r, nowMs);
+
+  // Combined yield multiplier: base × phaseMod × weatherMod × deepBonus ×
+  // wearEfficiency × veinMod.
+  const modifier = phaseMod * weatherMod * deepBonus * wearEff * veinMod;
+
+  // Accrue one tick of equipment wear (only while actively mining — never idle).
+  const newWear = accrueWear(currentWear);
+
+  // Calculate mining yield (with combined modifier applied)
   const yield_ = calculateMiningYield(hex.resourceType as any, hex.resourceAmount, modifier);
 
   if (yield_.amount > 0n) {
@@ -206,7 +372,7 @@ async function processMiningAgent(
       yield_
     );
 
-    // Queue Redis update
+    // Queue Redis update (wear accrues one tick per active mine).
     updates.push({
       agentId: agent.agentId,
       fields: {
@@ -214,6 +380,7 @@ async function processMiningAgent(
         silver: newResources.silver,
         copper: newResources.copper,
         iron: newResources.iron,
+        wear: String(newWear),
         lastTick: String(currentTick),
       },
     });
@@ -268,7 +435,56 @@ async function processMiningAgent(
         });
       }
     }
+  } else {
+    // No yield this tick (e.g. hex momentarily empty), but the agent is still
+    // actively MINING — persist the accrued wear so it isn't lost.
+    updates.push({
+      agentId: agent.agentId,
+      fields: { wear: String(newWear), lastTick: String(currentTick) },
+    });
   }
+}
+
+/**
+ * Process a TRAPPED agent for one tick (System 3).
+ *
+ * Auto-rescue when the 4-hour self-dig timer has passed: status back to MINING,
+ * clear trappedAt/selfDigAt, wear unchanged, resources kept (never confiscatory).
+ * Persists the freed state to DB immediately so a restart doesn't re-trap it.
+ */
+async function processTrappedAgent(
+  agent: CachedAgent,
+  nowMs: number,
+  updates: Array<{ agentId: string; fields: Record<string, string> }>,
+  rescued: Array<{ agentId: string }>
+): Promise<void> {
+  // Not yet time to self-dig — stay trapped, skip mining entirely.
+  if (agent.selfDigAt === undefined || nowMs < agent.selfDigAt) {
+    return;
+  }
+
+  console.log(
+    `[cave-in] SELF-DIG agent=${agent.agentId} freed at ${nowMs} (selfDigAt=${agent.selfDigAt})`
+  );
+
+  // Cache: back to MINING, clear the self-dig timer.
+  updates.push({
+    agentId: agent.agentId,
+    fields: {
+      status: 'MINING',
+      selfDigAt: '',
+    },
+  });
+
+  // DB: clear trapped state immediately (don't wait for the 30s flush).
+  await prisma.agent
+    .update({
+      where: { id: agent.agentId },
+      data: { status: 'MINING', trappedAt: null, selfDigAt: null },
+    })
+    .catch((err) => console.error(`Failed to persist self-dig for ${agent.agentId}:`, err));
+
+  rescued.push({ agentId: agent.agentId });
 }
 
 /**
@@ -369,6 +585,9 @@ export async function startTickLoop(): Promise<void> {
 
   // Rehydrate weather fronts from Redis so a restart doesn't hard-reset weather.
   await rehydrateWeather();
+
+  // Rehydrate the active rich vein from Redis (System 3) so a restart preserves it.
+  await rehydrateVeins();
 
   // Start processing
   console.log(`Tick loop started (interval: ${TICK_INTERVAL}ms)`);

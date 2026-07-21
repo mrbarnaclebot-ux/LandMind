@@ -19,7 +19,7 @@ import { hexToPixel, HEX_TILE_HEIGHT } from '../hex/hexMath';
 export interface ClusterableAgent {
   id: string;
   hex?: { q: number; r: number } | null;
-  status: 'MINING' | 'RELOCATING' | 'IDLE';
+  status: 'MINING' | 'RELOCATING' | 'IDLE' | 'TRAPPED';
 }
 
 /** Cluster of agents at a position */

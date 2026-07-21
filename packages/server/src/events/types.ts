@@ -25,7 +25,7 @@ export interface AgentUpdate {
     copper: string;
     iron: string;
   };
-  status: 'MINING' | 'RELOCATING' | 'IDLE';
+  status: 'MINING' | 'RELOCATING' | 'IDLE' | 'TRAPPED';
 }
 
 // Earnings update event data
@@ -78,6 +78,29 @@ export interface ServerToClientEvents {
   'agent:placed': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
   // Manual relocation (System 2) — emitted to the owner when they move an agent.
   'agent:relocated': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
+  // Hazards (System 3) — cave-in fired on an agent. To the owner's room.
+  // selfDigAt = epoch ms when the agent auto-frees itself (4-hour timer).
+  'agent:trapped': (data: {
+    agentId: string;
+    hexId: number;
+    hexQ: number;
+    hexR: number;
+    selfDigAt: number;
+  }) => void;
+  // Hazards (System 3) — agent freed (rescue endpoint OR self-dig). To owner.
+  'agent:rescued': (data: { agentId: string }) => void;
+  // Hazards (System 3) — a rich vein spawned. Broadcast to ALL sockets for the
+  // land-rush ping. multiplier is always 3; expiresAt is epoch ms.
+  'vein:spawned': (data: {
+    hexId: number;
+    q: number;
+    r: number;
+    resourceType: string;
+    multiplier: number;
+    expiresAt: number;
+  }) => void;
+  // Hazards (System 3) — a rich vein expired. Broadcast to ALL sockets.
+  'vein:expired': (data: { hexId: number }) => void;
   // Earnings and leaderboard events
   'earnings:update': (data: EarningsUpdateData) => void;
   'leaderboard:update': (data: LeaderboardUpdateData) => void;

@@ -8,6 +8,9 @@ import { ThreeEvent } from '@react-three/fiber';
 import { pixelToHex, hexToPixel } from '../hex/hexMath';
 import { useHexStore, type ResourceType } from '../stores/hexStore';
 import { useAgentStore } from '../stores/agentStore';
+import { useRelocationStore } from '../stores/relocationStore';
+import { useWorldStore } from '../stores/worldStore';
+import { isDeepHex } from '../terrain/deepHexes';
 import type { Biome } from '../terrain/biomes';
 import '../styles/pixel-theme.css';
 
@@ -60,9 +63,17 @@ const biomeColors: Record<Biome, string> = {
 const elevationNames = ['LOW', 'MID', 'HIGH'];
 
 export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
+  // Relocation MOVE mode: when placing an agent, surface the DEEP risk/reward
+  // of the hovered hex so the choice is informed. Deep = pit floor / cave-
+  // adjacent (deterministic from the terrain gen). Hooks run unconditionally.
+  const inMoveMode = useRelocationStore((s) => s.activeAgentId !== null);
+  const deepBonus = useWorldStore((s) => s.hazardTable?.caveIn?.deepYieldBonus ?? 1.25);
+
   if (!visible || !hexInfo) return null;
 
   const resource = hexInfo.resourceType ? resourceConfig[hexInfo.resourceType] : null;
+  // Only compute the deep lookup while actually placing (cheap + cached anyway).
+  const showDeep = inMoveMode && isDeepHex(hexInfo.q, hexInfo.r);
 
   return (
     <Html
@@ -90,6 +101,27 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
         <div style={{ marginBottom: '8px', color: 'var(--dusk-text-dim)', fontSize: '12px' }}>
           HEX ({hexInfo.q}, {hexInfo.r})
         </div>
+
+        {/* DEEP risk/reward tag — only while placing (relocation MOVE mode).
+            Amber, hard pixel bevel, matte (no bloom). */}
+        {showDeep && (
+          <div
+            style={{
+              display: 'inline-block',
+              marginBottom: '8px',
+              padding: '2px 6px',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.03em',
+              color: 'var(--dusk-on-amber)',
+              background: 'var(--amber)',
+              boxShadow:
+                'inset 1px 1px 0 0 var(--amber-light), inset -1px -1px 0 0 var(--amber-dark)',
+            }}
+          >
+            DEEP ×{deepBonus} · cave-in risk
+          </div>
+        )}
 
         {/* Biome */}
         {hexInfo.biome && (

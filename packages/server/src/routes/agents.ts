@@ -746,3 +746,143 @@ agentRouter.post(
     }
   }
 );
+
+// ---------------------------------------------------------------------------
+// Phase C (Hazards) — Rescue + Repair endpoints.
+//
+// Both are treasury sinks (SOL fee → treasury). In FAKE_SOL_MODE they are
+// INSTANT + FREE, gated only by auth + ownership. In real mode they would be a
+// two-phase deploy-style flow (request → unsigned SOL-transfer tx to treasury →
+// confirm with signature verification). Because the on-chain contract is NOT yet
+// deployed, real mode returns 501 with a TODO (acceptable per the phase brief).
+// Rate-limiting is inherited from the sensitiveLimiter mounted on /api/agents.
+// ---------------------------------------------------------------------------
+
+/** Published Phase-C sink costs (lamports). Mirrors hazardService.HAZARD_TABLE. */
+const RESCUE_COST_LAMPORTS = 5_000_000; // 0.005 SOL
+const REPAIR_COST_LAMPORTS = 3_000_000; // 0.003 SOL
+
+/**
+ * Load an agent and authorize the caller as its owner. Returns the agent on
+ * success, or sends the appropriate error response and returns null.
+ */
+async function loadOwnedAgent(
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<{ id: string; ownerId: string; status: string } | null> {
+  const id = String(req.params.id);
+  const agent = await prisma.agent.findUnique({
+    where: { id },
+    select: { id: true, ownerId: true, status: true },
+  });
+  if (!agent) {
+    res.status(404).json({ error: 'Agent not found' });
+    return null;
+  }
+  if (agent.ownerId !== req.userId) {
+    res.status(403).json({ error: 'Not the owner of this agent' });
+    return null;
+  }
+  return agent;
+}
+
+/**
+ * POST /api/agents/:id/rescue — free a trapped agent immediately.
+ *
+ * Clears the trapped state (status MINING, trappedAt/selfDigAt null) in DB AND
+ * the Redis cache, and emits agent:rescued to the owner. Resources are never
+ * touched (never confiscatory). Fake mode: instant + free. Real mode: 501.
+ */
+agentRouter.post(
+  '/:id/rescue',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const agent = await loadOwnedAgent(req, res);
+      if (!agent) return; // response already sent
+
+      if (agent.status !== 'TRAPPED') {
+        return res.status(400).json({ error: 'Agent is not trapped' });
+      }
+
+      // Real (on-chain) payment flow is pending contract deployment.
+      // TODO: implement the two-phase deploy-style flow (request → unsigned
+      // SOL-transfer of RESCUE_COST_LAMPORTS to the treasury PDA → confirm with
+      // verifyDeployPayment-style signature verification) once the contract ships.
+      if (!isFakeSolMode()) {
+        return res.status(501).json({
+          error: 'on-chain payment flow pending contract deployment',
+          cost: RESCUE_COST_LAMPORTS,
+        });
+      }
+
+      // Fake mode: instant + free. Clear trapped state in DB.
+      await prisma.agent.update({
+        where: { id: agent.id },
+        data: { status: 'MINING', trappedAt: null, selfDigAt: null },
+      });
+
+      // Clear trapped state in the Redis cache so the tick loop resumes mining.
+      const cached = await getAgent(agent.id);
+      if (cached) {
+        await updateAgentFields(agent.id, { status: 'MINING', selfDigAt: '' });
+      }
+
+      const ownerWallet = req.walletAddress;
+      if (ownerWallet) {
+        getIO().to(`user:${ownerWallet}`).emit('agent:rescued', { agentId: agent.id });
+      }
+
+      return res.json({ success: true, fake: true, agentId: agent.id, status: 'MINING' });
+    } catch (error) {
+      console.error('Failed to rescue agent:', error);
+      return res.status(500).json({ error: 'Failed to rescue agent' });
+    }
+  }
+);
+
+/**
+ * POST /api/agents/:id/repair — reset equipment wear to 0.
+ *
+ * Resets wear in DB AND the Redis cache. Fake mode: instant + free. Real mode:
+ * 501 (on-chain payment pending). A trapped agent can still be repaired (wear is
+ * independent of the cave-in state).
+ */
+agentRouter.post(
+  '/:id/repair',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const agent = await loadOwnedAgent(req, res);
+      if (!agent) return; // response already sent
+
+      // Real (on-chain) payment flow is pending contract deployment.
+      // TODO: implement the two-phase deploy-style flow (request → unsigned
+      // SOL-transfer of REPAIR_COST_LAMPORTS to the treasury PDA → confirm with
+      // verifyDeployPayment-style signature verification) once the contract ships.
+      if (!isFakeSolMode()) {
+        return res.status(501).json({
+          error: 'on-chain payment flow pending contract deployment',
+          cost: REPAIR_COST_LAMPORTS,
+        });
+      }
+
+      // Fake mode: instant + free. Reset wear in DB.
+      await prisma.agent.update({
+        where: { id: agent.id },
+        data: { wear: 0 },
+      });
+
+      // Reset wear in the Redis cache so the next tick mines at full efficiency.
+      const cached = await getAgent(agent.id);
+      if (cached) {
+        await updateAgentFields(agent.id, { wear: '0' });
+      }
+
+      return res.json({ success: true, fake: true, agentId: agent.id, wear: 0 });
+    } catch (error) {
+      console.error('Failed to repair agent:', error);
+      return res.status(500).json({ error: 'Failed to repair agent' });
+    }
+  }
+);

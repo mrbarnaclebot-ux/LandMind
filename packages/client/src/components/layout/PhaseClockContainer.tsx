@@ -9,6 +9,7 @@
 import { FC, useCallback, useState } from 'react';
 import { PhaseClock } from './PhaseClock';
 import { WeatherForecast } from './WeatherForecast';
+import { VeinStrip } from './VeinStrip';
 
 const TOAST_MS = 3600;
 
@@ -26,6 +27,9 @@ export const PhaseClockContainer: FC = () => {
 
       {/* System 2: active-weather forecast strip, stacked under the phase clock. */}
       <WeatherForecast />
+
+      {/* System 3: active rich-vein strikes with countdowns, stacked below. */}
+      <VeinStrip />
 
       {toast && (
         <div

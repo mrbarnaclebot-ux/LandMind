@@ -13,6 +13,8 @@
 import { Router, type Request, type Response } from 'express';
 import { getWorldState, MODIFIER_TABLE } from '../simulation/worldClock.js';
 import { getActiveFronts, WEATHER_TABLE } from '../simulation/weatherService.js';
+import { getActiveVeins } from '../simulation/veinService.js';
+import { HAZARD_TABLE } from '../simulation/hazardService.js';
 
 const router = Router();
 
@@ -25,6 +27,10 @@ router.get('/', (_req: Request, res: Response) => {
     // Phase B — active weather fronts + published weather modifier table.
     fronts: getActiveFronts(),
     weatherTable: WEATHER_TABLE,
+    // Phase C (Hazards) — active rich veins + published hazard table (cave-in
+    // odds, self-dig timer, rescue/repair costs, deep-yield bonus, wear params).
+    veins: getActiveVeins(),
+    hazardTable: HAZARD_TABLE,
   });
 });
 

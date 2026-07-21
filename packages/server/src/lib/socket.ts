@@ -5,6 +5,7 @@ import { jwtVerify } from 'jose';
 import { redisPub, redisSub } from './redis.js';
 import { JWT_SECRET, SESSION_COOKIE_NAME } from './jwtSecret.js';
 import { isUserAdmin } from '../middleware/adminAuth.js';
+import { touchLastActive } from './lastActive.js';
 import type {
   ServerToClientEvents,
   ClientToServerEvents,
@@ -157,6 +158,8 @@ export function setupSocket(httpServer: HttpServer): TypedServer {
         return;
       }
       socket.join(`user:${wallet}`);
+      // Phase C: throttled last-seen update (≤1/min) for the offline-grace rule.
+      touchLastActive(socket.data.userId);
       console.log(`Socket ${socket.id} subscribed to user:${wallet}`);
       ack(true);
     });

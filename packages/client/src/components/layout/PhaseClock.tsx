@@ -23,8 +23,15 @@ import {
   phaseAtCycleT,
 } from '../../stores/worldStore';
 import { PHASE_META } from '../../scene/worldPhases';
-import type { WorldPhase, WorldModifiers } from '../../lib/socketTypes';
+import type { WorldPhase, WorldModifiers, HazardTable } from '../../lib/socketTypes';
 import './phaseClock.css';
+
+/** Lamports → a compact SOL string (1 SOL = 1e9 lamports). */
+function lamportsToSol(lamports: number): string {
+  const sol = lamports / 1e9;
+  // Trim trailing zeros: 0.005, 0.003, etc.
+  return `${parseFloat(sol.toFixed(4))} SOL`;
+}
 
 /** mm:ss from a millisecond duration (clamped at 0). */
 function fmtCountdown(ms: number): string {
@@ -69,6 +76,7 @@ export const PhaseClock: FC<PhaseClockProps> = ({ onEnterGoldenHour }) => {
   const modifiers = useWorldStore((s) => s.modifiers);
   const nextPhaseAt = useWorldStore((s) => s.nextPhaseAt);
   const table = useWorldStore((s) => s.table);
+  const hazardTable = useWorldStore((s) => s.hazardTable);
 
   const [open, setOpen] = useState(false);
   const [pulsing, setPulsing] = useState(false);
@@ -163,17 +171,25 @@ export const PhaseClock: FC<PhaseClockProps> = ({ onEnterGoldenHour }) => {
       </div>
 
       {/* Modifier table popover */}
-      {open && <ModifierPopover table={table} activePhase={phase} onClose={() => setOpen(false)} />}
+      {open && (
+        <ModifierPopover
+          table={table}
+          hazardTable={hazardTable}
+          activePhase={phase}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </div>
   );
 };
 
-/** Popover listing the published modifier table (all phases). */
+/** Popover listing the published modifier table (all phases) + hazard odds. */
 const ModifierPopover: FC<{
   table: Record<string, unknown>;
+  hazardTable: HazardTable;
   activePhase: WorldPhase;
   onClose: () => void;
-}> = ({ table, activePhase, onClose }) => {
+}> = ({ table, hazardTable, activePhase, onClose }) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
@@ -211,8 +227,60 @@ const ModifierPopover: FC<{
           })}
         </tbody>
       </table>
+
+      {/* HAZARDS section (System 3) — compact published odds, no drama. */}
+      <HazardSection hazardTable={hazardTable} />
+
       <div className="phase-clock__popover-foot">Published odds · server-authoritative</div>
     </div>
+  );
+};
+
+/** Compact hazard-odds table (System 3): deep bonus, cave-in, self-dig, sinks. */
+const HazardSection: FC<{ hazardTable: HazardTable }> = ({ hazardTable }) => {
+  const c = hazardTable?.caveIn;
+  const w = hazardTable?.wear;
+  if (!c || !w) return null;
+
+  const basePct = (c.baseChancePerHour * 100).toFixed(1).replace(/\.0$/, '');
+  const emberPct = (c.baseChancePerHour * c.emberMultiplier * 100).toFixed(1).replace(/\.0$/, '');
+  const floorPct = Math.round(w.efficiencyFloor * 100);
+
+  return (
+    <>
+      <div className="phase-clock__popover-subtitle">HAZARDS</div>
+      <table className="phase-clock__table">
+        <tbody>
+          <tr>
+            <td>Deep deploy bonus</td>
+            <td style={{ color: 'var(--teal)' }}>×{c.deepYieldBonus}</td>
+          </tr>
+          <tr>
+            <td>Cave-in / hr</td>
+            <td>
+              {basePct}%
+              <span style={{ color: 'var(--ember)' }}> · ember {emberPct}%</span>
+            </td>
+          </tr>
+          <tr>
+            <td>Self-dig timer</td>
+            <td>{c.selfDigHours}h</td>
+          </tr>
+          <tr>
+            <td>Rescue fee</td>
+            <td>{lamportsToSol(c.rescueCostLamports)}</td>
+          </tr>
+          <tr>
+            <td>Repair fee</td>
+            <td>{lamportsToSol(w.repairCostLamports)}</td>
+          </tr>
+          <tr>
+            <td>Wear floor</td>
+            <td>{floorPct}% over {w.fullWearMiningDays}d</td>
+          </tr>
+        </tbody>
+      </table>
+    </>
   );
 };
 

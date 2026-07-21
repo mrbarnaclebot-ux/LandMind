@@ -7,6 +7,10 @@
  *    The world composer adds Bloom threshold 0.9; the core crosses it, nothing else does.
  *  - States: IDLE steady core; MINING core pulses 0.8→1.5 @ 1.2 Hz + amber ground ring pulse;
  *    RELOCATING slight forward lean + faster bob.
+ *  - TRAPPED (System 3 cave-in): bob/sway STOP, the body tilts slightly (buried
+ *    lean), the amber core dims to a faint 0.3 flicker (still toneMapped=false but
+ *    below the 0.9 bloom threshold so it no longer halos), and small grey matte
+ *    dust puffs rise around the feet (quality-gated). No mining ring.
  *  - Idle motion: bob 0.3 Hz + sway 0.18 Hz with per-instance phase offsets (id hash) to kill
  *    the mechanical synchronized look.
  *  - Deploy juice: squash-land (scaleY 0.88→1.0 easeOutBack ~220ms) + 12 amber spark particles
@@ -35,6 +39,7 @@ import {
   noise1D,
 } from '../lib/juice';
 import { DeployBurst } from './effects/DeployBurst';
+import { DustPuff } from './effects/DustPuff';
 
 // Agent visual config
 const BODY_WIDTH = 0.4;
@@ -55,6 +60,11 @@ const MINING_HZ = 1.2;
 const CORE_MIN = 0.8;
 const CORE_MAX = 1.5;
 
+// Trapped core flicker (spec: dim to 0.3, below the 0.9 bloom threshold → no halo).
+const TRAPPED_CORE = 0.3;
+const TRAPPED_FLICKER_HZ = 5.5; // fast uneven flicker
+const TRAPPED_TILT = 0.22; // radians of buried body lean
+
 // Deploy juice (spec)
 const SQUASH_DURATION = 0.22; // 220ms easeOutBack
 const SQUASH_START_Y = 0.88; // scaleY 0.88 → 1.0
@@ -71,7 +81,7 @@ const RING_AMBER = new THREE.Color('#F0A63C'); // ground ring (no bloom)
 interface AgentData {
   id: string;
   position: [number, number, number];
-  status: 'MINING' | 'RELOCATING' | 'IDLE';
+  status: 'MINING' | 'RELOCATING' | 'IDLE' | 'TRAPPED';
 }
 
 /**
@@ -159,8 +169,14 @@ function VoxelAgent({
     }
 
     // ---- Idle / state motion ---------------------------------------------
-    // During the hit-pause we freeze the bob/sway to sell the impact.
-    if (!inHitPause) {
+    // TRAPPED (System 3): bob/sway STOP entirely; the body settles at rest with a
+    // slight buried tilt. Sells "stuck under a cave-in".
+    if (status === 'TRAPPED') {
+      g.position.y = position[1];
+      g.rotation.y = 0;
+      g.rotation.x = TRAPPED_TILT;
+    } else if (!inHitPause) {
+      // During the hit-pause we freeze the bob/sway to sell the impact.
       let bobAmp = BOB_AMPLITUDE;
       let bobHz = BOB_HZ;
       let lean = 0;
@@ -188,7 +204,14 @@ function VoxelAgent({
     // ---- Amber core state emissive ---------------------------------------
     if (coreMatRef.current) {
       let intensity: number;
-      if (status === 'MINING') {
+      if (status === 'TRAPPED') {
+        // Dim faint flicker around 0.3 — below the 0.9 bloom threshold, so the
+        // core no longer halos (an agent in distress, its light guttering).
+        const f =
+          Math.sin(time * TRAPPED_FLICKER_HZ * Math.PI * 2 + bobPhase) *
+          Math.sin(time * (TRAPPED_FLICKER_HZ * 0.37) * Math.PI * 2 + swayPhase);
+        intensity = Math.max(0.12, TRAPPED_CORE + f * 0.12);
+      } else if (status === 'MINING') {
         // Pulse 0.8 → 1.5 @ 1.2 Hz.
         const p = 0.5 + 0.5 * Math.sin(time * MINING_HZ * Math.PI * 2 + bobPhase);
         intensity = CORE_MIN + (CORE_MAX - CORE_MIN) * p;
@@ -280,6 +303,12 @@ function VoxelAgent({
           seedId={id}
           onDone={() => setBurst((b) => ({ ...b, active: false }))}
         />
+      )}
+
+      {/* Cave-in dust (System 3): matte grey motes while TRAPPED. Quality-gated,
+          never blooms. Own draw call; mounts/unmounts with the trapped state. */}
+      {status === 'TRAPPED' && particlesEnabled && (
+        <DustPuff position={[position[0], position[1] + 0.02, position[2]]} seedId={id} />
       )}
     </>
   );

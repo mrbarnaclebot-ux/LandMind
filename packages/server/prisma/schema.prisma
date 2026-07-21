@@ -16,6 +16,9 @@ model User {
   role      UserRole @default(USER)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  // Phase C (Hazards): throttled (≤1/min) last-seen timestamp. Cave-ins only
+  // fire on agents whose owner was active within the last 60 min (offline grace).
+  lastActiveAt DateTime? @map("last_active_at")
   agents    Agent[]
   claims    Claim[]
   earningsSnapshot EarningsSnapshot?
@@ -39,6 +42,13 @@ model Agent {
   // Phase B (Weather): last time this agent was manually relocated by its owner.
   // Enforces the 10-min relocation cooldown. Null = never relocated (no cooldown).
   lastRelocatedAt DateTime? @map("last_relocated_at")
+  // Phase C (Hazards): equipment wear ∈ [0,1]. Accrues only while actively mining
+  // (never idle-time decay); efficiency = 1 - 0.3*wear. Repair resets to 0.
+  wear         Float    @default(0)
+  // Cave-in state (System 3). trappedAt = when it fired; selfDigAt = when the
+  // agent auto-frees. Both NULL unless status === TRAPPED. Never confiscatory.
+  trappedAt    DateTime? @map("trapped_at")
+  selfDigAt    DateTime? @map("self_dig_at")
   miningState  MiningState?
 
   // cNFT fields - added for Phase 5
@@ -86,6 +96,9 @@ enum AgentStatus {
   IDLE
   MINING
   RELOCATING
+  // Phase C (Hazards): caught in a cave-in — stops mining until Rescue or the
+  // 4-hour self-dig timer. Already-mined resources are never confiscated.
+  TRAPPED
 }
 
 enum ResourceType {

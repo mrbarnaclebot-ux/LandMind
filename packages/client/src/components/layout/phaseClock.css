@@ -181,6 +181,14 @@
   background: var(--dusk-panel-2);
 }
 
+.phase-clock__popover-subtitle {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--ember);
+  text-shadow: 1px 1px 0 var(--ember-dark);
+  margin: 10px 0 6px 0;
+}
+
 .phase-clock__popover-foot {
   margin-top: 6px;
   font-size: 10px;

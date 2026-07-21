@@ -20,8 +20,10 @@ import { invalidateMerkleTreeCache } from '../services/merkleService.js';
 export async function loadHotAgentsFromPostgres(): Promise<number> {
   try {
     const agents = await prisma.agent.findMany({
+      // Phase C: TRAPPED agents are also "hot" — the tick loop must keep them
+      // cached so it can auto-rescue them when their self-dig timer passes.
       where: {
-        status: { in: ['MINING', 'RELOCATING'] },
+        status: { in: ['MINING', 'RELOCATING', 'TRAPPED'] },
       },
       include: {
         owner: true,
@@ -46,8 +48,10 @@ export async function loadHotAgentsFromPostgres(): Promise<number> {
         silver: String(agent.miningState.silver),
         copper: String(agent.miningState.copper),
         iron: String(agent.miningState.iron),
-        status: agent.status as 'MINING' | 'RELOCATING',
+        status: agent.status as 'MINING' | 'RELOCATING' | 'TRAPPED',
         lastTick: 0, // Will be updated on first tick
+        wear: agent.wear ?? 0,
+        selfDigAt: agent.selfDigAt ? agent.selfDigAt.getTime() : undefined,
       };
 
       await cacheAgent(cached);
@@ -131,12 +135,20 @@ export async function flushToPostgres(): Promise<void> {
         },
       });
 
-      // Update agent status and position
+      // Update agent status and position. Phase C: also persist wear and the
+      // trapped-state timers so a restart restores cave-in state exactly. When
+      // an agent is NOT trapped, trappedAt/selfDigAt are cleared to null.
+      const trapped = agent.status === 'TRAPPED';
       await tx.agent.update({
         where: { id: agent.agentId },
         data: {
           status: agent.status,
           hexId: agent.hexId,
+          wear: agent.wear ?? 0,
+          selfDigAt: trapped && agent.selfDigAt ? new Date(agent.selfDigAt) : null,
+          // trappedAt is set by the cave-in path directly in DB+cache; on flush
+          // we only clear it when the agent is no longer trapped.
+          ...(trapped ? {} : { trappedAt: null }),
         },
       });
     }

@@ -13,26 +13,73 @@
 import { useEffect } from 'react';
 import { getSocket } from '../lib/socket';
 import { useWorldStore } from '../stores/worldStore';
-import type { WorldUpdateEvent, WeatherUpdateEvent } from '../lib/socketTypes';
+import { useTransactionStore } from '../stores/transactionStore';
+import type {
+  WorldUpdateEvent,
+  WeatherUpdateEvent,
+  VeinSpawnedEvent,
+  VeinExpiredEvent,
+} from '../lib/socketTypes';
+
+/** Human resource name from the resourceType code (fallback: as-given, lowercased). */
+function resourceLabel(type: string): string {
+  const map: Record<string, string> = {
+    GOLD: 'gold',
+    SILVER: 'silver',
+    COPPER: 'copper',
+    IRON: 'iron',
+  };
+  return map[type?.toUpperCase?.() ?? ''] ?? (type ? type.toLowerCase() : 'ore');
+}
+
+/** mm:ss from a millisecond duration (clamped at 0). */
+function fmtRemaining(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
 
 export function useWorldClock(): void {
   useEffect(() => {
-    const { loadWorld, applyUpdate, applyWeatherUpdate } = useWorldStore.getState();
+    const { loadWorld, applyUpdate, applyWeatherUpdate, applyVeinSpawned, applyVeinExpired } =
+      useWorldStore.getState();
 
-    // Initial snapshot (world clock + seed weather fronts/table from /api/world).
+    // Initial snapshot (world clock + seed weather fronts/table + veins/hazard
+    // table from /api/world).
     void loadWorld();
 
     // Live reconciliation.
     const sock = getSocket();
     const onUpdate = (data: WorldUpdateEvent) => applyUpdate(data);
     const onWeather = (data: WeatherUpdateEvent) => applyWeatherUpdate(data);
+
+    // System 3: rich-vein strikes (public broadcast). Store the vein AND fire a
+    // brief global land-rush toast.
+    const onVeinSpawned = (data: VeinSpawnedEvent) => {
+      applyVeinSpawned(data);
+      const remaining = fmtRemaining(data.expiresAt - Date.now());
+      useTransactionStore.getState().addToast({
+        type: 'success',
+        title: 'RICH VEIN STRUCK',
+        message: `×${data.multiplier} ${resourceLabel(data.resourceType)} at (${data.q}, ${data.r}) — ${remaining} remaining`,
+        autoHide: 6000,
+      });
+    };
+    const onVeinExpired = (data: VeinExpiredEvent) => applyVeinExpired(data);
+
     sock.on('world:update', onUpdate);
     // Weather fronts (System 2) arrive on their own ~5s public broadcast.
     sock.on('weather:update', onWeather);
+    // Rich veins (System 3) — public broadcasts.
+    sock.on('vein:spawned', onVeinSpawned);
+    sock.on('vein:expired', onVeinExpired);
 
     return () => {
       sock.off('world:update', onUpdate);
       sock.off('weather:update', onWeather);
+      sock.off('vein:spawned', onVeinSpawned);
+      sock.off('vein:expired', onVeinExpired);
     };
   }, []);
 }

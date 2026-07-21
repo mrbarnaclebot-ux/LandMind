@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET, SESSION_COOKIE_NAME } from '../lib/jwtSecret.js';
+import { touchLastActive } from '../lib/lastActive.js';
 
 export interface AuthenticatedRequest extends Request {
   walletAddress?: string;
@@ -28,6 +29,8 @@ export async function authMiddleware(
     const { payload } = await jwtVerify(token, JWT_SECRET);
     req.walletAddress = payload.sub as string;
     req.userId = payload.userId as string;
+    // Phase C: throttled last-seen update (≤1/min) for the offline-grace rule.
+    touchLastActive(req.userId);
     next();
   } catch {
     res.status(401).json({ error: 'Invalid or expired session' });
@@ -61,6 +64,9 @@ export async function requireAuth(
       res.status(401).json({ error: 'Invalid session - missing user ID' });
       return;
     }
+
+    // Phase C: throttled last-seen update (≤1/min) for the offline-grace rule.
+    touchLastActive(req.userId);
 
     next();
   } catch {

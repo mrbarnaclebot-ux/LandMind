@@ -27,6 +27,10 @@ import type {
   WeatherFront,
   WeatherTable,
   WeatherUpdateEvent,
+  Vein,
+  HazardTable,
+  VeinSpawnedEvent,
+  VeinExpiredEvent,
 } from '../lib/socketTypes';
 
 // ---------------------------------------------------------------------------
@@ -90,6 +94,25 @@ const DEFAULT_WEATHER_TABLE: WeatherTable = {
   ember: { default: 1.5 },
 };
 
+/**
+ * Default published hazard odds (System 3). Matches the pinned server interface;
+ * replaced by whatever the server sends via GET /api/world.
+ */
+const DEFAULT_HAZARD_TABLE: HazardTable = {
+  caveIn: {
+    baseChancePerHour: 0.02,
+    emberMultiplier: 3,
+    selfDigHours: 4,
+    rescueCostLamports: 5_000_000,
+    deepYieldBonus: 1.25,
+  },
+  wear: {
+    fullWearMiningDays: 3,
+    efficiencyFloor: 0.7,
+    repairCostLamports: 3_000_000,
+  },
+};
+
 // ---------------------------------------------------------------------------
 // Local phase computation (from the anchor)
 // ---------------------------------------------------------------------------
@@ -142,6 +165,13 @@ interface WorldState {
   /** Published per-front-type per-biome effect table (for the HUD popover). */
   weatherTable: WeatherTable;
 
+  // --- System 3 (hazards) — additive ----------------------------------------
+  /** Live rich-vein strikes, keyed by hexId. Seeded from /api/world, then kept
+   *  live via vein:spawned / vein:expired broadcasts. */
+  veins: Vein[];
+  /** Published hazard odds table (for the PhaseClock HAZARDS section). */
+  hazardTable: HazardTable;
+
   /**
    * Reconciliation offset (ms). We add this to `Date.now()` before deriving the
    * local cycleT so the anchor-derived clock matches the server's reported
@@ -157,6 +187,10 @@ interface WorldState {
   applyUpdate: (data: WorldUpdateEvent) => void;
   /** Apply a weather:update broadcast (full-replacement fronts set). */
   applyWeatherUpdate: (data: WeatherUpdateEvent) => void;
+  /** Add / replace a rich vein (vein:spawned broadcast). */
+  applyVeinSpawned: (data: VeinSpawnedEvent) => void;
+  /** Remove a rich vein (vein:expired broadcast). */
+  applyVeinExpired: (data: VeinExpiredEvent) => void;
   /** Fetch the initial snapshot from GET /api/world. */
   loadWorld: () => Promise<void>;
 
@@ -180,6 +214,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   table: DEFAULT_TABLE,
   fronts: [],
   weatherTable: DEFAULT_WEATHER_TABLE,
+  veins: [],
+  hazardTable: DEFAULT_HAZARD_TABLE,
   clockOffsetMs: 0,
   devOverride: null,
 
@@ -212,11 +248,39 @@ export const useWorldStore = create<WorldState>((set, get) => ({
         data.weatherTable && Object.keys(data.weatherTable).length > 0
           ? data.weatherTable
           : state.weatherTable,
+      // System 3 (additive): GET /api/world may also seed veins + hazardTable.
+      // Only overwrite when present so a socket-only world:update doesn't clobber
+      // veins delivered by the vein:spawned/expired stream.
+      veins: data.veins !== undefined ? data.veins : state.veins,
+      hazardTable:
+        data.hazardTable && Object.keys(data.hazardTable).length > 0
+          ? data.hazardTable
+          : state.hazardTable,
     }));
   },
 
   applyWeatherUpdate: (data) => {
     set({ fronts: Array.isArray(data.fronts) ? data.fronts : [] });
+  },
+
+  applyVeinSpawned: (data) => {
+    set((state) => {
+      const vein: Vein = {
+        hexId: data.hexId,
+        q: data.q,
+        r: data.r,
+        resourceType: data.resourceType,
+        multiplier: data.multiplier,
+        expiresAt: data.expiresAt,
+      };
+      // Replace any existing vein on the same hex, else append.
+      const others = state.veins.filter((v) => v.hexId !== data.hexId);
+      return { veins: [...others, vein] };
+    });
+  },
+
+  applyVeinExpired: (data) => {
+    set((state) => ({ veins: state.veins.filter((v) => v.hexId !== data.hexId) }));
   },
 
   loadWorld: async () => {

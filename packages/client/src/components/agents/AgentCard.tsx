@@ -9,12 +9,23 @@
  *  - Combined phase × weather modifier chip: when a front covers this agent's
  *    hex, the chip shows the combined multiplier (e.g. '×1.38') with a tooltip
  *    breaking it into phase and weather parts.
+ *
+ * Phase C (System 3 — hazards) additions:
+ *  - EFFICIENCY wear bar: a thin segmented bar, teal→amber→ember as wear grows,
+ *    labelled 'EFFICIENCY 87%' (= 1 − 0.3×wear). A REPAIR button (enabled when
+ *    wear > 0.15) posts to /repair, toasts on success, and refetches.
+ *  - TRAPPED state: an ember 'TRAPPED' badge replaces the status chip, a live
+ *    self-dig mm:ss countdown (from selfDigAt) is shown, and a RESCUE button
+ *    posts to /rescue. Both actions handle the real-mode 501 gracefully.
  */
 import { FC, useEffect, useState } from 'react';
 import type { Agent } from '../../lib/agents';
+import { rescueAgent, repairAgent, HazardActionError } from '../../lib/agents';
 import { useWorldStore } from '../../stores/worldStore';
 import { useHexStore } from '../../stores/hexStore';
+import { useAgentStore } from '../../stores/agentStore';
 import { useRelocationStore } from '../../stores/relocationStore';
+import { useTransactionStore } from '../../stores/transactionStore';
 import { ModifierChip } from '../layout/ModifierChip';
 import { AgentModifierChip } from '../layout/AgentModifierChip';
 import '../../styles/pixel-theme.css';
@@ -37,6 +48,7 @@ const STATUS_COLORS: Record<string, string> = {
   MINING: 'var(--teal)',
   RELOCATING: 'var(--amber)',
   IDLE: 'var(--dusk-text-faint)',
+  TRAPPED: 'var(--ember)',
 };
 
 /** mm:ss from a millisecond duration (clamped at 0). */
@@ -46,6 +58,67 @@ function fmtCountdown(ms: number): string {
   const s = total % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
+
+// --- System 3: wear / efficiency ------------------------------------------
+
+/** Efficiency 0..1 from wear (published rule: efficiency = 1 − 0.3×wear). */
+function efficiencyFromWear(wear: number): number {
+  return 1 - 0.3 * Math.max(0, Math.min(1, wear));
+}
+
+/** Segment fill color: teal (fresh) → amber (worn) → ember (near floor). */
+function wearColor(wear: number): string {
+  if (wear < 0.4) return 'var(--teal)';
+  if (wear < 0.75) return 'var(--amber)';
+  return 'var(--ember)';
+}
+
+/** Number of lit segments (out of N) for a wear level. */
+const WEAR_SEGMENTS = 10;
+
+/**
+ * EFFICIENCY wear bar — a thin segmented bar. Segments fill from the LEFT as
+ * wear grows (more wear = more lit segments); the fill color shifts
+ * teal→amber→ember. Matte, hard bevel, no gradient (anti-slop).
+ */
+const WearBar: FC<{ wear: number }> = ({ wear }) => {
+  const clamped = Math.max(0, Math.min(1, wear));
+  const eff = efficiencyFromWear(clamped);
+  const lit = Math.round(clamped * WEAR_SEGMENTS);
+  const color = wearColor(clamped);
+  return (
+    <div style={{ marginBottom: '8px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontFamily: 'var(--font-body)',
+          fontSize: '11px',
+          color: 'var(--dusk-text-dim)',
+          marginBottom: '3px',
+        }}
+      >
+        <span>EFFICIENCY</span>
+        <span style={{ color, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+          {Math.round(eff * 100)}%
+        </span>
+      </div>
+      <div style={{ display: 'flex', gap: '2px' }}>
+        {Array.from({ length: WEAR_SEGMENTS }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              height: '6px',
+              background: i < lit ? color : 'var(--dusk-panel-lo)',
+              boxShadow: 'inset 1px 1px 0 0 rgba(14,16,26,0.4)',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
   const hasLocation = agent.hex && agent.hex.q !== undefined;
@@ -80,6 +153,78 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
 
   const biome = hasLocation ? getHexInfo(agent.hex!.q, agent.hex!.r)?.biome : undefined;
 
+  // --- System 3: hazards (wear / repair + trapped / rescue) ----------------
+  const updateAgent = useAgentStore((s) => s.updateAgent);
+  const addToast = useTransactionStore((s) => s.addToast);
+  const [busy, setBusy] = useState<null | 'repair' | 'rescue'>(null);
+
+  const isTrapped = agent.status === 'TRAPPED';
+  const wear = agent.wear ?? 0;
+  const canRepair = wear > 0.15;
+  // Self-dig countdown (mm:ss) from selfDigAt.
+  const selfDigMs = agent.selfDigAt != null ? agent.selfDigAt - now : 0;
+
+  const handleRepair = async () => {
+    if (busy) return;
+    setBusy('repair');
+    try {
+      const updated = await repairAgent(agent.id);
+      updateAgent(agent.id, { wear: updated.wear ?? 0, status: updated.status });
+      addToast({
+        type: 'success',
+        title: 'EQUIPMENT REPAIRED',
+        message: `Agent ${label} restored to full efficiency`,
+        autoHide: 3500,
+      });
+    } catch (err) {
+      handleHazardError(err, 'REPAIR');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const handleRescue = async () => {
+    if (busy) return;
+    setBusy('rescue');
+    try {
+      const updated = await rescueAgent(agent.id);
+      updateAgent(agent.id, {
+        status: updated.status ?? 'MINING',
+        selfDigAt: null,
+        trappedAt: null,
+      });
+      addToast({
+        type: 'success',
+        title: 'AGENT RESCUED',
+        message: `Agent ${label} is back to mining`,
+        autoHide: 3500,
+      });
+    } catch (err) {
+      handleHazardError(err, 'RESCUE');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /** Toast a hazard-action failure, softly for the real-mode 501 case. */
+  function handleHazardError(err: unknown, action: string) {
+    if (err instanceof HazardActionError && err.notImplemented) {
+      addToast({
+        type: 'info',
+        title: `${action} UNAVAILABLE`,
+        message: 'Available after contract deployment',
+        autoHide: 4000,
+      });
+      return;
+    }
+    addToast({
+      type: 'error',
+      title: `${action} FAILED`,
+      message: err instanceof Error ? err.message : `${action} failed`,
+      autoHide: 4000,
+    });
+  }
+
   return (
     <div
       className="pixel-slot"
@@ -113,12 +258,20 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
             fontFamily: 'var(--font-body)',
             fontSize: '13px',
             lineHeight: 1.5,
+            fontWeight: isTrapped ? 700 : 400,
+            letterSpacing: isTrapped ? '0.04em' : undefined,
             padding: '2px 6px',
-            background: STATUS_COLORS[agent.status] || 'var(--dusk-text-faint)',
-            color: 'var(--dusk-on-amber)',
+            background: isTrapped
+              ? 'var(--ember)'
+              : STATUS_COLORS[agent.status] || 'var(--dusk-text-faint)',
+            color: isTrapped ? '#fff' : 'var(--dusk-on-amber)',
+            // Hard pixel bevel on the ember badge so it reads as an alarm chip.
+            boxShadow: isTrapped
+              ? 'inset 1px 1px 0 0 var(--ember-light), inset -1px -1px 0 0 var(--ember-dark)'
+              : undefined,
           }}
         >
-          {agent.status}
+          {isTrapped ? '⚠ TRAPPED' : agent.status}
         </span>
       </div>
 
@@ -137,6 +290,77 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
             <ModifierChip />
           )}
         </div>
+      )}
+
+      {/* TRAPPED panel (System 3): ember-outlined alert with the self-dig
+          countdown + RESCUE. Cave-ins never claw back mined resources. */}
+      {isTrapped && (
+        <div
+          style={{
+            marginBottom: '8px',
+            padding: '8px',
+            background: 'var(--dusk-panel-2)',
+            boxShadow: 'inset 0 0 0 1px var(--ember-dark)',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '12px',
+              color: 'var(--ember-light)',
+              marginBottom: '6px',
+              lineHeight: 1.4,
+            }}
+          >
+            Cave-in! Self-dig in{' '}
+            <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+              {agent.selfDigAt != null ? fmtCountdown(selfDigMs) : '—'}
+            </span>
+          </div>
+          <button
+            onClick={handleRescue}
+            className="pixel-btn"
+            disabled={busy !== null}
+            title="Pay a small SOL fee to free this agent now"
+            style={{
+              width: '100%',
+              padding: '6px',
+              fontSize: '8px',
+              opacity: busy ? 0.6 : 1,
+              cursor: busy ? 'wait' : 'pointer',
+              boxShadow: 'inset 0 0 0 2px var(--ember)',
+            }}
+          >
+            {busy === 'rescue' ? 'RESCUING…' : 'RESCUE'}
+          </button>
+        </div>
+      )}
+
+      {/* EFFICIENCY wear bar (System 3) — shown for any deployed agent, plus a
+          REPAIR action when wear is worth clearing (> 15%). */}
+      {hasLocation && (
+        <>
+          <WearBar wear={wear} />
+          {canRepair && !isTrapped && (
+            <button
+              onClick={handleRepair}
+              className="pixel-btn"
+              disabled={busy !== null}
+              title="Pay a small SOL fee to restore full efficiency"
+              style={{
+                width: '100%',
+                padding: '6px',
+                fontSize: '8px',
+                marginBottom: '8px',
+                opacity: busy ? 0.6 : 1,
+                cursor: busy ? 'wait' : 'pointer',
+                boxShadow: 'inset 0 0 0 2px var(--amber)',
+              }}
+            >
+              {busy === 'repair' ? 'REPAIRING…' : 'REPAIR'}
+            </button>
+          )}
+        </>
       )}
 
       {/* Location */}
@@ -195,22 +419,24 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
             LOCATE
           </button>
           <button
-            onClick={() => !onCooldown && beginRelocation(agent.id, label)}
+            onClick={() => !onCooldown && !isTrapped && beginRelocation(agent.id, label)}
             className="pixel-btn"
-            disabled={onCooldown}
+            disabled={onCooldown || isTrapped}
             title={
-              onCooldown
-                ? `Relocation cooldown — ready in ${fmtCountdown(readyAt - now)}`
-                : isActive
-                  ? 'Cancel relocation (or press ESC)'
-                  : 'Move this agent — click a hex in the world'
+              isTrapped
+                ? 'Agent is trapped — rescue it first'
+                : onCooldown
+                  ? `Relocation cooldown — ready in ${fmtCountdown(readyAt - now)}`
+                  : isActive
+                    ? 'Cancel relocation (or press ESC)'
+                    : 'Move this agent — click a hex in the world'
             }
             style={{
               flex: 1,
               padding: '6px',
               fontSize: '8px',
-              opacity: onCooldown ? 0.55 : 1,
-              cursor: onCooldown ? 'not-allowed' : 'pointer',
+              opacity: onCooldown || isTrapped ? 0.55 : 1,
+              cursor: onCooldown || isTrapped ? 'not-allowed' : 'pointer',
               // Amber emphasis while this agent is the active MOVE target.
               boxShadow: isActive ? 'inset 0 0 0 2px var(--amber)' : undefined,
             }}

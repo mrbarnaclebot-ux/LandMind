@@ -31,6 +31,7 @@ import { PerformanceAdapter } from '../rendering/PerformanceAdapter';
 import { AgentLayer } from './AgentLayer';
 import { HeatMapOverlay } from './HeatMapOverlay';
 import { WeatherLayer } from './WeatherLayer';
+import { VeinLayer } from './VeinLayer';
 import { HexTooltip, useHexHover } from './HexTooltip';
 import { useHexPick } from '../hooks/useHexPick';
 import { Clouds } from './Clouds';
@@ -386,6 +387,10 @@ function SceneContent({
       {/* Weather fronts (System 2): drifting overlays + telegraph + particles.
           Sibling in the Canvas tree; disabled at low quality tier. */}
       <WeatherLayer qualityLow={!weatherEnabled} particlesEnabled={weatherParticles} />
+
+      {/* Rich veins (System 3): pulsing amber hex ring + rising sparkle motes on
+          struck hexes. Sibling in the Canvas tree; disabled at low quality. */}
+      <VeinLayer qualityLow={!weatherEnabled} particlesEnabled={weatherParticles} />
 
       {/* Agents rendered on hexes */}
       <AgentLayer />

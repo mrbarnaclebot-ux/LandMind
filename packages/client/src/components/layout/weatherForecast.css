@@ -18,6 +18,16 @@
     0 0 0 2px var(--dusk-panel-lo);
 }
 
+/* Vein strip (System 3) reuses this panel but with an amber top edge so it
+   reads as "rewards" rather than the teal "info" of the weather strip. */
+.wx-forecast--vein {
+  box-shadow:
+    inset 0 1px 0 0 var(--amber),
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo);
+}
+
 .wx-forecast__head {
   display: flex;
   align-items: center;

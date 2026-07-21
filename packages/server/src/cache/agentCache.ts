@@ -17,8 +17,14 @@ export interface CachedAgent {
   silver: string;
   copper: string;
   iron: string;
-  status: 'MINING' | 'RELOCATING';
+  status: 'MINING' | 'RELOCATING' | 'TRAPPED';
   lastTick: number;
+  // Phase C (Hazards): equipment wear ∈ [0,1]. Accrues per tick while MINING.
+  // Optional at construction (defaults to 0); always present when read back.
+  wear?: number;
+  // Phase C (Hazards): epoch ms when a trapped agent auto-frees (self-dig).
+  // Only set while status === 'TRAPPED'; undefined otherwise.
+  selfDigAt?: number;
   // Relocation fields (only when status === 'RELOCATING')
   targetHexId?: number;
   targetQ?: number;
@@ -48,7 +54,13 @@ export async function cacheAgent(agent: CachedAgent): Promise<void> {
     iron: agent.iron,
     status: agent.status,
     lastTick: String(agent.lastTick),
+    wear: String(agent.wear ?? 0),
   };
+
+  // Phase C: self-dig timer (only meaningful while TRAPPED).
+  if (agent.selfDigAt !== undefined) {
+    data.selfDigAt = String(agent.selfDigAt);
+  }
 
   // Add relocation fields if relocating
   if (agent.targetHexId !== undefined) {
@@ -89,8 +101,10 @@ export async function getAgent(agentId: string): Promise<CachedAgent | null> {
     silver: data.silver,
     copper: data.copper,
     iron: data.iron,
-    status: data.status as 'MINING' | 'RELOCATING',
+    status: data.status as 'MINING' | 'RELOCATING' | 'TRAPPED',
     lastTick: parseInt(data.lastTick, 10),
+    wear: data.wear ? parseFloat(data.wear) : 0,
+    selfDigAt: data.selfDigAt ? parseInt(data.selfDigAt, 10) : undefined,
     targetHexId: data.targetHexId ? parseInt(data.targetHexId, 10) : undefined,
     targetQ: data.targetQ ? parseInt(data.targetQ, 10) : undefined,
     targetR: data.targetR ? parseInt(data.targetR, 10) : undefined,
@@ -132,8 +146,10 @@ export async function getAllAgents(): Promise<CachedAgent[]> {
       silver: d.silver,
       copper: d.copper,
       iron: d.iron,
-      status: d.status as 'MINING' | 'RELOCATING',
+      status: d.status as 'MINING' | 'RELOCATING' | 'TRAPPED',
       lastTick: parseInt(d.lastTick, 10),
+      wear: d.wear ? parseFloat(d.wear) : 0,
+      selfDigAt: d.selfDigAt ? parseInt(d.selfDigAt, 10) : undefined,
       targetHexId: d.targetHexId ? parseInt(d.targetHexId, 10) : undefined,
       targetQ: d.targetQ ? parseInt(d.targetQ, 10) : undefined,
       targetR: d.targetR ? parseInt(d.targetR, 10) : undefined,

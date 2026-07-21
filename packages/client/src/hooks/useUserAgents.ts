@@ -138,6 +138,31 @@ export function useUserAgents() {
       });
     });
 
+    // Handle cave-in (System 3): agent trapped. Freeze mining, record the
+    // self-dig timer so the card can count down.
+    sock.on('agent:trapped', (data) => {
+      updateAgent(data.agentId, {
+        status: 'TRAPPED',
+        selfDigAt: data.selfDigAt,
+        trappedAt: Date.now(),
+        hexId: data.hexId,
+        hex: {
+          q: data.hexQ,
+          r: data.hexR,
+          resourceType: 'GOLD',
+        },
+      });
+    });
+
+    // Handle rescue / self-dig completion (System 3): back to mining.
+    sock.on('agent:rescued', (data) => {
+      updateAgent(data.agentId, {
+        status: 'MINING',
+        selfDigAt: null,
+        trappedAt: null,
+      });
+    });
+
     // Handle player-initiated relocation landing (System 2). Mirrors placed but
     // also refreshes the cooldown anchor for the MOVE-button countdown.
     sock.on('agent:relocated', (data) => {
@@ -164,6 +189,8 @@ export function useUserAgents() {
       sock.off('agent:deployed');
       sock.off('agent:placed');
       sock.off('agent:relocated');
+      sock.off('agent:trapped');
+      sock.off('agent:rescued');
     };
   }, [isAuthenticated, walletAddress, updateAgent, addAgent, loadAgents]);
 
