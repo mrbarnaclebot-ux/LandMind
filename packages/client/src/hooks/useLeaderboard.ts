@@ -3,8 +3,8 @@
  * Uses optional authentication to show personalized user rank
  */
 import { useState, useEffect, useCallback } from 'react';
+import { API_URL } from '../lib/config';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const REFRESH_INTERVAL = 30_000; // 30 seconds
 
 export interface LeaderboardEntry {
@@ -50,7 +50,7 @@ interface UseLeaderboardReturn {
  * Uses credentials to include auth cookie if available
  */
 async function fetchLeaderboard(): Promise<LeaderboardResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/leaderboard`, {
+  const response = await fetch(`${API_URL}/api/leaderboard`, {
     credentials: 'include',
   });
 

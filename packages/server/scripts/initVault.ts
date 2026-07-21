@@ -25,9 +25,8 @@ import {
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
 import bs58 from 'bs58';
-
-// Program ID
-const PROGRAM_ID = new PublicKey('D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ');
+import { LANDMIND_PROGRAM_ID as PROGRAM_ID } from '../src/lib/programId.js';
+import { VAULT_STATE_SEED } from '../src/lib/pdaSeeds.js';
 
 // initialize_vault discriminator from IDL
 const INITIALIZE_VAULT_DISCRIMINATOR = Buffer.from([48, 191, 163, 44, 71, 129, 63, 164]);
@@ -90,7 +89,7 @@ async function main() {
 
   // Derive vault_state PDA
   const [vaultState, vaultBump] = PublicKey.findProgramAddressSync(
-    [Buffer.from('vault_state')],
+    [Buffer.from(VAULT_STATE_SEED)],
     PROGRAM_ID
   );
   console.log('Vault State PDA:', vaultState.toBase58());

@@ -1,8 +1,7 @@
 /**
  * Agent API functions
  */
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { API_URL } from './config';
 
 export interface Agent {
   id: string;
@@ -51,8 +50,7 @@ export interface ConfirmResponse {
  * Fetch user's agents from server
  */
 export async function fetchUserAgents(): Promise<Agent[]> {
-  console.log('[fetchUserAgents] Fetching agents from API...');
-  const response = await fetch(`${API_BASE_URL}/api/agents`, {
+  const response = await fetch(`${API_URL}/api/agents`, {
     credentials: 'include',
   });
 
@@ -62,7 +60,6 @@ export async function fetchUserAgents(): Promise<Agent[]> {
   }
 
   const data = await response.json();
-  console.log('[fetchUserAgents] Raw API response:', data);
 
   // Map server response to client Agent type
   const mapped = data.agents.map((agent: any) => ({
@@ -87,7 +84,6 @@ export async function fetchUserAgents(): Promise<Agent[]> {
     } : undefined,
   }));
 
-  console.log('[fetchUserAgents] Mapped agents:', mapped);
   return mapped;
 }
 
@@ -95,7 +91,7 @@ export async function fetchUserAgents(): Promise<Agent[]> {
  * Request deployment transaction from server
  */
 export async function requestDeployTransaction(): Promise<DeployTransactionResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/agents/deploy`, {
+  const response = await fetch(`${API_URL}/api/agents/deploy`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -113,7 +109,7 @@ export async function requestDeployTransaction(): Promise<DeployTransactionRespo
  * Confirm deployment after transaction sent
  */
 export async function confirmDeployment(signature: string): Promise<ConfirmResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/agents/confirm`, {
+  const response = await fetch(`${API_URL}/api/agents/confirm`, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -126,4 +122,31 @@ export async function confirmDeployment(signature: string): Promise<ConfirmRespo
   }
 
   return response.json();
+}
+
+/**
+ * Assemble a client-side Agent object from a successful deploy confirmation.
+ *
+ * Lives next to confirmDeployment so the deploy hook stays a thin composition.
+ * NOTE: resourceType is hardcoded to 'GOLD' pending a server data-model change
+ * that returns the real resource type; the value is corrected via socket update.
+ */
+export function buildDeployedAgent(confirm: ConfirmResponse): Agent {
+  const { agent } = confirm;
+  return {
+    id: agent.id,
+    hexId: agent.hexId ?? null,
+    status: agent.hexId ? 'MINING' : 'IDLE',
+    deployedAt: new Date().toISOString(),
+    agentIndex: agent.agentIndex,
+    mintAddress: agent.mintAddress,
+    hex:
+      agent.hexQ != null && agent.hexR != null
+        ? {
+            q: agent.hexQ,
+            r: agent.hexR,
+            resourceType: 'GOLD', // Corrected via socket mining update
+          }
+        : undefined,
+  };
 }

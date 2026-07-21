@@ -40,7 +40,7 @@ model Agent {
 
   // cNFT fields - added for Phase 5
   mintAddress     String?  @unique @map("mint_address")  // cNFT asset ID
-  deployTxSig     String?  @map("deploy_tx_sig")         // Deployment transaction signature
+  deployTxSig     String?  @unique @map("deploy_tx_sig")  // Deployment transaction signature (unique to prevent reuse)
   mintTxSig       String?  @map("mint_tx_sig")           // Minting transaction signature
   agentIndex      Int?     @map("agent_index")           // On-chain index from event
 

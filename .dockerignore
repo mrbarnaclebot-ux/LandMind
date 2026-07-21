@@ -1,0 +1,29 @@
+# Dependencies & build output (reinstalled/rebuilt inside the image)
+node_modules
+**/node_modules
+dist
+**/dist
+
+# Knowledge graph / planning / docs artifacts (not needed at build time)
+graphify-out
+.planning
+Plan
+docs
+
+# Version control & tooling
+.git
+.gitignore
+.playwright-mcp
+
+# Anchor / Solana program build artifacts (contracts are NOT deployed here)
+packages/contracts/target
+
+# Local env & logs
+.env
+.env.*
+*.log
+
+# Editor cruft
+.vscode
+.idea
+.DS_Store

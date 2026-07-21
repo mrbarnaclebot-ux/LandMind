@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { jwtVerify } from 'jose';
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production'
-);
+import { JWT_SECRET, SESSION_COOKIE_NAME } from '../lib/jwtSecret.js';
 
 export interface AuthenticatedRequest extends Request {
   walletAddress?: string;
@@ -19,7 +16,7 @@ export async function authMiddleware(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const token = req.cookies?.session ||
+  const token = req.cookies?.[SESSION_COOKIE_NAME] ||
     req.headers.authorization?.replace('Bearer ', '');
 
   if (!token) {
@@ -47,7 +44,7 @@ export async function requireAuth(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const token = req.cookies?.session ||
+  const token = req.cookies?.[SESSION_COOKIE_NAME] ||
     req.headers.authorization?.replace('Bearer ', '');
 
   if (!token) {
@@ -82,7 +79,7 @@ export async function optionalAuth(
   _res: Response,
   next: NextFunction
 ): Promise<void> {
-  const token = req.cookies?.session ||
+  const token = req.cookies?.[SESSION_COOKIE_NAME] ||
     req.headers.authorization?.replace('Bearer ', '');
 
   if (!token) {

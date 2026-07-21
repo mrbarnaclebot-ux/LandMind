@@ -1,4 +1,5 @@
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { API_URL } from './config';
 
 /**
  * Get SOL balance for a wallet address.
@@ -55,5 +56,7 @@ export function getExplorerUrl(
 
 /**
  * API base URL for server requests.
+ * @deprecated Import `API_URL` from `lib/config` directly. Re-exported here for
+ * backwards compatibility with existing admin/auth call sites.
  */
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+export const API_BASE_URL = API_URL;

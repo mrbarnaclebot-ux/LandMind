@@ -56,11 +56,11 @@ This specification defines a Web3-enabled 3D hexagonal land grid mining platform
    - Secondary market transactions
 3. **Demonstrate Solana's scalability** for complex game economies with large state spaces
 4. **Build community engagement** through competitive and collaborative mining mechanics
-5. **Enable true asset ownership** via Solana blockchain for plots and agents
+5. **Enable true asset ownership** via Solana blockchain for deployed agents (minted as compressed NFTs; hexes are system-owned)
 
 ### 1.2 Core Value Propositions
 
-- **Real Ownership**: Users own NFT-backed land plots on-chain with verifiable resource allocation
+- **Real Ownership**: Users own their deployed agents on-chain as compressed NFTs; hexes are system-owned, with resource allocation verifiable off-chain
 - **Passive Income**: Agent deployment generates continuous mining rewards and fee-sharing opportunities
 - **Transparent Economy**: All transactions and rewards logged on immutable blockchain
 - **Low Barriers to Entry**: Minimal transaction costs (sub-cent fees) enable mass participation
@@ -102,10 +102,13 @@ This specification defines a Web3-enabled 3D hexagonal land grid mining platform
                        │
 ┌──────────────────────────────────────────────────────────────┐
 │              BLOCKCHAIN LAYER (Solana Mainnet)                │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
-│  │ Land Registry│  │ Agent Factory│  │ Reward Vault     │  │
-│  │ (NFT Program)│  │ (Program)    │  │ (Fee Distribution)  │
-│  └──────────────┘  └──────────────┘  └──────────────────┘  │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │  landmind (single Anchor program)                      │ │
+│  │  ├─ deploy_agent  (0.1 SOL -> fee vault, emit event)   │ │
+│  │  ├─ fee vault     (accumulates deploy + external fees) │ │
+│  │  └─ claim_earnings (Merkle-proof fee distribution)     │ │
+│  │  Hexes are system-owned (no per-tile ownership NFT)    │ │
+│  └────────────────────────────────────────────────────────┘ │
 └──────────────────────────────────────────────────────────────┘
                        │
 ┌──────────────────────────────────────────────────────────────┐
@@ -185,7 +188,7 @@ This specification defines a Web3-enabled 3D hexagonal land grid mining platform
 | **Language** | Rust + Anchor | Solana program development |
 | **Network** | Solana Mainnet-beta | Production deployment |
 | **Development** | Anchor CLI | Program scaffolding & testing |
-| **Token Standard** | SPL Token / Metaplex | NFT standard for land plots |
+| **Token Standard** | Metaplex Bubblegum (cNFT) | Compressed NFT standard for agents (hexes are system-owned, not tokenized) |
 | **Testing** | Anchor Tests | Local environment testing |
 | **Deployment** | Solana CLI + Anchor | Contract verification & deployment |
 
@@ -696,224 +699,151 @@ Performance Optimization:
 
 ### 6.1 Program Architecture
 
-**3 Main Anchor Programs:**
+**Single Anchor program: `landmind`.**
 
-#### A. Land Registry Program (NFT Standard)
+The on-chain surface is a single program that handles agent deployment (fee
+collection into a program-owned vault) and Merkle-proof-based earnings claims.
+There is **no** Land Registry program and **no** per-hex ownership NFT — hexes
+are system-owned and hex/agent assignment is resolved off-chain by the
+simulation. Agents are minted as Metaplex **compressed NFTs (cNFTs)** off the
+deploy event rather than tracked in a per-agent on-chain account.
 
-```rust
-// Land Registry - Manages hex tile ownership via SPL NFTs
+> **Design evolution.** This specification originally described three separate
+> programs — a Land Registry (per-hex ownership NFTs), an Agent Factory, and a
+> Rewards Vault. They were consolidated into the single `landmind` program to
+> reduce on-chain surface area, deployment cost, and cross-program complexity.
+> Per-hex ownership NFTs were removed in favour of system-owned hexes; deploy,
+> the fee vault, and Merkle claims now live in one program. User-facing
+> economics (0.1 SOL deploy, weighted fee distribution) are unchanged.
 
-#[derive(Accounts)]
-pub struct ClaimHexTile<'info> {
-    #[account(mut)]
-    pub claimer: Signer<'info>,
-    
-    #[account(init, payer = claimer, space = HexTile::LEN)]
-    pub hex_tile: Account<'info, HexTile>,
-    
-    pub system_program: Program<'info, System>,
-}
+Program ID: `D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ`
 
-#[account]
-pub struct HexTile {
-    pub coordinate: HexCoord,           // (q, r)
-    pub owner: Pubkey,
-    pub nft_mint: Pubkey,
-    pub resources: ResourceAllocation,
-    pub discovered_at: i64,
-}
+| Instruction | Description |
+|-------------|-------------|
+| `deploy_agent` | Transfer 0.1 SOL to the program fee vault, emit a deploy event for off-chain cNFT minting |
+| `initialize_vault` | One-time setup of the fee vault state / authority |
+| `claim_earnings` | Verify a Merkle proof and transfer the caller's earned fee share |
+| `update_merkle_root` | Admin updates the claimable-amounts Merkle root each distribution epoch |
+| `pause_vault` / `unpause_vault` | Emergency controls |
 
-pub fn claim_hex_tile(
-    ctx: Context<ClaimHexTile>,
-    q: i32,
-    r: i32,
-) -> Result<()> {
-    require!(!tile_exists(q, r), TileAlreadyClaimed);
-    
-    let hex = &mut ctx.accounts.hex_tile;
-    hex.coordinate = HexCoord { q, r };
-    hex.owner = ctx.accounts.claimer.key();
-    hex.resources = generate_resources(q, r);
-    hex.discovered_at = Clock::get()?.unix_timestamp;
-    
-    // Emit event for indexing
-    emit!(HexTileClaimed {
-        owner: hex.owner,
-        coordinate: (q, r),
-        timestamp: hex.discovered_at,
-    });
-    
-    Ok(())
-}
-```
-
-#### B. Agent Factory Program
+#### A. Agent deployment (`deploy_agent`)
 
 ```rust
-// Agent Factory - Manages agent deployment and lifecycle
+// landmind::deploy_agent
+// Transfers the flat deploy cost to the program fee vault (a system-owned PDA)
+// and emits an event. The cNFT is minted off-chain by the server from the event;
+// there is no per-agent on-chain account and no hex-ownership check.
 
 #[derive(Accounts)]
 pub struct DeployAgent<'info> {
     #[account(mut)]
     pub deployer: Signer<'info>,
-    
-    #[account(mut, has_one = owner)]
-    pub hex_tile: Account<'info, HexTile>,
-    
-    #[account(init, payer = deployer, space = Agent::LEN)]
-    pub agent: Account<'info, Agent>,
-    
-    #[account(mut)]
-    pub agent_vault: Account<'info, TokenAccount>,
-    
-    #[account(mut)]
-    pub program_vault: Account<'info, TokenAccount>,
-    
+
+    /// Program-owned SOL fee vault PDA. Accumulates deploy fees + external fees.
+    #[account(mut, seeds = [b"fee_vault"], bump)]
+    pub fee_vault: SystemAccount<'info>,
+
     pub system_program: Program<'info, System>,
-    pub token_program: Interface<'info, TokenInterface>,
 }
 
-#[account]
-pub struct Agent {
-    pub id: [u8; 32],              // UUID bytes
-    pub nft_mint: Pubkey,
-    pub owner: Pubkey,
-    pub hex_tile_id: Pubkey,
-    pub status: AgentStatus,
-    pub mining_power: f64,
-    pub energy_level: f64,
-    pub deployed_at: i64,
-    pub total_mined: ResourceCount,
-}
+pub fn deploy_agent(ctx: Context<DeployAgent>) -> Result<()> {
+    const DEPLOYMENT_COST: u64 = 100_000_000; // 0.1 SOL in lamports
 
-pub fn deploy_agent(
-    ctx: Context<DeployAgent>,
-    agent_type: AgentType,
-) -> Result<()> {
-    let deployment_cost = match agent_type {
-        AgentType::Base => 100_000_000,        // 0.1 SOL (in lamports)
-        AgentType::Advanced => 150_000_000,    // 0.15 SOL
-        AgentType::Elite => 300_000_000,       // 0.3 SOL
-    };
-    
-    // Transfer cost to program vault
-    transfer(&CpiContext::new(
-        ctx.accounts.token_program.to_account_info(),
-        TransferChecked {
-            from: ctx.accounts.deployer.to_account_info(),
-            mint: WRAPPED_SOL_MINT.into(),
-            to: ctx.accounts.program_vault.to_account_info(),
-            authority: ctx.accounts.deployer.to_account_info(),
-        },
-    ), deployment_cost, 9)?;
-    
-    // Register agent on-chain
-    let agent = &mut ctx.accounts.agent;
-    agent.owner = ctx.accounts.deployer.key();
-    agent.hex_tile_id = ctx.accounts.hex_tile.key();
-    agent.status = AgentStatus::Active;
-    agent.mining_power = agent_type.base_power();
-    agent.energy_level = 100.0;
-    agent.deployed_at = Clock::get()?.unix_timestamp;
-    
+    // Move the deploy fee into the program fee vault.
+    let ix = system_instruction::transfer(
+        ctx.accounts.deployer.key,
+        ctx.accounts.fee_vault.key,
+        DEPLOYMENT_COST,
+    );
+    invoke(
+        &ix,
+        &[
+            ctx.accounts.deployer.to_account_info(),
+            ctx.accounts.fee_vault.to_account_info(),
+            ctx.accounts.system_program.to_account_info(),
+        ],
+    )?;
+
+    // Emit for off-chain indexing + cNFT minting. Hex assignment happens off-chain.
     emit!(AgentDeployed {
-        agent_id: agent.id,
-        owner: agent.owner,
-        hex_coord: ctx.accounts.hex_tile.coordinate,
-        deployment_cost,
-        timestamp: agent.deployed_at,
+        owner: ctx.accounts.deployer.key(),
+        deployment_cost: DEPLOYMENT_COST,
+        timestamp: Clock::get()?.unix_timestamp,
     });
-    
+
     Ok(())
 }
 ```
 
-#### C. Rewards & Fee Distribution Program
+#### B. Earnings claim (`claim_earnings`)
 
 ```rust
-// Rewards Vault - Manages mining rewards and fee distribution
+// landmind::claim_earnings
+// Verifies a Merkle proof against the current root (published per distribution
+// epoch by update_merkle_root) and transfers the caller's claimable fee share
+// out of the fee vault. Fee-share weighting is computed off-chain from mining.
 
 #[derive(Accounts)]
-pub struct ClaimMiningRewards<'info> {
+pub struct ClaimEarnings<'info> {
     #[account(mut)]
     pub claimer: Signer<'info>,
-    
-    #[account(mut, has_one = owner)]
-    pub agent: Account<'info, Agent>,
-    
-    #[account(mut)]
-    pub reward_vault: Account<'info, TokenAccount>,
-    
-    #[account(mut)]
-    pub claimer_ata: Account<'info, TokenAccount>,
-    
-    pub token_program: Interface<'info, TokenInterface>,
+
+    #[account(mut, seeds = [b"vault_state"], bump)]
+    pub vault_state: Account<'info, VaultState>,
+
+    #[account(mut, seeds = [b"fee_vault"], bump)]
+    pub fee_vault: SystemAccount<'info>,
+
+    pub system_program: Program<'info, System>,
 }
 
-pub fn claim_rewards(ctx: Context<ClaimMiningRewards>) -> Result<()> {
-    let agent = &mut ctx.accounts.agent;
-    
-    let total_resources = agent.total_mined.to_sol_value();
-    
-    // Calculate fee-share (based on agent count)
-    let fee_distribution_amount = calculate_fee_share(
-        agent.owner,
-        agent.mining_power,
-    )?;
-    
-    // Transfer rewards + fee-share to user
-    let total_transfer = total_resources + fee_distribution_amount;
-    
-    transfer(&CpiContext::new(
-        ctx.accounts.token_program.to_account_info(),
-        TransferChecked {
-            from: ctx.accounts.reward_vault.to_account_info(),
-            mint: WRAPPED_SOL_MINT.into(),
-            to: ctx.accounts.claimer_ata.to_account_info(),
-            authority: VAULT_AUTHORITY.into(),
-        },
-    ), total_transfer, 9)?;
-    
-    // Zero out claimed resources
-    agent.total_mined = ResourceCount::default();
-    
-    emit!(RewardsClaimed {
-        agent_id: agent.id,
-        owner: agent.owner,
-        amount_sol: total_transfer,
+pub fn claim_earnings(
+    ctx: Context<ClaimEarnings>,
+    amount: u64,
+    proof: Vec<[u8; 32]>,
+) -> Result<()> {
+    let vault = &mut ctx.accounts.vault_state;
+    require!(!vault.paused, LandmindError::VaultPaused);
+
+    // Leaf = hash(claimer, amount); verify against the published root.
+    let leaf = hash_leaf(&ctx.accounts.claimer.key(), amount);
+    require!(
+        verify_merkle_proof(&proof, vault.merkle_root, leaf),
+        LandmindError::InvalidProof
+    );
+
+    // Transfer the claimable share from the fee vault to the claimer.
+    **ctx.accounts.fee_vault.to_account_info().try_borrow_mut_lamports()? -= amount;
+    **ctx.accounts.claimer.to_account_info().try_borrow_mut_lamports()? += amount;
+
+    emit!(EarningsClaimed {
+        owner: ctx.accounts.claimer.key(),
+        amount,
         timestamp: Clock::get()?.unix_timestamp,
     });
-    
+
     Ok(())
 }
+```
 
-#[derive(Accounts)]
-pub struct DistributeFeeShares<'info> {
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    
-    #[account(mut)]
-    pub fee_vault: Account<'info, TokenAccount>,
-    
-    pub token_program: Interface<'info, TokenInterface>,
+#### C. Vault administration (`update_merkle_root`, pause controls)
+
+```rust
+// landmind - admin instructions guarded by the vault authority.
+
+#[account]
+pub struct VaultState {
+    pub authority: Pubkey,   // admin allowed to update the root / pause
+    pub merkle_root: [u8; 32],
+    pub paused: bool,
+    pub epoch: u64,
 }
 
-pub fn distribute_fee_shares(
-    ctx: Context<DistributeFeeShares>,
-    distributions: Vec<FeeDistributionRecord>,
-) -> Result<()> {
-    require_eq!(ctx.accounts.authority.key(), PROGRAM_AUTHORITY);
-    
-    for record in distributions {
-        transfer(&CpiContext::new(...), record.amount, 9)?;
-        
-        emit!(FeeDistributed {
-            recipient: record.recipient,
-            amount: record.amount,
-            timestamp: Clock::get()?.unix_timestamp,
-        });
-    }
-    
+pub fn update_merkle_root(ctx: Context<UpdateRoot>, new_root: [u8; 32]) -> Result<()> {
+    let vault = &mut ctx.accounts.vault_state;
+    require_keys_eq!(ctx.accounts.authority.key(), vault.authority);
+    vault.merkle_root = new_root;
+    vault.epoch += 1;
     Ok(())
 }
 ```
@@ -921,35 +851,19 @@ pub fn distribute_fee_shares(
 ### 6.2 Event Architecture
 
 ```rust
-// Events for off-chain indexing
-
-#[event]
-pub struct HexTileClaimed {
-    pub owner: Pubkey,
-    pub coordinate: (i32, i32),
-    pub timestamp: i64,
-}
+// landmind events for off-chain indexing.
+// No HexTileClaimed event — hexes are system-owned and assigned off-chain.
 
 #[event]
 pub struct AgentDeployed {
-    pub agent_id: [u8; 32],
     pub owner: Pubkey,
-    pub hex_coord: (i32, i32),
     pub deployment_cost: u64,
     pub timestamp: i64,
 }
 
 #[event]
-pub struct RewardsClaimed {
-    pub agent_id: [u8; 32],
+pub struct EarningsClaimed {
     pub owner: Pubkey,
-    pub amount_sol: u64,
-    pub timestamp: i64,
-}
-
-#[event]
-pub struct FeeDistributed {
-    pub recipient: Pubkey,
     pub amount: u64,
     pub timestamp: i64,
 }
@@ -1816,7 +1730,7 @@ Solutions:
 
 ## Conclusion
 
-This specification defines a comprehensive Web3 gaming platform leveraging Solana's high throughput and low transaction costs. The architecture separates blockchain operations (land registry, agent creation, rewards) from off-chain simulation (mining mechanics, 3D rendering), enabling scalability while maintaining trustlessness.
+This specification defines a comprehensive Web3 gaming platform leveraging Solana's high throughput and low transaction costs. The architecture separates blockchain operations (agent deployment, the fee vault, and Merkle-proof earnings claims — all in the single `landmind` program) from off-chain simulation (mining mechanics, hex assignment, 3D rendering), enabling scalability while maintaining trustlessness. Hexes are system-owned rather than tokenized.
 
 Key strengths:
 - ✅ Solana's sub-cent transaction costs enable mass participation

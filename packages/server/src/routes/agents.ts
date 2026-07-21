@@ -3,12 +3,19 @@
  */
 import { Router, Request, Response } from 'express';
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { mintAgentNFT, getAgentMetadata } from '../services/agentMinting.js';
 import { placeAgentOnHex, getUserAgentStats } from '../services/agentPlacement.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/authMiddleware.js';
+import { LANDMIND_PROGRAM_ID } from '../lib/programId.js';
+import { TREASURY_SEED } from '../lib/pdaSeeds.js';
+import { getIO } from '../lib/socket.js';
 
 export const agentRouter = Router();
+
+// Max agents a single user may deploy.
+const MAX_AGENTS_PER_USER = 20;
 
 /**
  * Helper to serialize BigInt values to strings for JSON response
@@ -21,12 +28,59 @@ function serializeBigInts<T>(obj: T): T {
 
 // Constants
 const DEPLOY_COST_LAMPORTS = 100_000_000; // 0.1 SOL
-const LANDMIND_PROGRAM_ID = new PublicKey('D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ');
 
 // Get RPC connection
 function getConnection(): Connection {
   const rpcUrl = process.env.HELIUS_RPC_URL || process.env.VITE_SOLANA_RPC_URL || 'https://api.devnet.solana.com';
   return new Connection(rpcUrl, 'confirmed');
+}
+
+/** Sentinel error thrown inside the create transaction when the cap is hit. */
+class AgentCapError extends Error {
+  constructor() {
+    super('Agent cap reached');
+    this.name = 'AgentCapError';
+  }
+}
+
+/**
+ * Verify a confirmed deploy transaction actually transferred DEPLOY_COST_LAMPORTS
+ * from `payerWallet` to `treasuryAddress`.
+ *
+ * We inspect pre/postBalances against the account keys: the treasury must have
+ * gained >= DEPLOY_COST_LAMPORTS and the payer must have decreased by at least
+ * that amount (payer also pays network fees, so its decrease is >= cost).
+ */
+function verifyDeployPayment(
+  tx: Awaited<ReturnType<Connection['getTransaction']>>,
+  payerWallet: string,
+  treasuryAddress: string
+): boolean {
+  if (!tx || !tx.meta) return false;
+
+  // Resolve account keys (supports both legacy and v0 messages).
+  const message = tx.transaction.message;
+  const staticKeys = message.staticAccountKeys ?? [];
+  const accountKeys = staticKeys.map((k) => k.toBase58());
+
+  const payerIndex = accountKeys.indexOf(payerWallet);
+  const treasuryIndex = accountKeys.indexOf(treasuryAddress);
+
+  // Both accounts must be present in the static keys.
+  if (payerIndex === -1 || treasuryIndex === -1) return false;
+
+  const { preBalances, postBalances } = tx.meta;
+  const treasuryDelta =
+    (postBalances[treasuryIndex] ?? 0) - (preBalances[treasuryIndex] ?? 0);
+  const payerDelta =
+    (postBalances[payerIndex] ?? 0) - (preBalances[payerIndex] ?? 0);
+
+  // Treasury must have received at least the deploy cost.
+  if (treasuryDelta < DEPLOY_COST_LAMPORTS) return false;
+  // Payer must have paid at least the deploy cost (their balance decreased).
+  if (payerDelta > -DEPLOY_COST_LAMPORTS) return false;
+
+  return true;
 }
 
 /**
@@ -106,10 +160,10 @@ agentRouter.post('/deploy', requireAuth, async (req: AuthenticatedRequest, res: 
       where: { ownerId: req.userId },
     });
 
-    if (agentCount >= 20) {
+    if (agentCount >= MAX_AGENTS_PER_USER) {
       return res.status(400).json({
         error: 'Agent limit reached',
-        message: 'You already have 20 agents deployed',
+        message: `You already have ${MAX_AGENTS_PER_USER} agents deployed`,
       });
     }
 
@@ -118,7 +172,7 @@ agentRouter.post('/deploy', requireAuth, async (req: AuthenticatedRequest, res: 
 
     // Derive treasury PDA
     const [treasuryPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('treasury')],
+      [Buffer.from(TREASURY_SEED)],
       LANDMIND_PROGRAM_ID
     );
 
@@ -167,8 +221,29 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
   try {
     const { signature } = req.body;
 
-    if (!signature) {
+    if (!signature || typeof signature !== 'string') {
       return res.status(400).json({ error: 'Transaction signature required' });
+    }
+
+    // Get user
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Explicit pre-check: reject a deployTxSig that was already used.
+    // (Backed by the DB unique constraint below to close the race window.)
+    const existingWithSig = await prisma.agent.findUnique({
+      where: { deployTxSig: signature },
+    });
+    if (existingWithSig) {
+      return res.status(409).json({
+        error: 'Transaction already used',
+        message: 'This deployment transaction has already been redeemed for an agent.',
+      });
     }
 
     const connection = getConnection();
@@ -187,31 +262,73 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
       return res.status(400).json({ error: 'Transaction failed', details: tx.meta.err });
     }
 
-    // Get user
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-    });
+    // Derive the treasury PDA (deploy fee destination).
+    const [treasuryPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(TREASURY_SEED)],
+      LANDMIND_PROGRAM_ID
+    );
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+    // Verify the tx actually moved DEPLOY_COST_LAMPORTS from THIS user's wallet
+    // to the treasury PDA. We check the balance deltas against account keys.
+    const paid = verifyDeployPayment(tx, user.walletPubkey, treasuryPda.toBase58());
+    if (!paid) {
+      return res.status(400).json({
+        error: 'Invalid deployment payment',
+        message:
+          'Transaction did not transfer the required deployment fee from your wallet to the treasury.',
+      });
     }
 
-    // Get next agent index
-    const lastAgent = await prisma.agent.findFirst({
-      orderBy: { agentIndex: 'desc' },
-      where: { agentIndex: { not: null } },
-    });
-    const agentIndex = (lastAgent?.agentIndex || 0) + 1;
+    // Create the agent atomically with the 20-agent cap enforced INSIDE the
+    // same transaction (closes the count-then-create race, M-5). The
+    // deployTxSig unique constraint also protects against sig reuse races.
+    let agent;
+    try {
+      agent = await prisma.$transaction(async (txClient) => {
+        const count = await txClient.agent.count({
+          where: { ownerId: req.userId! },
+        });
+        if (count >= MAX_AGENTS_PER_USER) {
+          throw new AgentCapError();
+        }
 
-    // Create agent record first
-    const agent = await prisma.agent.create({
-      data: {
-        ownerId: req.userId!,
-        status: 'IDLE',
-        deployTxSig: signature,
-        agentIndex,
-      },
-    });
+        // Compute next global agent index inside the transaction.
+        const lastAgent = await txClient.agent.findFirst({
+          orderBy: { agentIndex: 'desc' },
+          where: { agentIndex: { not: null } },
+        });
+        const nextIndex = (lastAgent?.agentIndex || 0) + 1;
+
+        return txClient.agent.create({
+          data: {
+            ownerId: req.userId!,
+            status: 'IDLE',
+            deployTxSig: signature,
+            agentIndex: nextIndex,
+          },
+        });
+      });
+    } catch (txErr) {
+      if (txErr instanceof AgentCapError) {
+        return res.status(400).json({
+          error: 'Agent limit reached',
+          message: `You already have ${MAX_AGENTS_PER_USER} agents deployed`,
+        });
+      }
+      // Unique constraint violation on deployTxSig => concurrent reuse.
+      if (
+        txErr instanceof Prisma.PrismaClientKnownRequestError &&
+        txErr.code === 'P2002'
+      ) {
+        return res.status(409).json({
+          error: 'Transaction already used',
+          message: 'This deployment transaction has already been redeemed for an agent.',
+        });
+      }
+      throw txErr;
+    }
+
+    const agentIndex = agent.agentIndex!;
 
     // Mint cNFT (async - could fail but agent is already created)
     try {
@@ -235,15 +352,12 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
 
       if (placement) {
         // Emit socket event for real-time update
-        const io = req.app.get('io');
-        if (io) {
-          io.to(`user:${user.walletPubkey}`).emit('agent:placed', {
-            agentId: agent.id,
-            hexId: placement.hexId,
-            hexQ: placement.q,
-            hexR: placement.r,
-          });
-        }
+        getIO().to(`user:${user.walletPubkey}`).emit('agent:placed', {
+          agentId: agent.id,
+          hexId: placement.hexId,
+          hexQ: placement.q,
+          hexR: placement.r,
+        });
       }
 
       res.json({
@@ -264,15 +378,12 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
       const placement = await placeAgentOnHex(agent.id);
 
       if (placement) {
-        const io = req.app.get('io');
-        if (io) {
-          io.to(`user:${user.walletPubkey}`).emit('agent:placed', {
-            agentId: agent.id,
-            hexId: placement.hexId,
-            hexQ: placement.q,
-            hexR: placement.r,
-          });
-        }
+        getIO().to(`user:${user.walletPubkey}`).emit('agent:placed', {
+          agentId: agent.id,
+          hexId: placement.hexId,
+          hexQ: placement.q,
+          hexR: placement.r,
+        });
       }
 
       // Agent exists but minting failed - can retry later

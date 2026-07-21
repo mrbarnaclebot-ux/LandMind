@@ -21,7 +21,8 @@ import {
   deductHexResources,
 } from './relocation.js';
 import { flushToPostgres, loadHotAgentsFromPostgres } from '../cache/persistence.js';
-import type { AgentUpdate } from '../events/types.js';
+import { getEarningsForUser } from '../services/earningsService.js';
+import type { AgentUpdate, EarningsUpdateData } from '../events/types.js';
 
 const TICK_INTERVAL = 5000; // 5 seconds
 const FLUSH_INTERVAL = 6; // Flush every 6 ticks (30 seconds)
@@ -78,6 +79,33 @@ async function processTick(): Promise<void> {
     // 1. Mining updates per user
     for (const [wallet, agentUpdates] of userUpdates) {
       io.to(`user:${wallet}`).emit('mining:update', { agents: agentUpdates });
+    }
+
+    // 1b. Earnings updates per user (recompute share for owners that changed).
+    // Map each updated wallet back to its ownerId so we can compute earnings.
+    const walletToOwnerId = new Map<string, string>();
+    for (const agent of agents) {
+      walletToOwnerId.set(agent.ownerWallet, agent.ownerId);
+    }
+    for (const wallet of userUpdates.keys()) {
+      const ownerId = walletToOwnerId.get(wallet);
+      if (!ownerId) continue;
+      try {
+        const earnings = await getEarningsForUser(ownerId);
+        // sharePercent = (userScore / totalPoolScore) * 100
+        const sharePercent =
+          earnings.totalPoolScore > 0n
+            ? (Number(earnings.weightedScore) / Number(earnings.totalPoolScore)) * 100
+            : 0;
+        const payload: EarningsUpdateData = {
+          claimable: earnings.claimableAmount.toString(),
+          sharePercent,
+          totalPoolScore: earnings.totalPoolScore.toString(),
+        };
+        io.to(`user:${wallet}`).emit('earnings:update', payload);
+      } catch (err) {
+        console.error(`Failed to compute earnings update for ${wallet}:`, err);
+      }
     }
 
     // 2. Hex depletion events (broadcast to all)

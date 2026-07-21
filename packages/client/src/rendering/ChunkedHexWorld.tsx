@@ -149,11 +149,7 @@ export function ChunkedHexWorld({
 
   // Generate hex data - only regenerate on seed/radius change
   const hexes = useMemo(() => {
-    console.log(`[ChunkedHexWorld] Generating hex data for radius ${gridRadius}`);
-    const start = performance.now();
-    const data = generateHexData(gridRadius, seed);
-    console.log(`[ChunkedHexWorld] Generated ${data.length} hexes in ${(performance.now() - start).toFixed(0)}ms`);
-    return data;
+    return generateHexData(gridRadius, seed);
   }, [gridRadius, seed]);
 
   // Populate hex store with generated data
@@ -165,12 +161,7 @@ export function ChunkedHexWorld({
 
   // Initialize chunks when hex data changes
   useEffect(() => {
-    console.log('[ChunkedHexWorld] Generating chunks...');
-    const start = performance.now();
     chunkManager.generateChunks(hexes, gridRadius);
-    console.log(
-      `[ChunkedHexWorld] Created ${chunkManager.getChunkCount()} chunks in ${(performance.now() - start).toFixed(0)}ms`
-    );
   }, [hexes, gridRadius, chunkManager]);
 
   // Track visible chunks

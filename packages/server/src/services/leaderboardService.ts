@@ -132,40 +132,6 @@ export async function removeUser(wallet: string): Promise<void> {
 }
 
 /**
- * Get users around a specific user (context for their position)
- *
- * @param wallet - User's wallet public key
- * @param contextCount - Number of users above and below to include
- * @returns Array of nearby users or null if user not found
- */
-export async function getUserContext(
-  wallet: string,
-  contextCount: number = 2
-): Promise<LeaderboardEntry[] | null> {
-  const rankInfo = await getUserRank(wallet);
-  if (!rankInfo) return null;
-
-  // Calculate range (0-indexed)
-  const startRank = Math.max(0, rankInfo.rank - 1 - contextCount);
-  const endRank = rankInfo.rank - 1 + contextCount;
-
-  const results = await redis.zrevrange(LEADERBOARD_KEY, startRank, endRank, 'WITHSCORES');
-
-  const entries: LeaderboardEntry[] = [];
-  for (let i = 0; i < results.length; i += 2) {
-    const w = results[i];
-    const score = results[i + 1];
-    entries.push({
-      wallet: w,
-      score,
-      rank: startRank + Math.floor(i / 2) + 1, // 1-indexed rank
-    });
-  }
-
-  return entries;
-}
-
-/**
  * Get total number of users in the leaderboard
  *
  * @returns Total user count

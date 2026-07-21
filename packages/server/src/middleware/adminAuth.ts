@@ -3,6 +3,25 @@ import { prisma } from '../lib/prisma.js';
 import { AuthenticatedRequest } from './authMiddleware.js';
 
 /**
+ * Core admin check: is the given user an ADMIN in the database?
+ * Shared by the requireAdmin HTTP middleware and the socket admin gate so both
+ * use identical logic.
+ *
+ * @param userId - User UUID (may be undefined)
+ * @returns true if the user exists and has the ADMIN role
+ */
+export async function isUserAdmin(userId: string | undefined | null): Promise<boolean> {
+  if (!userId) return false;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  return user?.role === 'ADMIN';
+}
+
+/**
  * Middleware that requires admin role.
  * Must be used after requireAuth middleware.
  */
@@ -17,13 +36,7 @@ export async function requireAdmin(
       return;
     }
 
-    // Fetch user with role from database
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-      select: { role: true },
-    });
-
-    if (!user || user.role !== 'ADMIN') {
+    if (!(await isUserAdmin(req.userId))) {
       res.status(403).json({ error: 'Admin access required' });
       return;
     }

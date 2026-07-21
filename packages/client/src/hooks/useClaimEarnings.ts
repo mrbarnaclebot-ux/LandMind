@@ -14,8 +14,7 @@ import {
   createComputeUnitLimitInstruction,
 } from '../solana/priorityFees';
 import { confirmTransactionUntilExpiry } from '../solana/transactionRetry';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { API_URL } from '../lib/config';
 
 export type ClaimStatus = 'idle' | 'building' | 'signing' | 'sending' | 'confirming' | 'success' | 'error';
 
@@ -77,7 +76,7 @@ export function useClaimEarnings() {
 
     try {
       // 1. Request claim transaction from server
-      const claimResponse = await fetch(`${API_BASE_URL}/api/earnings/claim`, {
+      const claimResponse = await fetch(`${API_URL}/api/earnings/claim`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -162,7 +161,7 @@ export function useClaimEarnings() {
           }
 
           // 7. Confirm with server
-          const confirmResponse = await fetch(`${API_BASE_URL}/api/earnings/confirm`, {
+          const confirmResponse = await fetch(`${API_URL}/api/earnings/confirm`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },

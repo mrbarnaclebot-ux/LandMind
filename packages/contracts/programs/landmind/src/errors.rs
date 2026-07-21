@@ -25,6 +25,8 @@ pub enum LandMindError {
     InsufficientTreasuryBalance,
     #[msg("Claim amount exceeds allowance")]
     ClaimExceedsAllowance,
+    #[msg("Claim exceeds vault's distributable share (50% of deposits)")]
+    VaultShareExceeded,
 
     // Arithmetic errors (6030-6039)
     #[msg("Arithmetic overflow")]

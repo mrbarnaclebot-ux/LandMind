@@ -246,3 +246,104 @@ anchor deploy --provider.cluster mainnet
 | Deploy Cost | 0.1 SOL |
 | Min Claim | 0.025 SOL |
 | Max Agents | 16,384 (tree depth 14) |
+
+---
+
+## Railway Deployment (App Services)
+
+The application (server + client) deploys to [Railway](https://railway.app) as
+**two services built from this single monorepo** using per-service Dockerfiles.
+Railway selects which Dockerfile a service builds by the `RAILWAY_DOCKERFILE_PATH`
+service variable. Both Dockerfiles build from the **repository root** as the
+build context (npm workspaces monorepo).
+
+Postgres and Redis are provisioned from Railway's managed database templates,
+which expose `DATABASE_URL` and `REDIS_URL` respectively. Reference those into
+the server service with Railway variable references
+(e.g. `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `REDIS_URL=${{Redis.REDIS_URL}}`).
+
+### Services overview
+
+| Service | Dockerfile (`RAILWAY_DOCKERFILE_PATH`) | Runtime | Listens on |
+|---------|----------------------------------------|---------|-----------|
+| `server` | `packages/server/Dockerfile` | Node 20 (Express + Socket.io) | `process.env.PORT` on `0.0.0.0` |
+| `client` | `packages/client/Dockerfile` | Caddy 2 (static SPA) | `{$PORT}` |
+
+The server binds `process.env.PORT` and `0.0.0.0` (Railway injects `PORT`).
+Health check path: **`GET /health`** — returns `200` with
+`{ services: { database, cache } }` when Postgres + Redis are reachable, `503`
+otherwise. Point Railway's healthcheck at `/health`.
+
+### Server service — environment variables
+
+Required (the server boots and runs the full simulation + API with only these):
+
+| Variable | Notes |
+|----------|-------|
+| `DATABASE_URL` | From the Railway Postgres template. Prisma connection string. |
+| `REDIS_URL` | From the Railway Redis template. |
+| `JWT_SECRET` | Strong random secret. Startup **fails hard** in production if unset or left at the dev default. |
+| `CORS_ORIGIN` | Public URL of the client service (comma-separated for multiple). Never `*` (credentials are used). |
+| `NODE_ENV` | Set to `production`. |
+
+Optional (on-chain features; **absence only degrades on-chain functionality — the
+server still boots**). Missing values log a `[startup] Running with DEGRADED
+on-chain features` warning:
+
+| Variable | Enables |
+|----------|---------|
+| `SERVER_WALLET_SECRET` | Server signing key (base58) for cNFT minting. |
+| `MERKLE_TREE_ADDRESS` | Bubblegum merkle tree to mint agent cNFTs into. |
+| `HELIUS_RPC_URL` | Preferred Solana RPC endpoint (reads/verification). |
+| `SOLANA_RPC_URL` | Fallback RPC for metrics/fee reads. |
+| `PROGRAM_ID` | LandMind Anchor program ID (defaults to the known devnet ID). |
+| `SERVER_URL` | Public server URL used in cNFT metadata URIs. |
+| `PUMPFUN_FEE_WALLET` | Enables PumpFun fee-deposit monitoring. |
+| `ADMIN_WALLET_1` / `ADMIN_WALLET_2` | Admin wallet allowlist. |
+
+Without the Solana secrets, cNFT minting and on-chain verification are disabled
+and only fail when those specific endpoints are actually invoked — the
+simulation, WebSocket streaming, auth, and REST API are fully operational.
+
+### Client service — environment variables
+
+| Variable | Notes |
+|----------|-------|
+| `VITE_API_URL` | **Build-time** variable. Vite inlines `import.meta.env.VITE_API_URL` at build time, so it must be set as a Railway service variable **before the build runs**; the Dockerfile threads it in via `ARG`/`ENV`. Set to the server service's public URL (e.g. `https://landmind-server.up.railway.app`). |
+
+A production build with `VITE_API_URL` unset will log a loud console error at
+runtime and API/socket requests will fail — always set it.
+
+Optional client build-time vars (Solana front-end features): `VITE_SOLANA_RPC_URL`,
+`VITE_HELIUS_RPC_URL`, `VITE_MERKLE_TREE_ADDRESS`, `VITE_LANDMIND_PROGRAM_ID`,
+`VITE_SOLANA_NETWORK`, `VITE_HEX_GRID_RADIUS`.
+
+### Database migration strategy
+
+The repo historically used `prisma db push` (no migration history). A baseline
+migration has been committed at `packages/server/prisma/migrations/0_init/` (with
+`migration_lock.toml`, provider `postgresql`). The server's start command runs:
+
+```
+npx prisma migrate deploy && node dist/index.js
+```
+
+`migrate deploy` is idempotent — on first boot it applies `0_init` (creating all
+tables, enums, and unique indexes including `agents_deploy_tx_sig_key`); on
+subsequent boots it applies only new, unapplied migrations. To evolve the schema,
+generate a new migration locally with `prisma migrate dev` and commit it; Railway
+applies it automatically on the next deploy.
+
+> **Baselining an existing database:** if the Postgres instance already has the
+> schema (e.g. created via `db push`), mark the baseline as already-applied once
+> with `npx prisma migrate resolve --applied 0_init` before the first
+> `migrate deploy`, otherwise it will try to recreate existing objects and fail.
+
+### Deploy order
+
+1. Provision Postgres + Redis templates.
+2. Deploy the **server** service (`RAILWAY_DOCKERFILE_PATH=packages/server/Dockerfile`),
+   set its env vars, generate a public domain.
+3. Deploy the **client** service (`RAILWAY_DOCKERFILE_PATH=packages/client/Dockerfile`),
+   set `VITE_API_URL` to the server's public URL, generate a public domain.
+4. Set the server's `CORS_ORIGIN` to the client's public URL and redeploy the server.

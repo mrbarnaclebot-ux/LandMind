@@ -9,6 +9,8 @@
  */
 import { Connection, PublicKey, ParsedTransactionWithMeta } from '@solana/web3.js';
 import { prisma } from '../lib/prisma.js';
+import { LANDMIND_PROGRAM_ID } from '../lib/programId.js';
+import { TREASURY_SEED } from '../lib/pdaSeeds.js';
 
 // Check interval: 60 seconds
 const CHECK_INTERVAL = 60_000;
@@ -19,13 +21,10 @@ let lastProcessedSlot = 0;
 // Monitor timer reference
 let monitorTimer: ReturnType<typeof setTimeout> | null = null;
 
-// Program ID for deriving treasury PDA
-const PROGRAM_ID = new PublicKey('D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ');
-
 // Treasury PDA: seeds = ["treasury"]
 const [TREASURY_PDA] = PublicKey.findProgramAddressSync(
-  [Buffer.from('treasury')],
-  PROGRAM_ID
+  [Buffer.from(TREASURY_SEED)],
+  LANDMIND_PROGRAM_ID
 );
 
 // PumpFun fee wallet (optional - from environment)

@@ -5,15 +5,12 @@ import { redis } from '../lib/redis.js';
 import { verifySignature } from '../lib/solana.js';
 import { prisma } from '../lib/prisma.js';
 import { isAdminWallet } from '../middleware/adminAuth.js';
+import { JWT_SECRET, SESSION_COOKIE_NAME } from '../lib/jwtSecret.js';
 
 const router = Router();
 const NONCE_TTL = 300; // 5 minutes
 const SESSION_DURATION = '24h';
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000;
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'dev-jwt-secret-change-in-production'
-);
 
 /**
  * GET /auth/nonce?address=<wallet_address>
@@ -110,7 +107,7 @@ router.post('/verify', async (req: Request, res: Response) => {
     .sign(JWT_SECRET);
 
   // 7. Set httpOnly cookie
-  res.cookie('session', accessToken, {
+  res.cookie(SESSION_COOKIE_NAME, accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
@@ -130,7 +127,7 @@ router.post('/verify', async (req: Request, res: Response) => {
  * Clear session cookie
  */
 router.post('/logout', (_req: Request, res: Response) => {
-  res.clearCookie('session');
+  res.clearCookie(SESSION_COOKIE_NAME);
   res.json({ success: true });
 });
 
@@ -139,7 +136,7 @@ router.post('/logout', (_req: Request, res: Response) => {
  * Check current session status (requires valid token)
  */
 router.get('/session', async (req: Request, res: Response) => {
-  const token = req.cookies?.session ||
+  const token = req.cookies?.[SESSION_COOKIE_NAME] ||
     req.headers.authorization?.replace('Bearer ', '');
 
   if (!token) {

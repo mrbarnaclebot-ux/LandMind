@@ -113,6 +113,18 @@ The `landmind` program (Anchor/Rust) handles:
 
 Program ID: `D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ`
 
+Hexes are **system-owned** — there is no on-chain Land Registry NFT. Agents are
+minted as compressed NFTs off the deploy event, and mining/hex assignment is
+resolved by the off-chain simulation rather than per-tile on-chain accounts.
+
+> **Design evolution.** Earlier drafts specified three separate Anchor programs
+> — a Land Registry (per-hex ownership NFTs), an Agent Factory, and a Rewards
+> Vault. These were consolidated into the single `landmind` program above.
+> Per-hex ownership NFTs were dropped in favour of system-owned hexes assigned
+> off-chain, and agent deployment, the fee vault, and Merkle-proof claims now
+> live in one program. This cut on-chain surface area, deployment cost, and
+> cross-program complexity while keeping the same user-facing economics.
+
 ---
 
 ## Getting Started

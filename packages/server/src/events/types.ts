@@ -14,10 +14,11 @@ export interface AgentUpdate {
 }
 
 // Earnings update event data
+// NOTE: shape aligned with the client contract (was: claimableAmount/weightedScore/userShare).
 export interface EarningsUpdateData {
-  claimableAmount: string; // BigInt as string
-  weightedScore: string;
-  userShare: string;
+  claimable: string;       // BigInt lamports as string (claimable now)
+  sharePercent: number;    // User's share of the total pool, as a percentage (0-100)
+  totalPoolScore: string;  // BigInt total weighted pool score as string
 }
 
 // Leaderboard update event data
@@ -65,7 +66,9 @@ export interface ServerToClientEvents {
 
 // Client -> Server events
 export interface ClientToServerEvents {
-  'subscribe': (walletPubkey: string, callback: (ok: boolean) => void) => void;
+  'subscribe': (walletPubkey: string | undefined, callback: (ok: boolean) => void) => void;
+  'admin:subscribe': () => void;
+  'admin:unsubscribe': () => void;
 }
 
 // Inter-server events (for Redis adapter)
@@ -73,7 +76,13 @@ export interface InterServerEvents {
   ping: () => void;
 }
 
-// Socket data attached to each connection
+// Server -> Client admin metrics event is loosely typed via `admin:metrics`.
+// (Kept out of ServerToClientEvents to avoid importing the metrics type here.)
+
+// Socket data attached to each connection.
+// Populated by the handshake auth middleware from the session JWT.
 export interface SocketData {
-  walletPubkey: string;
+  walletPubkey?: string; // authenticated wallet (undefined for unauthenticated sockets)
+  userId?: string;       // authenticated user id
+  isAdmin?: boolean;     // whether the authenticated wallet is an admin
 }

@@ -100,13 +100,11 @@ export function HeatMapOverlay({ visible, fadeDuration = 0.3 }: HeatMapOverlayPr
   // Create instance matrices and colors
   const { matrices, colors, count } = useMemo(() => {
     if (hexArray.length === 0) {
-      console.log('[HeatMap] No hexes loaded yet, isInitialized:', isInitialized);
       return { matrices: new Float32Array(0), colors: new Float32Array(0), count: 0 };
     }
 
     // Filter out hexes with no resources (NONE type)
     const resourceHexes = hexArray.filter((hex) => hex.resourceType !== 'NONE');
-    console.log(`[HeatMap] Rendering ${resourceHexes.length} resource hexes from ${hexArray.length} total`);
     const count = resourceHexes.length;
 
     const matrices = new Float32Array(count * 16);

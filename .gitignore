@@ -137,3 +137,6 @@ dist
 
 # macOS
 .DS_Store
+
+# Generated knowledge graph output
+graphify-out/

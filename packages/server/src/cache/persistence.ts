@@ -11,6 +11,7 @@ import {
   type ResourceTotals,
 } from '../services/earningsService.js';
 import { updateScoresBatch } from '../services/leaderboardService.js';
+import { invalidateMerkleTreeCache } from '../services/merkleService.js';
 
 /**
  * Load all MINING/RELOCATING agents from PostgreSQL into Redis cache
@@ -158,14 +159,8 @@ export async function flushToPostgres(): Promise<void> {
   }
 
   console.log(`Flushed ${agents.length} agents to PostgreSQL, updated ${ownerResources.size} earnings snapshots`);
-}
 
-/**
- * Calculate missed ticks since last update (for crash recovery)
- * Capped at 10 ticks (50 seconds) to prevent long startup
- */
-export function calculateMissedTicks(lastUpdate: Date, tickInterval: number): number {
-  const elapsed = Date.now() - lastUpdate.getTime();
-  const missedTicks = Math.floor(elapsed / tickInterval);
-  return Math.min(missedTicks, 10); // Cap at 10 ticks
+  // Snapshot data changed — invalidate the cached Merkle tree so the next
+  // claim request rebuilds against fresh allowances.
+  invalidateMerkleTreeCache();
 }

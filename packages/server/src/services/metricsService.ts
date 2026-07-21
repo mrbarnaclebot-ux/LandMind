@@ -1,6 +1,8 @@
 import { redis } from '../lib/redis.js';
 import { prisma } from '../lib/prisma.js';
 import { Connection, PublicKey } from '@solana/web3.js';
+import { LANDMIND_PROGRAM_ID } from '../lib/programId.js';
+import { TREASURY_SEED } from '../lib/pdaSeeds.js';
 
 export interface PlatformMetrics {
   // User metrics
@@ -127,12 +129,9 @@ export async function gatherMetrics(): Promise<PlatformMetrics> {
 
 async function getTreasuryBalance(): Promise<number> {
   try {
-    const programId = process.env.PROGRAM_ID;
-    if (!programId) return 0;
-
     const treasuryPDA = PublicKey.findProgramAddressSync(
-      [Buffer.from('treasury')],
-      new PublicKey(programId)
+      [Buffer.from(TREASURY_SEED)],
+      LANDMIND_PROGRAM_ID
     )[0];
     const connection = getConnection();
     return await connection.getBalance(treasuryPDA);

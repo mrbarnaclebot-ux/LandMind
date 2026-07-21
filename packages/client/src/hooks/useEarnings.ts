@@ -4,50 +4,8 @@
 import { useEffect, useCallback } from 'react';
 import { useWalletStore } from '../stores/walletStore';
 import { useEarningsStore } from '../stores/earningsStore';
-import { io, Socket } from 'socket.io-client';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
-// Socket event types
-interface EarningsUpdateEvent {
-  claimable: string;
-  weightedScore: string;
-  totalPoolScore: string;
-  sharePercent: number;
-}
-
-interface ClaimSuccessEvent {
-  claimId: string;
-  amount: string;
-  txSignature: string;
-}
-
-interface ClaimErrorEvent {
-  error: string;
-  message: string;
-}
-
-interface ServerToClientEvents {
-  'earnings:update': (data: EarningsUpdateEvent) => void;
-  'claim:success': (data: ClaimSuccessEvent) => void;
-  'claim:error': (data: ClaimErrorEvent) => void;
-}
-
-interface ClientToServerEvents {
-  'subscribe': (walletPubkey: string, callback: (ok: boolean) => void) => void;
-}
-
-let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
-
-function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
-  if (!socket) {
-    socket = io(API_BASE_URL, {
-      withCredentials: true,
-      transports: ['websocket', 'polling'],
-    });
-  }
-  return socket;
-}
+import { API_URL } from '../lib/config';
+import { getSocket } from '../lib/socket';
 
 export interface EarningsResponse {
   weightedScore: string;
@@ -65,7 +23,7 @@ export interface EarningsResponse {
  * Fetch earnings from API
  */
 export async function fetchEarnings(): Promise<EarningsResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/earnings`, {
+  const response = await fetch(`${API_URL}/api/earnings`, {
     credentials: 'include',
   });
 
@@ -86,7 +44,7 @@ export async function fetchLeaderboard(): Promise<{
   userRank: { rank: number; score: number } | null;
   userPercentile: number | null;
 }> {
-  const response = await fetch(`${API_BASE_URL}/api/leaderboard`, {
+  const response = await fetch(`${API_URL}/api/leaderboard`, {
     credentials: 'include',
   });
 
@@ -182,9 +140,10 @@ export function useEarnings() {
     sock.on('earnings:update', (data) => {
       setEarnings({
         claimable: data.claimable,
-        weightedScore: data.weightedScore,
         totalPoolScore: data.totalPoolScore,
         sharePercent: data.sharePercent,
+        // weightedScore is only present in the legacy payload.
+        ...(data.weightedScore !== undefined ? { weightedScore: data.weightedScore } : {}),
       });
     });
 

@@ -3,24 +3,30 @@
  * Handles user earnings queries and claim transactions
  */
 import { Router, Response } from 'express';
-import { PublicKey, Connection, Transaction, TransactionInstruction } from '@solana/web3.js';
+import {
+  PublicKey,
+  Connection,
+  Transaction,
+  TransactionInstruction,
+  SystemProgram,
+} from '@solana/web3.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/authMiddleware.js';
 import { getEarningsForUser } from '../services/earningsService.js';
 import { isClaimsPaused } from '../services/economyService.js';
 import {
-  generateMerkleTree,
+  getOrBuildMerkleTree,
   generateProof,
-  hashLeaf,
-  proofToContractFormat,
   rootToHex,
   UserShare,
 } from '../services/merkleService.js';
+import { LANDMIND_PROGRAM_ID } from '../lib/programId.js';
+import { TREASURY_SEED, VAULT_STATE_SEED, CLAIM_SEED } from '../lib/pdaSeeds.js';
+import { getIO } from '../lib/socket.js';
 
 export const earningsRouter = Router();
 
 // Constants
-const LANDMIND_PROGRAM_ID = new PublicKey('D4JvrX3Rtp9RTGUbLqxGcwYqYBtz3T5qZ1Q4hABXosSQ');
 const MIN_CLAIM_LAMPORTS = 25_000_000n; // 0.025 SOL minimum claim
 
 /**
@@ -110,19 +116,22 @@ earningsRouter.post('/claim', requireAuth, async (req: AuthenticatedRequest, res
       });
     }
 
-    // Get all users' claimable amounts for Merkle tree
+    // Build the set of leaves for the Merkle tree. Per the pinned contract, a
+    // leaf commits to the user's CUMULATIVE lifetime allowance (total_allowance),
+    // NOT the per-claim amount. On-chain payout = total_allowance - claimed_total.
     const allSnapshots = await prisma.earningsSnapshot.findMany({
       include: { user: { select: { walletPubkey: true } } },
     });
 
     const shares: UserShare[] = [];
     for (const snapshot of allSnapshots) {
-      // Calculate each user's claimable
       const userEarnings = await getEarningsForUser(snapshot.userId);
-      if (userEarnings.claimableAmount > 0n) {
+      // Include everyone with a non-zero cumulative allowance so the tree is
+      // stable regardless of who has already claimed.
+      if (userEarnings.cumulativeAllowance > 0n) {
         shares.push({
           wallet: snapshot.user.walletPubkey,
-          claimableAmount: userEarnings.claimableAmount,
+          totalAllowance: userEarnings.cumulativeAllowance,
         });
       }
     }
@@ -131,53 +140,59 @@ earningsRouter.post('/claim', requireAuth, async (req: AuthenticatedRequest, res
       return res.status(400).json({ error: 'No claimable earnings in pool' });
     }
 
-    // Generate Merkle tree and proof
-    const treeResult = generateMerkleTree(shares);
-    const proof = generateProof(user.walletPubkey, earnings.claimableAmount, treeResult);
+    // Generate (or reuse cached) Merkle tree and this wallet's proof.
+    const treeResult = getOrBuildMerkleTree(shares);
+    const proof = generateProof(user.walletPubkey, treeResult);
 
     if (!proof) {
       return res.status(400).json({ error: 'Could not generate proof for this wallet' });
     }
 
-    // Derive PDAs
+    // total_allowance committed for this wallet (cumulative lifetime allowance).
+    const totalAllowance = earnings.cumulativeAllowance;
+
+    // Derive PDAs (pinned seeds).
     const [vaultStatePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('vault_state')],
+      [Buffer.from(VAULT_STATE_SEED)],
       LANDMIND_PROGRAM_ID
     );
     const [treasuryPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('treasury')],
+      [Buffer.from(TREASURY_SEED)],
       LANDMIND_PROGRAM_ID
     );
+    const claimerPubkey = new PublicKey(user.walletPubkey);
     const [claimStatePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from('claim_state'), new PublicKey(user.walletPubkey).toBuffer()],
+      [Buffer.from(CLAIM_SEED), claimerPubkey.toBuffer()],
       LANDMIND_PROGRAM_ID
     );
 
-    // Build the claim_earnings instruction
-    // Instruction discriminator for claim_earnings (first 8 bytes of sha256("global:claim_earnings"))
+    // Build the claim_earnings instruction.
+    // args = (total_allowance: u64, proof: Vec<[u8; 32]>)
     const discriminator = Buffer.from([143, 233, 171, 4, 181, 61, 111, 145]);
 
-    // Amount as u64 little-endian
-    const amountBuffer = Buffer.alloc(8);
-    amountBuffer.writeBigUInt64LE(earnings.claimableAmount);
+    // total_allowance as u64 little-endian
+    const allowanceBuffer = Buffer.alloc(8);
+    allowanceBuffer.writeBigUInt64LE(totalAllowance);
 
-    // Proof: vec of [u8; 32]
-    // Vec prefix is 4-byte length (little-endian)
+    // Proof: Vec<[u8; 32]> with a 4-byte little-endian length prefix.
     const proofLenBuffer = Buffer.alloc(4);
     proofLenBuffer.writeUInt32LE(proof.length);
-    const proofElements = proof.map(p => Buffer.from(p));
+    const proofElements = proof.map((p) => Buffer.from(p));
     const proofData = Buffer.concat([proofLenBuffer, ...proofElements]);
 
-    const instructionData = Buffer.concat([discriminator, amountBuffer, proofData]);
+    const instructionData = Buffer.concat([discriminator, allowanceBuffer, proofData]);
 
+    // Accounts in the exact pinned order with correct writability:
+    //   vault_state (w), treasury PDA (w), claim_state PDA (w, init_if_needed),
+    //   claimer (signer, w), system_program.
     const claimInstruction = new TransactionInstruction({
       programId: LANDMIND_PROGRAM_ID,
       keys: [
-        { pubkey: new PublicKey(user.walletPubkey), isSigner: true, isWritable: true }, // claimer
-        { pubkey: vaultStatePda, isSigner: false, isWritable: false }, // vault_state
-        { pubkey: treasuryPda, isSigner: false, isWritable: true }, // treasury
-        { pubkey: claimStatePda, isSigner: false, isWritable: true }, // claim_state
-        { pubkey: new PublicKey('11111111111111111111111111111111'), isSigner: false, isWritable: false }, // system_program
+        { pubkey: vaultStatePda, isSigner: false, isWritable: true }, // vault_state (writable)
+        { pubkey: treasuryPda, isSigner: false, isWritable: true }, // treasury PDA (writable)
+        { pubkey: claimStatePda, isSigner: false, isWritable: true }, // claim_state PDA (writable, init_if_needed)
+        { pubkey: claimerPubkey, isSigner: true, isWritable: true }, // claimer (signer, writable)
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // system_program
       ],
       data: instructionData,
     });
@@ -188,7 +203,7 @@ earningsRouter.post('/claim', requireAuth, async (req: AuthenticatedRequest, res
 
     const transaction = new Transaction().add(claimInstruction);
     transaction.recentBlockhash = blockhash;
-    transaction.feePayer = new PublicKey(user.walletPubkey);
+    transaction.feePayer = claimerPubkey;
 
     // Serialize for client
     const serializedTx = transaction.serialize({
@@ -198,7 +213,10 @@ earningsRouter.post('/claim', requireAuth, async (req: AuthenticatedRequest, res
 
     res.json({
       transaction: serializedTx,
+      // Amount the user can claim now (informational); on-chain payout is derived
+      // from total_allowance - claimed_total.
       amount: earnings.claimableAmount.toString(),
+      totalAllowance: totalAllowance.toString(),
       merkleRoot: rootToHex(treeResult.root),
       proofLength: proof.length,
       blockhash,
@@ -218,14 +236,32 @@ earningsRouter.post('/claim', requireAuth, async (req: AuthenticatedRequest, res
  */
 earningsRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { signature, amount } = req.body;
+    const { signature } = req.body;
 
-    if (!signature) {
+    // NOTE: client-supplied `amount` is deliberately IGNORED. The claimed value
+    // is derived from the on-chain transaction below.
+    if (!signature || typeof signature !== 'string') {
       return res.status(400).json({ error: 'Transaction signature required' });
     }
 
-    if (!amount) {
-      return res.status(400).json({ error: 'Claim amount required' });
+    // Pre-check: reject an already-recorded signature (backed by the unique
+    // Claim.txSignature constraint to close the race).
+    const existingClaim = await prisma.claim.findUnique({
+      where: { txSignature: signature },
+    });
+    if (existingClaim) {
+      return res.status(409).json({
+        error: 'Claim already recorded',
+        message: 'This transaction has already been recorded as a claim.',
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { walletPubkey: true },
+    });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
     }
 
     const connection = getConnection();
@@ -244,43 +280,67 @@ earningsRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, r
       return res.status(400).json({ error: 'Transaction failed', details: tx.meta.err });
     }
 
-    // Parse amount as BigInt
-    const claimedAmount = BigInt(amount);
-
-    // Update earnings snapshot with claimed amount
-    await prisma.earningsSnapshot.update({
-      where: { userId: req.userId },
-      data: {
-        totalClaimed: {
-          increment: claimedAmount,
-        },
-      },
-    });
-
-    // Record claim in database
-    const claim = await prisma.claim.create({
-      data: {
-        userId: req.userId!,
-        amount: claimedAmount,
-        txSignature: signature,
-      },
-    });
-
-    // Get user for socket event
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-      select: { walletPubkey: true },
-    });
-
-    // Emit socket event for real-time update
-    const io = req.app.get('io');
-    if (io && user) {
-      io.to(`user:${user.walletPubkey}`).emit('claim:success', {
-        claimId: claim.id,
-        amount: claimedAmount.toString(),
-        txSignature: signature,
+    // Require that the tx actually invoked OUR program.
+    if (!txInvokesProgram(tx, LANDMIND_PROGRAM_ID.toBase58())) {
+      return res.status(400).json({
+        error: 'Invalid claim transaction',
+        message: 'Transaction did not invoke the LandMind program.',
       });
     }
+
+    // Derive the actual claimed lamports from the claimer's balance change.
+    // Payout increases the claimer's balance; they also pay the network fee, so
+    // claimed = balanceDelta + fee (fee is only charged to the fee payer, which
+    // is the claimer here). We reconstruct the gross payout as:
+    //   claimed = (post - pre) + fee
+    const derivedClaimed = deriveClaimedLamports(tx, user.walletPubkey);
+    if (derivedClaimed <= 0n) {
+      return res.status(400).json({
+        error: 'Invalid claim transaction',
+        message: 'Could not derive a positive claimed amount from the transaction.',
+      });
+    }
+
+    // Record the claim and bump totalClaimed by the DERIVED amount, atomically.
+    let claim;
+    try {
+      claim = await prisma.$transaction(async (txClient) => {
+        const created = await txClient.claim.create({
+          data: {
+            userId: req.userId!,
+            amount: derivedClaimed,
+            txSignature: signature,
+          },
+        });
+
+        await txClient.earningsSnapshot.update({
+          where: { userId: req.userId! },
+          data: {
+            totalClaimed: { increment: derivedClaimed },
+            lastClaimAt: new Date(),
+          },
+        });
+
+        return created;
+      });
+    } catch (txErr) {
+      // Concurrent duplicate signature => unique violation.
+      const code = (txErr as { code?: string }).code;
+      if (code === 'P2002') {
+        return res.status(409).json({
+          error: 'Claim already recorded',
+          message: 'This transaction has already been recorded as a claim.',
+        });
+      }
+      throw txErr;
+    }
+
+    // Emit socket event for real-time update
+    getIO().to(`user:${user.walletPubkey}`).emit('claim:success', {
+      claimId: claim.id,
+      amount: derivedClaimed.toString(),
+      txSignature: signature,
+    });
 
     res.json(serializeBigInts({
       success: true,
@@ -295,19 +355,58 @@ earningsRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, r
     console.error('Failed to confirm claim:', error);
 
     // Emit error event
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-      select: { walletPubkey: true },
-    });
-
-    const io = req.app.get('io');
-    if (io && user) {
-      io.to(`user:${user.walletPubkey}`).emit('claim:error', {
-        error: 'Failed to confirm claim',
-        message: error instanceof Error ? error.message : 'Unknown error',
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.userId },
+        select: { walletPubkey: true },
       });
+      if (user) {
+        getIO().to(`user:${user.walletPubkey}`).emit('claim:error', {
+          error: 'Failed to confirm claim',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    } catch {
+      // ignore socket emit failures on the error path
     }
 
     res.status(500).json({ error: 'Failed to confirm claim' });
   }
 });
+
+/**
+ * Whether a fetched transaction invoked the given program id (checks the static
+ * account keys, which include all invoked program ids for the message).
+ */
+function txInvokesProgram(
+  tx: NonNullable<Awaited<ReturnType<Connection['getTransaction']>>>,
+  programId: string
+): boolean {
+  const staticKeys = tx.transaction.message.staticAccountKeys ?? [];
+  return staticKeys.some((k) => k.toBase58() === programId);
+}
+
+/**
+ * Derive the lamports paid out to `claimerWallet` in a confirmed claim tx.
+ *
+ * The claimer is the fee payer, so their raw balance delta is
+ * (payout - networkFee). We add the fee back to recover the gross payout.
+ */
+function deriveClaimedLamports(
+  tx: NonNullable<Awaited<ReturnType<Connection['getTransaction']>>>,
+  claimerWallet: string
+): bigint {
+  if (!tx.meta) return 0n;
+
+  const staticKeys = tx.transaction.message.staticAccountKeys ?? [];
+  const idx = staticKeys.findIndex((k) => k.toBase58() === claimerWallet);
+  if (idx === -1) return 0n;
+
+  const pre = BigInt(tx.meta.preBalances[idx] ?? 0);
+  const post = BigInt(tx.meta.postBalances[idx] ?? 0);
+  const fee = BigInt(tx.meta.fee ?? 0);
+
+  // Gross payout = net balance increase + fee the claimer paid.
+  const claimed = post - pre + fee;
+  return claimed > 0n ? claimed : 0n;
+}
