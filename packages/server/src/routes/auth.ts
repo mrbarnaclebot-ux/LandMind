@@ -4,7 +4,7 @@ import { SignJWT, jwtVerify } from 'jose';
 import { redis } from '../lib/redis.js';
 import { verifySignature } from '../lib/solana.js';
 import { prisma } from '../lib/prisma.js';
-import { isAdminWallet } from '../middleware/adminAuth.js';
+import { isAdminWallet, isUserAdmin } from '../middleware/adminAuth.js';
 import { JWT_SECRET, SESSION_COOKIE_NAME } from '../lib/jwtSecret.js';
 import { isFakeSolMode, generateTestWallet } from '../lib/testMode.js';
 import { cookieOptions, clearCookieOptions } from '../lib/cookieOptions.js';
@@ -118,6 +118,7 @@ router.post('/verify', async (req: Request, res: Response) => {
     success: true,
     address,
     userId: user.id,
+    isAdmin: user.role === 'ADMIN',
     expiresAt: (now * 1000) + SESSION_DURATION_MS
   });
 });
@@ -170,6 +171,7 @@ router.post('/test-session', async (_req: Request, res: Response) => {
     testMode: true,
     address,
     userId: user.id,
+    isAdmin: user.role === 'ADMIN',
     expiresAt: now * 1000 + SESSION_DURATION_MS,
   });
 });
@@ -198,10 +200,12 @@ router.get('/session', async (req: Request, res: Response) => {
 
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
+    const userId = payload.userId as string | undefined;
     res.json({
       authenticated: true,
       address: payload.sub,
-      userId: payload.userId,
+      userId,
+      isAdmin: await isUserAdmin(userId),
       expiresAt: (payload.exp ?? 0) * 1000
     });
   } catch {

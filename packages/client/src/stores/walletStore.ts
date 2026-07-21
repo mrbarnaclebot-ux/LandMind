@@ -8,6 +8,13 @@ interface WalletSession {
   walletAddress: string | null;
   userId: string | null;
   sessionExpiry: number | null; // Unix timestamp in ms
+  /**
+   * Whether the current user has the ADMIN role. Learned at login (verify /
+   * test-session responses) and on the /auth/session reconcile — no separate
+   * probe of /admin/metrics. Cleared on logout / session expiry. NOT persisted
+   * (it is re-derived from the reconcile on every page load).
+   */
+  isAdmin: boolean;
 
   // UI state
   isAuthenticating: boolean;
@@ -21,6 +28,8 @@ interface WalletSession {
 
   // Actions
   setSession: (address: string, userId: string, expiry: number) => void;
+  /** Update the admin flag independently (from a login response or reconcile). */
+  setIsAdmin: (isAdmin: boolean) => void;
   clearSession: () => void;
   /**
    * Clear the session because the server rejected us (401) while we believed we
@@ -42,6 +51,7 @@ export const useWalletStore = create<WalletSession>()(
       walletAddress: null,
       userId: null,
       sessionExpiry: null,
+      isAdmin: false,
       isAuthenticating: false,
       authError: null,
       sessionExpiredNotice: false,
@@ -58,12 +68,16 @@ export const useWalletStore = create<WalletSession>()(
         sessionExpiredNotice: false
       }),
 
+      // Store the admin flag learned at login or on reconcile.
+      setIsAdmin: (isAdmin) => set({ isAdmin }),
+
       // Clear session on logout or auth failure
       clearSession: () => set({
         isAuthenticated: false,
         walletAddress: null,
         userId: null,
         sessionExpiry: null,
+        isAdmin: false,
         isAuthenticating: false,
         authError: null
       }),
@@ -78,6 +92,7 @@ export const useWalletStore = create<WalletSession>()(
           walletAddress: null,
           userId: null,
           sessionExpiry: null,
+          isAdmin: false,
           isAuthenticating: false,
           authError: null,
           sessionExpiredNotice: true

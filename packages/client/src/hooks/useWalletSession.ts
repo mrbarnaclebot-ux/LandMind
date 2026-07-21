@@ -26,6 +26,7 @@ export function useWalletSession() {
     authError,
     sessionExpiredNotice,
     setSession,
+    setIsAdmin,
     clearSession,
     clearSessionExpiredNotice,
     setAuthenticating,
@@ -42,6 +43,10 @@ export function useWalletSession() {
    * authenticated probe against GET /auth/session with credentials. Returns
    * true only if the server confirms the cookie is valid; on 401/failure the
    * caller clears session state and surfaces an error.
+   *
+   * Also captures `isAdmin` from the /auth/session response and stores it in the
+   * wallet store, so the ADMIN button can be shown without a separate probe of
+   * /admin/metrics.
    */
   const reconcileSession = useCallback(async (): Promise<boolean> => {
     try {
@@ -50,11 +55,15 @@ export function useWalletSession() {
       });
       if (!response.ok) return false;
       const data = await response.json();
-      return data.authenticated === true;
+      if (data.authenticated === true) {
+        setIsAdmin(data.isAdmin === true);
+        return true;
+      }
+      return false;
     } catch {
       return false;
     }
-  }, []);
+  }, [setIsAdmin]);
 
   /**
    * Authenticate with the server using SIWS flow.
@@ -116,9 +125,12 @@ export function useWalletSession() {
         throw new Error(error.error || 'Authentication failed');
       }
 
-      // 4. Store session info (JWT is in httpOnly cookie)
-      const { userId, expiresAt } = await verifyResponse.json();
+      // 4. Store session info (JWT is in httpOnly cookie). The verify response
+      // includes isAdmin so we learn admin status at login without a probe; the
+      // reconcile below re-confirms it authoritatively.
+      const { userId, expiresAt, isAdmin } = await verifyResponse.json();
       setSession(address, userId, expiresAt);
+      setIsAdmin(isAdmin === true);
 
       // 5. Reconcile: verify the session cookie actually took effect. If the
       // cookie never reached the browser, this probe 401s and we must not show
@@ -142,7 +154,7 @@ export function useWalletSession() {
       setAuthError(message);
       return false;
     }
-  }, [publicKey, signMessage, setSession, clearSession, reconcileSession, setAuthenticating, setAuthError]);
+  }, [publicKey, signMessage, setSession, setIsAdmin, clearSession, reconcileSession, setAuthenticating, setAuthError]);
 
   /**
    * TEST MODE ONLY: start a fake-SOL session with no wallet extension.
@@ -164,8 +176,9 @@ export function useWalletSession() {
         throw new Error('Test session unavailable');
       }
 
-      const { address, userId, expiresAt } = await response.json();
+      const { address, userId, expiresAt, isAdmin } = await response.json();
       setSession(address, userId, expiresAt);
+      setIsAdmin(isAdmin === true);
 
       // Reconcile: confirm the cookie is actually usable cross-site before
       // treating the user as authenticated (avoids fake "LIVE" state).
@@ -186,7 +199,7 @@ export function useWalletSession() {
       setAuthError(message);
       return false;
     }
-  }, [setSession, clearSession, reconcileSession, setAuthenticating, setAuthError]);
+  }, [setSession, setIsAdmin, clearSession, reconcileSession, setAuthenticating, setAuthError]);
 
   /**
    * Logout - clear session and disconnect wallet.
@@ -221,6 +234,7 @@ export function useWalletSession() {
 
       if (data.authenticated) {
         setSession(data.address, data.userId, data.expiresAt);
+        setIsAdmin(data.isAdmin === true);
         return true;
       } else {
         clearSession();
@@ -230,7 +244,7 @@ export function useWalletSession() {
       clearSession();
       return false;
     }
-  }, [setSession, clearSession]);
+  }, [setSession, setIsAdmin, clearSession]);
 
   // Effect: Detect wallet change (user switched wallets in extension)
   useEffect(() => {
