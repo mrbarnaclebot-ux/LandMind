@@ -7,6 +7,7 @@ import { prisma } from '../lib/prisma.js';
 import { isAdminWallet } from '../middleware/adminAuth.js';
 import { JWT_SECRET, SESSION_COOKIE_NAME } from '../lib/jwtSecret.js';
 import { isFakeSolMode, generateTestWallet } from '../lib/testMode.js';
+import { cookieOptions, clearCookieOptions } from '../lib/cookieOptions.js';
 
 const router = Router();
 const NONCE_TTL = 300; // 5 minutes
@@ -107,11 +108,9 @@ router.post('/verify', async (req: Request, res: Response) => {
     .setExpirationTime(SESSION_DURATION)
     .sign(JWT_SECRET);
 
-  // 7. Set httpOnly cookie
+  // 7. Set httpOnly cookie (cross-site aware — see cookieOptions)
   res.cookie(SESSION_COOKIE_NAME, accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    ...cookieOptions(),
     maxAge: SESSION_DURATION_MS
   });
 
@@ -162,9 +161,7 @@ router.post('/test-session', async (_req: Request, res: Response) => {
     .sign(JWT_SECRET);
 
   res.cookie(SESSION_COOKIE_NAME, accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    ...cookieOptions(),
     maxAge: SESSION_DURATION_MS,
   });
 
@@ -182,7 +179,7 @@ router.post('/test-session', async (_req: Request, res: Response) => {
  * Clear session cookie
  */
 router.post('/logout', (_req: Request, res: Response) => {
-  res.clearCookie(SESSION_COOKIE_NAME);
+  res.clearCookie(SESSION_COOKIE_NAME, clearCookieOptions());
   res.json({ success: true });
 });
 

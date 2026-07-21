@@ -12,7 +12,7 @@ import { useWalletSession } from '../../hooks/useWalletSession';
 function TestModeControls() {
   const fakeSolMode = useConfigStore((s) => s.fakeSolMode);
   const { isAuthenticated } = useWalletStore();
-  const { startTestSession, isAuthenticating } = useWalletSession();
+  const { startTestSession, isAuthenticating, authError } = useWalletSession();
 
   if (!fakeSolMode) return null;
 
@@ -34,7 +34,8 @@ function TestModeControls() {
         <button
           onClick={() => { void startTestSession(); }}
           disabled={isAuthenticating}
-          className="pixel-btn pixel-btn-primary"
+          className={`pixel-btn ${authError ? 'pixel-btn-danger' : 'pixel-btn-primary'}`}
+          title={authError || undefined}
           style={{
             padding: '8px 12px',
             fontSize: '10px',
@@ -42,7 +43,7 @@ function TestModeControls() {
             cursor: isAuthenticating ? 'not-allowed' : 'pointer',
           }}
         >
-          {isAuthenticating ? 'STARTING...' : 'PLAY TEST MODE'}
+          {isAuthenticating ? 'STARTING...' : authError ? 'RETRY TEST MODE' : 'PLAY TEST MODE'}
         </button>
       )}
     </>

@@ -23,6 +23,29 @@ export function useWalletSession() {
   } = useWalletStore();
 
   /**
+   * Session reconcile probe. After a login (real SIWS or test-session) the JWT
+   * lives in an httpOnly cookie we cannot read. Optimistically trusting the
+   * login response means the UI shows "authenticated"/"LIVE" even if the cookie
+   * never reached the browser (e.g. cross-site SameSite issues), in which case
+   * every subsequent API call 401s. To avoid fake-authenticated UI, make one
+   * authenticated probe against GET /auth/session with credentials. Returns
+   * true only if the server confirms the cookie is valid; on 401/failure the
+   * caller clears session state and surfaces an error.
+   */
+  const reconcileSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/session`, {
+        credentials: 'include',
+      });
+      if (!response.ok) return false;
+      const data = await response.json();
+      return data.authenticated === true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  /**
    * Authenticate with the server using SIWS flow.
    * 1. Get nonce from server
    * 2. Sign message with wallet
@@ -86,13 +109,23 @@ export function useWalletSession() {
       const { userId, expiresAt } = await verifyResponse.json();
       setSession(address, userId, expiresAt);
 
+      // 5. Reconcile: verify the session cookie actually took effect. If the
+      // cookie never reached the browser, this probe 401s and we must not show
+      // fake-authenticated UI.
+      const reconciled = await reconcileSession();
+      if (!reconciled) {
+        clearSession();
+        setAuthError('Session could not be established. Please try again.');
+        return false;
+      }
+
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Authentication failed';
       setAuthError(message);
       return false;
     }
-  }, [publicKey, signMessage, setSession, setAuthenticating, setAuthError]);
+  }, [publicKey, signMessage, setSession, clearSession, reconcileSession, setAuthenticating, setAuthError]);
 
   /**
    * TEST MODE ONLY: start a fake-SOL session with no wallet extension.
@@ -116,13 +149,22 @@ export function useWalletSession() {
 
       const { address, userId, expiresAt } = await response.json();
       setSession(address, userId, expiresAt);
+
+      // Reconcile: confirm the cookie is actually usable cross-site before
+      // treating the user as authenticated (avoids fake "LIVE" state).
+      const reconciled = await reconcileSession();
+      if (!reconciled) {
+        clearSession();
+        setAuthError('Session could not be established. Please try again.');
+        return false;
+      }
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Test session failed';
       setAuthError(message);
       return false;
     }
-  }, [setSession, setAuthenticating, setAuthError]);
+  }, [setSession, clearSession, reconcileSession, setAuthenticating, setAuthError]);
 
   /**
    * Logout - clear session and disconnect wallet.
