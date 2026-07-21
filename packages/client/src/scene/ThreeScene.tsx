@@ -13,7 +13,7 @@
  * - Mobile touch controls and optimizations
  */
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import {
@@ -34,6 +34,8 @@ import { WeatherLayer } from './WeatherLayer';
 import { VeinLayer } from './VeinLayer';
 import { HexTooltip, useHexHover } from './HexTooltip';
 import { useHexPick } from '../hooks/useHexPick';
+import { pixelToHex } from '../hex/hexMath';
+import { useRelocationStore } from '../stores/relocationStore';
 import { Clouds } from './Clouds';
 import { useUserAgents } from '../hooks/useUserAgents';
 import { useCameraStore } from '../stores/cameraStore';
@@ -353,11 +355,39 @@ function SceneContent({
   // Initialize agent loading and subscription
   useUserAgents();
 
-  // Hex hover state for tooltip
-  const { hoveredHex, handlePointerMove, handlePointerLeave } = useHexHover();
+  // Hex hover state for tooltip (+ click-to-pin + hover-safe panel handlers)
+  const {
+    hoveredHex,
+    pinnedHex,
+    handlePointerMove,
+    handlePointerLeave,
+    handlePanelEnter,
+    handlePanelLeave,
+    setPanelRect,
+    pinHex,
+    unpin,
+  } = useHexHover();
 
   // Relocation: while in MOVE mode a hex click on the ground picks the target.
   const handleHexPick = useHexPick();
+
+  // Ground click: in MOVE mode → relocation pick (existing behaviour). Otherwise
+  // → click-to-pin the clicked hex (robust path for pressing SURVEY at leisure).
+  const handleGroundClick = useCallback(
+    (event: any) => {
+      if (useRelocationStore.getState().activeAgentId !== null) {
+        handleHexPick(event);
+        return;
+      }
+      const { q, r } = pixelToHex(event.point.x, event.point.z);
+      pinHex(q, r);
+    },
+    [handleHexPick, pinHex],
+  );
+
+  // The pinned hex takes precedence over hover (stays open regardless of hover);
+  // otherwise show the hovered hex.
+  const tooltipHex = pinnedHex ?? hoveredHex;
 
   return (
     <>
@@ -385,7 +415,7 @@ function SceneContent({
       <PointerCaptureGround
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
-        onClick={handleHexPick}
+        onClick={handleGroundClick}
       />
 
       {/* Hex world terrain - chunked for scalability */}
@@ -405,8 +435,17 @@ function SceneContent({
       {/* Agents rendered on hexes */}
       <AgentLayer />
 
-      {/* Tooltip shown on hex hover */}
-      <HexTooltip visible={hoveredHex !== null} hexInfo={hoveredHex} />
+      {/* Tooltip shown on hex hover, or pinned open on click. Pinned takes
+          precedence and stays open regardless of hover. */}
+      <HexTooltip
+        visible={tooltipHex !== null}
+        hexInfo={tooltipHex}
+        pinned={pinnedHex !== null}
+        onUnpin={unpin}
+        onPanelEnter={handlePanelEnter}
+        onPanelLeave={handlePanelLeave}
+        onPanelRect={setPanelRect}
+      />
 
       {/* Post chain: Bloom → ToneMapping → HueSaturation → Vignette → SMAA.
           Tonemapping lives in the composer (gl tonemapping is bypassed by it). */}

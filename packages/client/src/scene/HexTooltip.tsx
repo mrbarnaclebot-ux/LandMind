@@ -47,6 +47,20 @@ interface HexInfo {
 interface HexTooltipProps {
   visible: boolean;
   hexInfo: HexInfo | null;
+  /** True when this tooltip is pinned open (click-to-pin). Shows the X close
+   *  button and an amber accent, and stays open regardless of hover. */
+  pinned?: boolean;
+  /** Unpin request (X button / ESC handled upstream). No-op when not pinned. */
+  onUnpin?: () => void;
+  /** Pointer entered the tooltip panel — cancels the pending hide and freezes
+   *  the hovered hex (no in-place swap while the cursor is over the panel). */
+  onPanelEnter?: () => void;
+  /** Pointer left the tooltip panel — resumes normal hover + grace behaviour. */
+  onPanelLeave?: () => void;
+  /** Reports the panel's live screen rect so the hover hook can build a
+   *  "corridor" between the last hex and the panel and suppress swaps while the
+   *  pointer travels toward the SURVEY button. */
+  onPanelRect?: (rect: DOMRect | null) => void;
 }
 
 // Resource display config
@@ -159,7 +173,15 @@ async function submitSurvey(q: number, r: number): Promise<void> {
   }
 }
 
-export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
+export const HexTooltip: FC<HexTooltipProps> = ({
+  visible,
+  hexInfo,
+  pinned = false,
+  onUnpin,
+  onPanelEnter,
+  onPanelLeave,
+  onPanelRect,
+}) => {
   // Relocation MOVE mode: when placing an agent, surface the DEEP risk/reward
   // of the hovered hex so the choice is informed. Deep = pit floor / cave-
   // adjacent (deterministic from the terrain gen). Hooks run unconditionally.
@@ -169,6 +191,39 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
   const surveyForHex = useContractStore((s) =>
     hexInfo ? s.getSurvey(hexInfo.q, hexInfo.r) : null,
   );
+
+  // The panel DOM node — measured each frame the tooltip is visible so the hover
+  // hook can compute the "corridor" between the last hex and the panel. drei's
+  // <Html> re-projects the wrapper every frame; we resample on rAF so the rect
+  // stays fresh under camera motion without leaning on a private drei API.
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!visible || !hexInfo || inMoveMode) {
+      onPanelRect?.(null);
+      return;
+    }
+    let raf = 0;
+    const tick = () => {
+      const el = panelRef.current;
+      if (el) onPanelRect?.(el.getBoundingClientRect());
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      onPanelRect?.(null);
+    };
+  }, [visible, hexInfo, inMoveMode, onPanelRect]);
+
+  // ESC unpins a pinned tooltip (only meaningful while pinned and not moving).
+  useEffect(() => {
+    if (!pinned || inMoveMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onUnpin?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pinned, inMoveMode, onUnpin]);
 
   // S-key survey while hovering (relocation MOVE mode takes precedence). We read
   // the hovered hex + mode off the store at keypress time so the listener is set
@@ -219,7 +274,9 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
       // edge crosses in front of its anchor point during camera motion.
       occlude={false}
       // Constant screen offset above the anchor so the box clears the hovered
-      // hex without covering it.
+      // hex without covering it. The wrapper stays pointer-transparent; only the
+      // inner panel opts back into pointer events so hover elsewhere is unaffected
+      // but the SURVEY button / X are clickable and the panel is hover-safe.
       style={{
         pointerEvents: 'none',
         transform: 'translateY(-14px)',
@@ -227,7 +284,16 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
       }}
     >
       <div
+        ref={panelRef}
         className="pixel-inventory-panel"
+        // Hover-safe panel: entering it cancels any pending hide and freezes the
+        // hex (no in-place swap); leaving resumes normal hover + grace. Clicks are
+        // stopped so pinning a hex via the panel never leaks through to the ground
+        // plane (relocation picks / camera drag).
+        onPointerEnter={onPanelEnter}
+        onPointerLeave={onPanelLeave}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
         style={{
           position: 'relative',
           padding: '10px 14px',
@@ -236,10 +302,56 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
           lineHeight: 1.5,
           color: 'var(--dusk-text)',
           minWidth: '140px',
+          // The panel itself is interactive (hover-safe + clickable button).
+          pointerEvents: 'auto',
+          // Pinned accent: amber border so the "stuck open" state reads clearly.
+          ...(pinned
+            ? { boxShadow: 'inset 0 0 0 2px var(--amber)' }
+            : null),
         }}
       >
-        {/* Surveyed corner-tick — subtle teal marker (top-right). */}
-        {surveyed && (
+        {/* Pinned close (X) — top-right, only when pinned. Generous 24px hit area,
+            stops propagation so it never triggers a ground pick. */}
+        {pinned && (
+          <button
+            type="button"
+            aria-label="Unpin tooltip"
+            title="Unpin (Esc)"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUnpin?.();
+            }}
+            style={{
+              position: 'absolute',
+              top: '2px',
+              right: '2px',
+              width: '24px',
+              height: '24px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 0,
+              fontFamily: 'var(--font-body)',
+              fontSize: '14px',
+              fontWeight: 700,
+              lineHeight: 1,
+              color: 'var(--dusk-on-amber)',
+              background: 'var(--amber)',
+              border: 'none',
+              cursor: 'pointer',
+              pointerEvents: 'auto',
+              boxShadow:
+                'inset 1px 1px 0 0 var(--amber-light), inset -1px -1px 0 0 var(--amber-dark)',
+            }}
+          >
+            ×
+          </button>
+        )}
+
+        {/* Surveyed corner-tick — subtle teal marker (top-right). Hidden when
+            pinned so it doesn't collide with the X close button in that corner. */}
+        {surveyed && !pinned && (
           <span
             title="Surveyed"
             aria-hidden
@@ -368,10 +480,12 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
               e.stopPropagation();
               void submitSurvey(hexInfo.q, hexInfo.r);
             }}
+            onPointerDown={(e) => e.stopPropagation()}
             style={{
               marginTop: '8px',
               width: '100%',
-              padding: '5px 8px',
+              minHeight: '32px',
+              padding: '6px 8px',
               fontFamily: 'var(--font-body)',
               fontSize: '11px',
               fontWeight: 700,
@@ -401,8 +515,17 @@ const HOVER_INTENT_MS = 60;
 /** Grace period (ms) before hiding on pointer-leave. Moving the cursor off the
  *  ground plane and onto the tooltip's own DOM (the SURVEY button) fires a
  *  ground `pointerleave`; without a grace window the tooltip would unmount out
- *  from under the click. A re-enter (back onto a hex) cancels the pending hide. */
-const HIDE_GRACE_MS = 120;
+ *  from under the click. A re-enter (back onto a hex) — or a pointerenter on the
+ *  panel itself — cancels the pending hide. Raised to 250ms so the cursor has
+ *  time to traverse the gap between the hex and the button (corridor tolerance).*/
+const HIDE_GRACE_MS = 250;
+
+/** Padding (px) added around the panel's screen rect when testing whether the
+ *  pointer is travelling *toward* the panel. While the pointer sits inside this
+ *  expanded corridor we suppress in-place content swaps, so crossing intermediate
+ *  hexes on the way to the SURVEY button doesn't steal the tooltip. Kept modest
+ *  so roaming the open map still swaps instantly. */
+const CORRIDOR_PAD_PX = 48;
 
 /**
  * Hook to track hovered hex with full data from store.
@@ -419,8 +542,17 @@ const HIDE_GRACE_MS = 120;
  */
 export function useHexHover() {
   const [hoveredHex, setHoveredHex] = useState<HexInfo | null>(null);
+  // Pinned hex (click-to-pin). When set, the tooltip stays open regardless of
+  // hover and shows the X close button. Independent of `hoveredHex`.
+  const [pinnedHex, setPinnedHex] = useState<HexInfo | null>(null);
   const { getHexInfo, hasHex } = useHexStore();
   const { agents } = useAgentStore();
+
+  // Entering relocation MOVE mode unpins the tooltip (pinning is disabled there).
+  const inMoveMode = useRelocationStore((s) => s.activeAgentId !== null);
+  useEffect(() => {
+    if (inMoveMode) setPinnedHex(null);
+  }, [inMoveMode]);
 
   // Last resolved hex key ("q,r" or null) — the short-circuit gate. Kept in a
   // ref so the pointermove handler stays referentially stable and doesn't churn.
@@ -431,6 +563,12 @@ export function useHexHover() {
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Whether a tooltip is currently visible — drives instant-swap vs delayed-show.
   const shownRef = useRef(false);
+  // Hover-safe freeze: true while the pointer is over the tooltip panel. Freezes
+  // the current hex (suppress swaps) and blocks hides.
+  const frozenRef = useRef(false);
+  // Latest measured panel screen rect (from <HexTooltip onPanelRect>), used for
+  // corridor detection. Null when no panel is on screen.
+  const panelRectRef = useRef<DOMRect | null>(null);
   // Keep the latest agents list available to the delayed callback without
   // rebinding the (stable) pointermove handler on every agent update.
   const agentsRef = useRef(agents);
@@ -484,6 +622,11 @@ export function useHexHover() {
 
   const handlePointerMove = useCallback(
     (event: ThreeEvent<PointerEvent>) => {
+      // Hover-safe: while the cursor is over the panel we freeze everything —
+      // no swaps, no hides. (pointerenter on the panel already cancelled the
+      // hide; the ground pointermove can still fire underneath, so guard here.)
+      if (frozenRef.current) return;
+
       // Any real move back over the map cancels a pending grace-hide.
       clearHideTimer();
 
@@ -502,6 +645,28 @@ export function useHexHover() {
       // Same-hex short-circuit: still hovering the same tile → nothing changed,
       // do not setState (this is the primary flicker fix).
       if (key === lastKeyRef.current) return;
+
+      // Corridor tolerance: if a tooltip is open and the pointer is currently
+      // inside the expanded rect around the panel (i.e. travelling *toward* the
+      // SURVEY button), suppress the in-place swap so crossing intermediate hexes
+      // doesn't steal the tooltip. Don't advance lastKeyRef — the resolved hex is
+      // in the corridor, not a deliberate new selection. Native clientX/Y come
+      // off the underlying DOM event.
+      if (shownRef.current) {
+        const rect = panelRectRef.current;
+        const native = event.nativeEvent as PointerEvent | undefined;
+        if (
+          rect &&
+          native &&
+          native.clientX >= rect.left - CORRIDOR_PAD_PX &&
+          native.clientX <= rect.right + CORRIDOR_PAD_PX &&
+          native.clientY >= rect.top - CORRIDOR_PAD_PX &&
+          native.clientY <= rect.bottom + CORRIDOR_PAD_PX
+        ) {
+          return;
+        }
+      }
+
       lastKeyRef.current = key;
 
       if (shownRef.current) {
@@ -531,10 +696,11 @@ export function useHexHover() {
   );
 
   const handlePointerLeave = useCallback(() => {
-    // Don't hide instantly: the pointer may be moving onto the tooltip's own DOM
-    // (the SURVEY button) which fires a ground `pointerleave`. Schedule a short
-    // grace hide; a re-enter over the map (or a click on the button) cancels it.
-    // If nothing cancels, the tooltip closes cleanly.
+    // The cursor may be moving onto the tooltip's own DOM (SURVEY button / panel)
+    // which fires a ground `pointerleave`. If the panel has since taken the
+    // pointer (frozen), the panel's own enter already cancelled the hide — bail.
+    if (frozenRef.current) return;
+
     clearShowTimer();
     if (!shownRef.current) {
       // Nothing shown yet (still within hover-intent) — drop immediately.
@@ -544,9 +710,54 @@ export function useHexHover() {
     clearHideTimer();
     hideTimerRef.current = setTimeout(() => {
       hideTimerRef.current = null;
+      // Don't yank a pinned tooltip; unpin is explicit (X / ESC / re-pin).
+      if (frozenRef.current) return;
       hideTooltip();
     }, HIDE_GRACE_MS);
   }, [hideTooltip, clearShowTimer, clearHideTimer]);
+
+  // --- Hover-safe panel handlers (wired to <HexTooltip>) -------------------
+
+  // Pointer entered the tooltip panel: cancel any pending hide and freeze the
+  // hex so the content doesn't swap while the cursor is over the panel.
+  const handlePanelEnter = useCallback(() => {
+    frozenRef.current = true;
+    clearHideTimer();
+  }, [clearHideTimer]);
+
+  // Pointer left the tooltip panel: resume normal hover. Arm the grace hide so
+  // leaving the panel into empty space still closes cleanly (a re-enter over a
+  // hex cancels it via handlePointerMove → clearHideTimer).
+  const handlePanelLeave = useCallback(() => {
+    frozenRef.current = false;
+    if (!shownRef.current) return;
+    clearHideTimer();
+    hideTimerRef.current = setTimeout(() => {
+      hideTimerRef.current = null;
+      if (frozenRef.current) return;
+      hideTooltip();
+    }, HIDE_GRACE_MS);
+  }, [hideTooltip, clearHideTimer]);
+
+  // Report the panel's live screen rect for corridor detection.
+  const setPanelRect = useCallback((rect: DOMRect | null) => {
+    panelRectRef.current = rect;
+  }, []);
+
+  // --- Click-to-pin --------------------------------------------------------
+
+  // Pin the currently-resolved hex (called from the ground onClick when NOT in
+  // MOVE mode). Re-pins if another hex is clicked. Reuses the last resolved key
+  // so it pins exactly what the cursor is over.
+  const pinHex = useCallback(
+    (q: number, r: number) => {
+      if (!hasHex(q, r)) return;
+      setPinnedHex(buildHexInfo(q, r));
+    },
+    [hasHex, buildHexInfo],
+  );
+
+  const unpin = useCallback(() => setPinnedHex(null), []);
 
   // Clean up any pending timers on unmount.
   useEffect(() => {
@@ -558,7 +769,13 @@ export function useHexHover() {
 
   return {
     hoveredHex,
+    pinnedHex,
     handlePointerMove,
     handlePointerLeave,
+    handlePanelEnter,
+    handlePanelLeave,
+    setPanelRect,
+    pinHex,
+    unpin,
   };
 }
