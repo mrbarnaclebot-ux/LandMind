@@ -7,6 +7,7 @@
  */
 import { create } from 'zustand';
 import { fetchServerConfig, type ServerConfig } from '../lib/config';
+import { markReady } from './readinessStore';
 
 interface ConfigState {
   fakeSolMode: boolean;
@@ -22,11 +23,17 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
   loadConfig: async () => {
     if (get().loaded) return;
-    const config = await fetchServerConfig();
-    set({
-      fakeSolMode: config.fakeSolMode,
-      network: config.network,
-      loaded: true,
-    });
+    try {
+      const config = await fetchServerConfig();
+      set({
+        fakeSolMode: config.fakeSolMode,
+        network: config.network,
+        loaded: true,
+      });
+    } finally {
+      // Readiness signal fires even on failure so the loading bar never hangs
+      // on a config fetch error (fake-SOL defaults still let the app run).
+      markReady('config');
+    }
   },
 }));

@@ -1,5 +1,6 @@
 import { DeployButton } from '../agents/DeployButton';
 import { ConnectButton } from '../wallet/ConnectButton';
+import { AudioToggle } from './AudioToggle';
 import { useConfigStore } from '../../stores/configStore';
 import { useWalletStore } from '../../stores/walletStore';
 import { useWalletSession } from '../../hooks/useWalletSession';
@@ -165,6 +166,7 @@ export function Header({
         </button>
         <TestModeControls />
         <DeployButton />
+        <AudioToggle />
         <ConnectButton />
       </div>
     </header>

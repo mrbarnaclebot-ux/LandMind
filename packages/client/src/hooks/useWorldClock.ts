@@ -14,6 +14,7 @@ import { useEffect } from 'react';
 import { getSocket } from '../lib/socket';
 import { useWorldStore } from '../stores/worldStore';
 import { useTransactionStore } from '../stores/transactionStore';
+import { audio } from '../lib/audio';
 import type {
   WorldUpdateEvent,
   WeatherUpdateEvent,
@@ -56,6 +57,16 @@ export function useWorldClock(): void {
     // true (the broadcast repeats every ~5s while achieved).
     let prevAchieved = useWorldStore.getState().goldrush?.achieved ?? false;
 
+    // Phase-transition audio cue: play the soft golden_hour fanfare the moment
+    // the world enters golden_hour (subscribe to the store's phase field).
+    let prevPhase = useWorldStore.getState().phase;
+    const unsubPhase = useWorldStore.subscribe((state) => {
+      if (state.phase !== prevPhase) {
+        if (state.phase === 'golden_hour') audio.sfx.play('golden_hour');
+        prevPhase = state.phase;
+      }
+    });
+
     // Initial snapshot (world clock + seed weather fronts/table + veins/hazard
     // table from /api/world).
     void loadWorld();
@@ -69,12 +80,15 @@ export function useWorldClock(): void {
     // brief global land-rush toast.
     const onVeinSpawned = (data: VeinSpawnedEvent) => {
       applyVeinSpawned(data);
+      audio.sfx.play('vein');
       const remaining = fmtRemaining(data.expiresAt - Date.now());
       useTransactionStore.getState().addToast({
         type: 'success',
         title: 'RICH VEIN STRUCK',
         message: `×${data.multiplier} ${resourceLabel(data.resourceType)} at (${data.q}, ${data.r}) — ${remaining} remaining`,
-        // Inherits central success default (6500ms).
+        // Inherits central success default (6500ms). Specific 'vein' cue already
+        // played above, so suppress the generic success blip.
+        noSfx: true,
       });
     };
     const onVeinExpired = (data: VeinExpiredEvent) => applyVeinExpired(data);
@@ -84,6 +98,7 @@ export function useWorldClock(): void {
     const onGoldRush = (data: GoldRushUpdateEvent) => {
       applyGoldRushUpdate(data);
       if (data.achieved && !prevAchieved) {
+        audio.sfx.play('goldrush');
         const hoursText = data.boostUntil
           ? `${Math.max(1, Math.round((data.boostUntil - Date.now()) / 3_600_000))}h`
           : '2h';
@@ -91,7 +106,9 @@ export function useWorldClock(): void {
           type: 'success',
           title: 'GOLD RUSH ACHIEVED',
           message: `Community goal met — ×1.15 for ${hoursText}`,
-          // Inherits central success default (6500ms).
+          // Inherits central success default (6500ms). Deeper 'goldrush' fanfare
+          // already played, so suppress the generic success blip.
+          noSfx: true,
         });
       }
       prevAchieved = data.achieved;
@@ -107,6 +124,7 @@ export function useWorldClock(): void {
     sock.on('goldrush:update', onGoldRush);
 
     return () => {
+      unsubPhase();
       sock.off('world:update', onUpdate);
       sock.off('weather:update', onWeather);
       sock.off('vein:spawned', onVeinSpawned);

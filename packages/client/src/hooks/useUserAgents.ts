@@ -7,6 +7,7 @@ import { useAgentStore } from '../stores/agentStore';
 import { useRelocationStore } from '../stores/relocationStore';
 import { fetchUserAgents } from '../lib/agents';
 import { getSocket } from '../lib/socket';
+import { audio } from '../lib/audio';
 
 export function useUserAgents() {
   const { isAuthenticated, walletAddress } = useWalletStore();
@@ -141,6 +142,7 @@ export function useUserAgents() {
     // Handle cave-in (System 3): agent trapped. Freeze mining, record the
     // self-dig timer so the card can count down.
     sock.on('agent:trapped', (data) => {
+      audio.sfx.play('trapped');
       updateAgent(data.agentId, {
         status: 'TRAPPED',
         selfDigAt: data.selfDigAt,
@@ -156,6 +158,7 @@ export function useUserAgents() {
 
     // Handle rescue / self-dig completion (System 3): back to mining.
     sock.on('agent:rescued', (data) => {
+      audio.sfx.play('rescue');
       updateAgent(data.agentId, {
         status: 'MINING',
         selfDigAt: null,

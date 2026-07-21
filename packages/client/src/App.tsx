@@ -18,6 +18,9 @@ import { useCameraStore } from './stores/cameraStore';
 import { useConfigStore } from './stores/configStore';
 import { getSocket } from './lib/socket';
 import { hexToPixel } from './hex/hexMath';
+import { StartScreen } from './components/screens/StartScreen';
+import { markReady } from './stores/readinessStore';
+import { installUiClickSound } from './lib/audio/uiClicks';
 import './styles/pixel-theme.css';
 
 function App() {
@@ -42,7 +45,17 @@ function App() {
   // page; user-room subscription still happens post-auth in the data hooks.
   useEffect(() => {
     void loadConfig();
-    getSocket();
+    const sock = getSocket();
+    // Boot readiness signal: socket connected.
+    if (sock.connected) markReady('socket');
+    const onConnect = () => markReady('socket');
+    sock.on('connect', onConnect);
+    // Install the delegated ui_click sound (no-op until audio is unlocked).
+    const uninstallClicks = installUiClickSound();
+    return () => {
+      sock.off('connect', onConnect);
+      uninstallClicks();
+    };
   }, [loadConfig]);
   const [isAgentDashboardOpen, setIsAgentDashboardOpen] = useState(false);
   const [isAdminDashboardOpen, setIsAdminDashboardOpen] = useState(false);
@@ -74,6 +87,7 @@ function App() {
         <RelocationBanner />
         <TransactionToastContainer />
         <SessionExpiredToast />
+        <StartScreen />
       </>
     );
   }
@@ -130,6 +144,8 @@ function App() {
       <TransactionToastContainer />
       {/* Global "session expired — reconnect" toast (fires on any authed 401) */}
       <SessionExpiredToast />
+      {/* Loading + start overlay (audio unlock gate) — sits above everything */}
+      <StartScreen />
     </div>
   );
 }

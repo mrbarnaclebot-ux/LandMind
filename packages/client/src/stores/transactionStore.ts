@@ -5,6 +5,19 @@
  * Supports auto-hide with configurable duration.
  */
 import { create } from 'zustand';
+import { audio } from '../lib/audio';
+
+/**
+ * Central toast→SFX mapping. One hook here covers deploy/relocate/survey/claim
+ * toasts automatically (they all flow through addToast). Guarded by the audio
+ * unlock inside sfx.play, so nothing sounds before the START gesture.
+ */
+const TOAST_SFX: Record<ToastType, Parameters<typeof audio.sfx.play>[0] | null> = {
+  info: null,
+  success: 'success',
+  warning: 'warning',
+  error: 'error',
+};
 
 /**
  * Toast notification types matching transaction states
@@ -48,6 +61,12 @@ export interface TransactionToast {
    * - A number => that exact delay.
    */
   autoHide?: number | null;
+  /**
+   * Suppress the central toast→SFX cue for this toast. Used when the caller has
+   * already played a MORE specific cue (e.g. vein/goldrush) so the generic
+   * success blip doesn't double up.
+   */
+  noSfx?: boolean;
 }
 
 /**
@@ -78,6 +97,13 @@ export const useTransactionStore = create<TransactionStore>((set, get) => ({
       toast.autoHide === undefined ? DEFAULT_TOAST_DURATION[toast.type] : toast.autoHide;
 
     set((state) => ({ toasts: [...state.toasts, { ...toast, id, autoHide }] }));
+
+    // Central toast→SFX cue (no-op while audio is locked/muted). Skipped when
+    // the caller already played a more specific cue (noSfx).
+    if (!toast.noSfx) {
+      const cue = TOAST_SFX[toast.type];
+      if (cue) audio.sfx.play(cue);
+    }
 
     // Auto-hide unless sticky (null/0).
     if (autoHide) {

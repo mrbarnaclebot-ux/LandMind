@@ -1,0 +1,235 @@
+/**
+ * StartScreen — "Golden-Hour Dusk" loading + start gate.
+ * Dark indigo ground, pixelated wordmark, segmented amber progress bar,
+ * hard bevels, stepped ember particles. No gradients / blur / glassmorphism.
+ */
+
+.start-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 4000; /* above toasts (3000+) — it's the audio unlock gate */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #14161f; /* dark indigo ground */
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 400ms ease-out;
+  font-family: var(--font-body, 'Manrope', system-ui, sans-serif);
+}
+
+.start-screen--leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- content stack ---- */
+.start-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  padding: 24px;
+}
+
+.start-wordmark {
+  width: 420px;
+  max-width: 80vw;
+  height: auto;
+  image-rendering: pixelated;
+  user-select: none;
+  -webkit-user-drag: none;
+  /* slow, subtle pulse — stepped, NOT a gaussian glow */
+  animation: start-pulse 2.4s steps(6, end) infinite alternate;
+}
+
+@keyframes start-pulse {
+  from {
+    opacity: 0.82;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---- loading: segmented progress bar ---- */
+.start-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.start-progress {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: #1b1e2c; /* base panel fill */
+  /* hard 1px-offset pixel bevel — highlight top/left, shadow bottom/right */
+  box-shadow:
+    inset 2px 2px 0 #0e101a,
+    inset -2px -2px 0 #3a4468,
+    4px 4px 0 rgba(14, 16, 26, 0.5);
+}
+
+.start-seg {
+  width: 44px;
+  height: 18px;
+  background: #232840; /* empty segment */
+  box-shadow: inset 1px 1px 0 #0e101a;
+  transition: background 180ms steps(3, end);
+}
+
+.start-seg--on {
+  background: #f0a63c; /* amber — filled */
+  box-shadow:
+    inset 1px 1px 0 #ffc46a,
+    inset -1px -1px 0 #b4761f;
+}
+
+/* the segment currently loading gets a stepped amber flicker */
+.start-seg--active {
+  background: #2c3350;
+  animation: start-seg-flicker 0.9s steps(2, end) infinite alternate;
+}
+
+@keyframes start-seg-flicker {
+  from {
+    background: #2c3350;
+  }
+  to {
+    background: #6b5220;
+  }
+}
+
+.start-label {
+  font-family: var(--font-body, 'Manrope', sans-serif);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: #9aa0b8; /* muted cool secondary */
+  text-transform: lowercase;
+  min-height: 18px;
+}
+
+/* ---- START button (Press Start 2P) ---- */
+.start-btn {
+  font-family: var(--font-pixel, 'Press Start 2P', monospace);
+  font-size: 24px;
+  letter-spacing: 0.06em;
+  color: #14161f; /* dark on amber */
+  background: #f0a63c; /* flat amber, no gradient */
+  border: none;
+  padding: 20px 44px;
+  cursor: pointer;
+  /* hard pixel bevel */
+  box-shadow:
+    inset 2px 2px 0 #ffc46a,
+    inset -3px -3px 0 #b4761f,
+    5px 5px 0 rgba(14, 16, 26, 0.55);
+  transition: transform 90ms steps(2, end);
+  animation: start-btn-appear 260ms steps(4, end);
+}
+
+@keyframes start-btn-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.start-btn:hover {
+  background: #ffc46a;
+  box-shadow:
+    inset 2px 2px 0 #ffd894,
+    inset -3px -3px 0 #b4761f,
+    5px 5px 0 rgba(14, 16, 26, 0.55);
+}
+
+.start-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow:
+    inset 2px 2px 0 #b4761f,
+    inset -2px -2px 0 #ffc46a,
+    2px 2px 0 rgba(14, 16, 26, 0.55);
+}
+
+.start-btn:focus-visible {
+  outline: 3px solid #ffc46a;
+  outline-offset: 3px;
+}
+
+.start-hint {
+  position: absolute;
+  bottom: 40px;
+  z-index: 2;
+  font-family: var(--font-body, 'Manrope', sans-serif);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: #626981; /* faint hint */
+  text-transform: uppercase;
+  min-height: 14px;
+}
+
+/* ---- ember particles (stepped, matte — no glow) ---- */
+.start-embers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.start-ember {
+  position: absolute;
+  bottom: -12px;
+  width: 3px;
+  height: 3px;
+  background: #f0a63c;
+  opacity: 0;
+  animation: start-ember-rise linear infinite;
+}
+
+@keyframes start-ember-rise {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  80% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-70vh);
+    opacity: 0;
+  }
+}
+
+/* Deterministic-ish spread across 7 lanes, varied speed/delay/position. */
+.start-ember--0 { left: 12%; animation-duration: 7s; animation-delay: 0s; }
+.start-ember--1 { left: 22%; animation-duration: 9s; animation-delay: 1.4s; background: #ffc46a; }
+.start-ember--2 { left: 34%; animation-duration: 6s; animation-delay: 2.1s; }
+.start-ember--3 { left: 47%; animation-duration: 10s; animation-delay: 0.7s; }
+.start-ember--4 { left: 61%; animation-duration: 8s; animation-delay: 3.2s; background: #ffc46a; }
+.start-ember--5 { left: 74%; animation-duration: 7.5s; animation-delay: 1.9s; }
+.start-ember--6 { left: 86%; animation-duration: 9.5s; animation-delay: 2.8s; }
+
+/* Second bank offset horizontally so 14 embers don't overlap in pairs. */
+.start-ember:nth-child(n + 8) { transform: translateX(18px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .start-wordmark,
+  .start-seg--active,
+  .start-ember,
+  .start-btn {
+    animation: none;
+  }
+  .start-ember { opacity: 0; }
+}

@@ -9,6 +9,7 @@ import { useAgentStore } from '../../stores/agentStore';
 import { useConfigStore } from '../../stores/configStore';
 import { useAgentDeploy, DeployStatus } from '../../hooks/useAgentDeploy';
 import { DEPLOY_COST_SOL } from '../../lib/umi';
+import { audio } from '../../lib/audio';
 import '../../styles/pixel-theme.css';
 
 // Toast-like status messages
@@ -47,6 +48,9 @@ export const DeployButton: FC = () => {
     setToastMessage(STATUS_MESSAGES[status]);
     setToastType(status === 'success' ? 'success' : status === 'error' ? 'error' : 'info');
 
+    // Deploy success → the low-thunk + ascending sparkle cue.
+    if (status === 'success') audio.sfx.play('deploy');
+
     // Clear success/error toast after delay
     if (status === 'success' || status === 'error') {
       const timer = setTimeout(() => setToastMessage(''), 3000);
@@ -70,6 +74,7 @@ export const DeployButton: FC = () => {
 
   const handleDeploy = async () => {
     if (isDeploying || isAtHardCap) return;
+    audio.sfx.play('ui_click');
     await deploy();
   };
 
@@ -82,6 +87,7 @@ export const DeployButton: FC = () => {
         onMouseLeave={() => setShowTooltip(false)}
         disabled={isDeploying || isAtHardCap}
         className="pixel-btn"
+        data-no-uiclick
         style={{
           padding: '8px 16px',
           fontSize: '10px',

@@ -19,6 +19,7 @@
  */
 import { create } from 'zustand';
 import { API_URL } from '../lib/config';
+import { markReady } from './readinessStore';
 import type {
   WorldPhase,
   WorldModifiers,
@@ -246,6 +247,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   devOverride: null,
 
   applyUpdate: (data) => {
+    // Boot readiness: first authoritative world snapshot has arrived.
+    markReady('world');
     // Reconcile the local clock: choose an offset such that the anchor-derived
     // cycleT at (now + offset) equals the server's reported cycleT. We solve for
     // the offset in seconds within one cycle, picking the smallest-magnitude

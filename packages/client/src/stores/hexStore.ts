@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import type { HexData } from '../terrain/terrainGenerator';
 import type { Biome } from '../terrain/biomes';
+import { markReady } from './readinessStore';
 
 // Resource types based on biome
 export type ResourceType = 'GOLD' | 'SILVER' | 'COPPER' | 'IRON' | 'NONE';
@@ -92,6 +93,8 @@ export const useHexStore = create<HexStore>((set, get) => ({
     });
 
     set({ hexes, isInitialized: true });
+    // Boot readiness: the world's hex data exists → first render is ready.
+    markReady('render');
     console.log(`HexStore initialized with ${hexes.size} hexes`);
   },
 
