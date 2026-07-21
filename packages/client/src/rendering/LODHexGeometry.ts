@@ -1,12 +1,16 @@
 /**
  * LOD Hex Geometry - 3 detail levels for distance-based rendering
  *
- * Level 0 (HIGH): Full hex geometry with top, sides, and bottom (current quality)
- * Level 1 (MED): Simplified 6-sided prism (fewer vertices, no bottom)
- * Level 2 (LOW): Simple flat hexagon (top face only)
+ * Level 0 (HIGH): Full hex prism with top, sides, and bottom, baked vertex AO.
+ * Level 1 (MED): Simplified prism (top + sides), baked vertex AO.
+ * Level 2 (LOW): Flat tier-colored hexagon (top face only) — far LOD flatten.
  *
- * Each lower LOD level has significantly fewer vertices for better GPU performance
- * at distance where detail isn't visible anyway.
+ * ART DIRECTION: vertex-color AO is baked here (multiply-only, no black):
+ *   - top face verts    warm  (1.0, 0.98, 0.94)
+ *   - side top ring     mid   ~0.80 grey
+ *   - skirt / crevices  cool  (0.55, 0.60, 0.74)
+ * The per-instance biome ramp color multiplies against these via instanceColor,
+ * so we get warm sun-caught tops and cool crevices without any black shadow.
  */
 
 import * as THREE from 'three';
@@ -18,13 +22,13 @@ export const LOD_LOW = 2;
 
 export type LODLevel = typeof LOD_HIGH | typeof LOD_MED | typeof LOD_LOW;
 
+/** Baked AO vertex colors (multiply-only, cool crevices, warm tops). */
+const AO_TOP: [number, number, number] = [1.0, 0.98, 0.94];
+const AO_EDGE: [number, number, number] = [0.8, 0.8, 0.82];
+const AO_SKIRT: [number, number, number] = [0.55, 0.6, 0.74];
+
 /**
- * Create all 3 LOD geometries for hex tiles
- *
- * @param size - Hex outer radius (default: 0.95)
- * @param height - Height of hex tile above y=0 (default: 0.35)
- * @param skirtDepth - Depth below y=0 for elevation gaps (default: 0.3)
- * @returns Tuple of [highGeo, medGeo, lowGeo]
+ * Create all 3 LOD geometries for hex tiles.
  */
 export function createLODGeometries(
   size = 0.95,
@@ -39,8 +43,7 @@ export function createLODGeometries(
 }
 
 /**
- * Calculate hex corner positions for flat-top orientation
- * Corners at angles 0, 60, 120, 180, 240, 300 degrees
+ * Calculate hex corner positions for flat-top orientation.
  */
 function getHexCorners(size: number): [number, number][] {
   const corners: [number, number][] = [];
@@ -52,9 +55,7 @@ function getHexCorners(size: number): [number, number][] {
 }
 
 /**
- * LOD 0 (HIGH): Full hex prism with top, sides, and bottom faces
- * Vertices: 7 (top) + 24 (sides) + 7 (bottom) = 38
- * Triangles: 6 (top) + 12 (sides) + 6 (bottom) = 24
+ * LOD 0 (HIGH): Full hex prism with baked vertex AO.
  */
 function createHighDetailGeometry(
   size: number,
@@ -64,29 +65,39 @@ function createHighDetailGeometry(
   const corners = getHexCorners(size);
   const positions: number[] = [];
   const normals: number[] = [];
+  const colors: number[] = [];
   const indices: number[] = [];
   let vertexIndex = 0;
 
-  const addVertex = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => {
+  const addVertex = (
+    x: number,
+    y: number,
+    z: number,
+    nx: number,
+    ny: number,
+    nz: number,
+    c: [number, number, number]
+  ) => {
     positions.push(x, y, z);
     normals.push(nx, ny, nz);
+    colors.push(c[0], c[1], c[2]);
     return vertexIndex++;
   };
 
   const sideBottom = -skirtDepth;
 
-  // TOP FACE
-  const topCenter = addVertex(0, height, 0, 0, 1, 0);
+  // TOP FACE — warm
+  const topCenter = addVertex(0, height, 0, 0, 1, 0, AO_TOP);
   const topRing: number[] = [];
   for (let i = 0; i < 6; i++) {
-    topRing.push(addVertex(corners[i][0], height, corners[i][1], 0, 1, 0));
+    topRing.push(addVertex(corners[i][0], height, corners[i][1], 0, 1, 0, AO_TOP));
   }
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
     indices.push(topCenter, topRing[next], topRing[i]);
   }
 
-  // SIDE FACES
+  // SIDE FACES — top edge mid, skirt cool
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
     const edgeX = corners[next][0] - corners[i][0];
@@ -97,38 +108,31 @@ function createHighDetailGeometry(
     const nx = faceNx / len;
     const nz = faceNz / len;
 
-    const v0 = addVertex(corners[i][0], height, corners[i][1], nx, 0, nz);
-    const v1 = addVertex(corners[next][0], height, corners[next][1], nx, 0, nz);
-    const v2 = addVertex(corners[next][0], sideBottom, corners[next][1], nx, 0, nz);
-    const v3 = addVertex(corners[i][0], sideBottom, corners[i][1], nx, 0, nz);
+    const v0 = addVertex(corners[i][0], height, corners[i][1], nx, 0, nz, AO_EDGE);
+    const v1 = addVertex(corners[next][0], height, corners[next][1], nx, 0, nz, AO_EDGE);
+    const v2 = addVertex(corners[next][0], sideBottom, corners[next][1], nx, 0, nz, AO_SKIRT);
+    const v3 = addVertex(corners[i][0], sideBottom, corners[i][1], nx, 0, nz, AO_SKIRT);
 
     indices.push(v0, v1, v2);
     indices.push(v0, v2, v3);
   }
 
-  // BOTTOM FACE
-  const bottomCenter = addVertex(0, sideBottom, 0, 0, -1, 0);
+  // BOTTOM FACE — cool
+  const bottomCenter = addVertex(0, sideBottom, 0, 0, -1, 0, AO_SKIRT);
   const bottomRing: number[] = [];
   for (let i = 0; i < 6; i++) {
-    bottomRing.push(addVertex(corners[i][0], sideBottom, corners[i][1], 0, -1, 0));
+    bottomRing.push(addVertex(corners[i][0], sideBottom, corners[i][1], 0, -1, 0, AO_SKIRT));
   }
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
     indices.push(bottomCenter, bottomRing[i], bottomRing[next]);
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-  geometry.setIndex(indices);
-  geometry.computeBoundingSphere();
-  return geometry;
+  return buildGeometry(positions, normals, colors, indices);
 }
 
 /**
- * LOD 1 (MED): Simplified prism - top face + sides, no bottom
- * Vertices: 7 (top) + 24 (sides) = 31
- * Triangles: 6 (top) + 12 (sides) = 18
+ * LOD 1 (MED): top face + sides, no bottom, baked vertex AO.
  */
 function createMedDetailGeometry(
   size: number,
@@ -138,29 +142,37 @@ function createMedDetailGeometry(
   const corners = getHexCorners(size);
   const positions: number[] = [];
   const normals: number[] = [];
+  const colors: number[] = [];
   const indices: number[] = [];
   let vertexIndex = 0;
 
-  const addVertex = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => {
+  const addVertex = (
+    x: number,
+    y: number,
+    z: number,
+    nx: number,
+    ny: number,
+    nz: number,
+    c: [number, number, number]
+  ) => {
     positions.push(x, y, z);
     normals.push(nx, ny, nz);
+    colors.push(c[0], c[1], c[2]);
     return vertexIndex++;
   };
 
   const sideBottom = -skirtDepth;
 
-  // TOP FACE
-  const topCenter = addVertex(0, height, 0, 0, 1, 0);
+  const topCenter = addVertex(0, height, 0, 0, 1, 0, AO_TOP);
   const topRing: number[] = [];
   for (let i = 0; i < 6; i++) {
-    topRing.push(addVertex(corners[i][0], height, corners[i][1], 0, 1, 0));
+    topRing.push(addVertex(corners[i][0], height, corners[i][1], 0, 1, 0, AO_TOP));
   }
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
     indices.push(topCenter, topRing[next], topRing[i]);
   }
 
-  // SIDE FACES (simplified - shared normals could be optimized further)
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
     const edgeX = corners[next][0] - corners[i][0];
@@ -171,56 +183,67 @@ function createMedDetailGeometry(
     const nx = faceNx / len;
     const nz = faceNz / len;
 
-    const v0 = addVertex(corners[i][0], height, corners[i][1], nx, 0, nz);
-    const v1 = addVertex(corners[next][0], height, corners[next][1], nx, 0, nz);
-    const v2 = addVertex(corners[next][0], sideBottom, corners[next][1], nx, 0, nz);
-    const v3 = addVertex(corners[i][0], sideBottom, corners[i][1], nx, 0, nz);
+    const v0 = addVertex(corners[i][0], height, corners[i][1], nx, 0, nz, AO_EDGE);
+    const v1 = addVertex(corners[next][0], height, corners[next][1], nx, 0, nz, AO_EDGE);
+    const v2 = addVertex(corners[next][0], sideBottom, corners[next][1], nx, 0, nz, AO_SKIRT);
+    const v3 = addVertex(corners[i][0], sideBottom, corners[i][1], nx, 0, nz, AO_SKIRT);
 
     indices.push(v0, v1, v2);
     indices.push(v0, v2, v3);
   }
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-  geometry.setIndex(indices);
-  geometry.computeBoundingSphere();
-  return geometry;
+  return buildGeometry(positions, normals, colors, indices);
 }
 
 /**
- * LOD 2 (LOW): Flat hexagon - top face only
- * Vertices: 7
- * Triangles: 6
- * Best for distant hexes where 3D detail isn't visible
+ * LOD 2 (LOW): flat tier-colored hexagon (top only), warm vertex AO.
  */
 function createLowDetailGeometry(size: number, height: number): THREE.BufferGeometry {
   const corners = getHexCorners(size);
   const positions: number[] = [];
   const normals: number[] = [];
+  const colors: number[] = [];
   const indices: number[] = [];
   let vertexIndex = 0;
 
-  const addVertex = (x: number, y: number, z: number, nx: number, ny: number, nz: number) => {
+  const addVertex = (
+    x: number,
+    y: number,
+    z: number,
+    nx: number,
+    ny: number,
+    nz: number,
+    c: [number, number, number]
+  ) => {
     positions.push(x, y, z);
     normals.push(nx, ny, nz);
+    colors.push(c[0], c[1], c[2]);
     return vertexIndex++;
   };
 
-  // TOP FACE ONLY
-  const topCenter = addVertex(0, height, 0, 0, 1, 0);
+  const topCenter = addVertex(0, height, 0, 0, 1, 0, AO_TOP);
   const topRing: number[] = [];
   for (let i = 0; i < 6; i++) {
-    topRing.push(addVertex(corners[i][0], height, corners[i][1], 0, 1, 0));
+    topRing.push(addVertex(corners[i][0], height, corners[i][1], 0, 1, 0, AO_TOP));
   }
   for (let i = 0; i < 6; i++) {
     const next = (i + 1) % 6;
     indices.push(topCenter, topRing[next], topRing[i]);
   }
 
+  return buildGeometry(positions, normals, colors, indices);
+}
+
+function buildGeometry(
+  positions: number[],
+  normals: number[],
+  colors: number[],
+  indices: number[]
+): THREE.BufferGeometry {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   geometry.setIndex(indices);
   geometry.computeBoundingSphere();
   return geometry;

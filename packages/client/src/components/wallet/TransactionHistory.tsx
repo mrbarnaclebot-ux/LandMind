@@ -95,11 +95,11 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
   };
 
   const titleStyle: React.CSSProperties = {
-    fontFamily: "'Press Start 2P', monospace",
+    fontFamily: "var(--font-pixel)",
     fontSize: '10px',
-    color: '#FFFFFF',
+    color: 'var(--dusk-text)',
     marginBottom: '14px',
-    textShadow: '2px 2px 0 #3F3F3F',
+    textShadow: '2px 2px 0 var(--dusk-text-shadow)',
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
@@ -118,9 +118,10 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
           style={{
             textAlign: 'center',
             padding: '32px 16px',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '10px',
-            color: '#8B8B8B',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-dim)',
           }}
         >
           <span
@@ -150,12 +151,13 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
           style={{
             textAlign: 'center',
             padding: '20px 16px',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '9px',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
           }}
         >
           <span className="pixel-warning" style={{ display: 'block', margin: '0 auto 12px', transform: 'scale(1.3)' }} />
-          <div style={{ color: '#FF3333', marginBottom: '12px' }}>
+          <div style={{ color: 'var(--ember)', marginBottom: '12px' }}>
             {error.message}
           </div>
           {error.retryable && (
@@ -190,9 +192,10 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
           style={{
             textAlign: 'center',
             padding: '28px 16px',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '9px',
-            color: '#8B8B8B',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-dim)',
           }}
         >
           <span className="pixel-chest" style={{ display: 'block', margin: '0 auto 12px', transform: 'scale(1.4)' }} />
@@ -212,10 +215,12 @@ export const TransactionHistory: FC<TransactionHistoryProps> = ({
         <span>ACTIVITY</span>
         <span
           style={{
-            fontSize: '8px',
-            color: '#8B8B8B',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-dim)',
             marginLeft: 'auto',
-            background: 'rgba(0, 0, 0, 0.3)',
+            background: 'rgba(14, 16, 26, 0.3)',
             padding: '4px 8px',
           }}
         >

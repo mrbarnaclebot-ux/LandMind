@@ -11,6 +11,15 @@ import { requireAuth, AuthenticatedRequest } from '../middleware/authMiddleware.
 import { LANDMIND_PROGRAM_ID } from '../lib/programId.js';
 import { TREASURY_SEED } from '../lib/pdaSeeds.js';
 import { getIO } from '../lib/socket.js';
+import crypto from 'crypto';
+import {
+  isFakeSolMode,
+  isFakeSignature,
+  FAKE_SIG_PREFIX,
+  FAKE_ASSET_PREFIX,
+} from '../lib/testMode.js';
+import { cacheAgent } from '../cache/agentCache.js';
+import { getCurrentTick } from '../simulation/tickLoop.js';
 
 export const agentRouter = Router();
 
@@ -81,6 +90,105 @@ function verifyDeployPayment(
   if (payerDelta > -DEPLOY_COST_LAMPORTS) return false;
 
   return true;
+}
+
+/**
+ * Create a fake (test-mode) agent end-to-end: enforce the cap + uniqueness
+ * inside a DB transaction, assign a fake assetId (no cNFT), place it on a hex,
+ * register it in the Redis cache so the tick loop mines it, and emit agent:placed.
+ *
+ * Returns the assembled agent payload, or a sentinel object on cap/sig-reuse so
+ * the caller can map to the right HTTP status. Mirrors the real /confirm flow
+ * minus on-chain verification and minting.
+ */
+async function createFakeAgent(
+  userId: string,
+  walletPubkey: string,
+  signature: string
+): Promise<
+  | { agent: Record<string, unknown> }
+  | { capReached: true }
+  | { sigReused: true }
+> {
+  let agent;
+  try {
+    agent = await prisma.$transaction(async (txClient) => {
+      const count = await txClient.agent.count({ where: { ownerId: userId } });
+      if (count >= MAX_AGENTS_PER_USER) {
+        throw new AgentCapError();
+      }
+
+      const lastAgent = await txClient.agent.findFirst({
+        orderBy: { agentIndex: 'desc' },
+        where: { agentIndex: { not: null } },
+      });
+      const nextIndex = (lastAgent?.agentIndex || 0) + 1;
+
+      return txClient.agent.create({
+        data: {
+          ownerId: userId,
+          status: 'IDLE',
+          deployTxSig: signature,
+          agentIndex: nextIndex,
+          // Fake asset id — clearly not a real cNFT asset id.
+          mintAddress: `${FAKE_ASSET_PREFIX}${crypto.randomUUID()}`,
+        },
+      });
+    });
+  } catch (txErr) {
+    if (txErr instanceof AgentCapError) {
+      return { capReached: true };
+    }
+    if (
+      txErr instanceof Prisma.PrismaClientKnownRequestError &&
+      txErr.code === 'P2002'
+    ) {
+      return { sigReused: true };
+    }
+    throw txErr;
+  }
+
+  const agentIndex = agent.agentIndex!;
+
+  // Place the agent on a hex (random placement, MINING status + mining state).
+  const placement = await placeAgentOnHex(agent.id);
+
+  // Register in the Redis cache exactly like real/seeded agents so the tick loop
+  // picks it up and mining:update / earnings:update events flow for it.
+  if (placement) {
+    await cacheAgent({
+      agentId: agent.id,
+      ownerId: userId,
+      ownerWallet: walletPubkey,
+      hexId: placement.hexId,
+      hexQ: placement.q,
+      hexR: placement.r,
+      gold: '0',
+      silver: '0',
+      copper: '0',
+      iron: '0',
+      status: 'MINING',
+      lastTick: getCurrentTick(),
+    });
+
+    getIO().to(`user:${walletPubkey}`).emit('agent:placed', {
+      agentId: agent.id,
+      hexId: placement.hexId,
+      hexQ: placement.q,
+      hexR: placement.r,
+    });
+  }
+
+  return {
+    agent: {
+      id: agent.id,
+      agentIndex,
+      mintAddress: agent.mintAddress,
+      hexId: placement?.hexId ?? null,
+      hexQ: placement?.q ?? null,
+      hexR: placement?.r ?? null,
+    },
+  };
 }
 
 /**
@@ -167,6 +275,22 @@ agentRouter.post('/deploy', requireAuth, async (req: AuthenticatedRequest, res: 
       });
     }
 
+    // FAKE-SOL TEST MODE: skip building a real on-chain transaction entirely and
+    // hand back a fake signature. /confirm recognizes the FAKE- prefix and skips
+    // on-chain verification. Gated behind the env flag; unreachable in prod.
+    if (isFakeSolMode()) {
+      const deployTxSig = `${FAKE_SIG_PREFIX}${crypto.randomUUID()}`;
+      return res.json({
+        fake: true,
+        deployTxSig,
+        cost: 0,
+        warning:
+          agentCount >= 10
+            ? `You have ${agentCount} agents. Soft cap is 20.`
+            : undefined,
+      });
+    }
+
     const connection = getConnection();
     const payerPubkey = new PublicKey(user.walletPubkey);
 
@@ -244,6 +368,29 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
         error: 'Transaction already used',
         message: 'This deployment transaction has already been redeemed for an agent.',
       });
+    }
+
+    // FAKE-SOL TEST MODE: when the flag is on AND this is a fake signature, skip
+    // ALL on-chain verification and cNFT minting. We deliberately KEEP: auth
+    // (requireAuth), deployTxSig uniqueness (pre-check above + DB unique
+    // constraint inside the tx), the 20-agent cap enforced INSIDE the tx, hex
+    // placement, DB create, the agent:placed socket emit, and Redis cache
+    // registration so the tick loop mines the fake agent like a real one.
+    if (isFakeSolMode() && isFakeSignature(signature)) {
+      const result = await createFakeAgent(req.userId!, user.walletPubkey, signature);
+      if ('capReached' in result) {
+        return res.status(400).json({
+          error: 'Agent limit reached',
+          message: `You already have ${MAX_AGENTS_PER_USER} agents deployed`,
+        });
+      }
+      if ('sigReused' in result) {
+        return res.status(409).json({
+          error: 'Transaction already used',
+          message: 'This deployment transaction has already been redeemed for an agent.',
+        });
+      }
+      return res.json({ success: true, fake: true, agent: result.agent });
     }
 
     const connection = getConnection();

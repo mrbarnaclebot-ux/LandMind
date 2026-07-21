@@ -21,9 +21,9 @@ function formatNumber(value: string | number): string {
 
 // Status colors
 const STATUS_COLORS: Record<string, string> = {
-  MINING: '#4CAF50',
-  RELOCATING: '#FFC107',
-  IDLE: '#9E9E9E',
+  MINING: 'var(--teal)',
+  RELOCATING: 'var(--amber)',
+  IDLE: 'var(--dusk-text-faint)',
 };
 
 export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
@@ -48,20 +48,21 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
       >
         <span
           style={{
-            fontFamily: "'Press Start 2P', monospace",
+            fontFamily: "var(--font-pixel)",
             fontSize: '9px',
-            color: '#FFFFFF',
+            color: 'var(--dusk-text)',
           }}
         >
           AGENT #{agent.agentIndex || '?'}
         </span>
         <span
           style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '7px',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
             padding: '2px 6px',
-            background: STATUS_COLORS[agent.status] || '#9E9E9E',
-            color: agent.status === 'RELOCATING' ? '#000' : '#FFF',
+            background: STATUS_COLORS[agent.status] || 'var(--dusk-text-faint)',
+            color: 'var(--dusk-on-amber)',
           }}
         >
           {agent.status}
@@ -71,9 +72,10 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
       {/* Location */}
       <div
         style={{
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '7px',
-          color: hasLocation ? '#8B8B8B' : '#666666',
+          fontFamily: "var(--font-body)",
+          fontSize: '13px',
+          lineHeight: 1.5,
+          color: hasLocation ? 'var(--dusk-text-dim)' : 'var(--dusk-text-faint)',
           marginBottom: '8px',
         }}
       >
@@ -88,8 +90,9 @@ export const AgentCard: FC<AgentCardProps> = ({ agent, onLocate }) => {
             gridTemplateColumns: '1fr 1fr',
             gap: '4px',
             marginBottom: '10px',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '7px',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
           }}
         >
           <div>

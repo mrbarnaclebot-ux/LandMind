@@ -103,7 +103,7 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(14, 16, 26, 0.7)',
     zIndex: 999,
     opacity: isOpen ? 1 : 0,
     visibility: isOpen ? 'visible' : 'hidden',
@@ -124,7 +124,7 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
     flexDirection: 'column',
     background: 'var(--pixel-inventory-dark)',
     border: '4px solid var(--pixel-obsidian)',
-    boxShadow: '-8px 0 0 0 var(--pixel-inventory), inset 4px 4px 0 0 rgba(0, 0, 0, 0.5)',
+    boxShadow: '-8px 0 0 0 var(--pixel-inventory), inset 4px 4px 0 0 rgba(14, 16, 26, 0.5)',
   };
 
   const headerStyle: React.CSSProperties = {
@@ -148,16 +148,16 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
         <header style={headerStyle}>
           <span
             style={{
-              fontFamily: "'Press Start 2P', monospace",
+              fontFamily: "var(--font-pixel)",
               fontSize: '12px',
-              color: '#FFFFFF',
-              textShadow: '2px 2px 0 #3F3F3F',
+              color: 'var(--dusk-text)',
+              textShadow: '2px 2px 0 var(--dusk-text-shadow)',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
             }}
           >
-            <span style={{ color: '#FFAA00' }}>[+]</span>
+            <span style={{ color: 'var(--amber)' }}>[+]</span>
             EARNINGS
           </span>
           <button
@@ -187,9 +187,10 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
               style={{
                 textAlign: 'center',
                 padding: '32px',
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: '8px',
-                color: '#8B8B8B',
+                fontFamily: "var(--font-body)",
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--dusk-text-dim)',
               }}
             >
               <span className="pixel-loading" style={{ fontSize: '16px', display: 'block', marginBottom: '12px' }}>
@@ -204,12 +205,13 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
             <div
               style={{
                 padding: '16px',
-                background: 'rgba(255, 51, 51, 0.1)',
+                background: 'rgba(224, 85, 60, 0.1)',
                 border: '2px solid var(--pixel-redstone)',
                 marginBottom: '16px',
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: '7px',
-                color: '#FF6666',
+                fontFamily: "var(--font-body)",
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--ember-light)',
               }}
             >
               {error}
@@ -234,18 +236,19 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
               {/* Claimable SOL - Hero Section */}
               <section
                 style={{
-                  background: 'linear-gradient(180deg, #3D3D41 0%, #2D2D31 100%)',
+                  background: 'var(--dusk-panel-2)',
                   padding: '20px 16px',
                   marginBottom: '16px',
                   border: '2px solid var(--pixel-obsidian)',
-                  boxShadow: 'inset 2px 2px 0 0 #4D4D51, inset -2px -2px 0 0 #1D1D21',
+                  boxShadow: 'inset 2px 2px 0 0 var(--dusk-panel-hi), inset -2px -2px 0 0 var(--dusk-panel-lo)',
                 }}
               >
                 <div
                   style={{
-                    fontFamily: "'Press Start 2P', monospace",
-                    fontSize: '7px',
-                    color: '#8B8B8B',
+                    fontFamily: "var(--font-body)",
+                    fontSize: '13px',
+                    lineHeight: 1.5,
+                    color: 'var(--dusk-text-dim)',
                     marginBottom: '8px',
                     display: 'flex',
                     alignItems: 'center',
@@ -258,8 +261,8 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '4px',
-                      color: '#4CAF50',
-                      fontSize: '6px',
+                      color: 'var(--teal)',
+                      fontSize: '13px',
                     }}
                   >
                     <span
@@ -267,7 +270,7 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                         width: '6px',
                         height: '6px',
                         borderRadius: '50%',
-                        backgroundColor: '#4CAF50',
+                        backgroundColor: 'var(--teal)',
                         animation: 'pulse 2s infinite',
                       }}
                     />
@@ -276,10 +279,10 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                 </div>
                 <div
                   style={{
-                    fontFamily: "'Press Start 2P', monospace",
+                    fontFamily: "var(--font-pixel)",
                     fontSize: '20px',
-                    color: '#FFAA00',
-                    textShadow: '2px 2px 0 #CC8800',
+                    color: 'var(--amber)',
+                    textShadow: '2px 2px 0 var(--amber-dark)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
@@ -290,9 +293,10 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                 </div>
                 <div
                   style={{
-                    fontFamily: "'Press Start 2P', monospace",
-                    fontSize: '7px',
-                    color: '#6B6B6B',
+                    fontFamily: "var(--font-body)",
+                    fontSize: '13px',
+                    lineHeight: 1.5,
+                    color: 'var(--dusk-text-faint)',
                     marginTop: '4px',
                   }}
                 >
@@ -315,9 +319,10 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                   <div
                     style={{
                       marginTop: '8px',
-                      fontFamily: "'Press Start 2P', monospace",
-                      fontSize: '6px',
-                      color: '#FF6666',
+                      fontFamily: "var(--font-body)",
+                      fontSize: '13px',
+                      lineHeight: 1.5,
+                      color: 'var(--ember-light)',
                       textAlign: 'center',
                     }}
                   >
@@ -330,9 +335,10 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                   <div
                     style={{
                       marginTop: '8px',
-                      fontFamily: "'Press Start 2P', monospace",
-                      fontSize: '7px',
-                      color: '#4CAF50',
+                      fontFamily: "var(--font-body)",
+                      fontSize: '13px',
+                      lineHeight: 1.5,
+                      color: 'var(--teal)',
                       textAlign: 'center',
                     }}
                   >
@@ -344,7 +350,7 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                       style={{
                         display: 'block',
                         marginTop: '4px',
-                        color: '#55CDFC',
+                        color: 'var(--teal-light)',
                         textDecoration: 'none',
                       }}
                     >
@@ -357,7 +363,7 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
               {/* Stats Grid */}
               <section
                 style={{
-                  background: '#2D2D31',
+                  background: 'var(--dusk-panel-2)',
                   padding: '12px',
                   border: '2px solid var(--pixel-obsidian)',
                   marginBottom: '16px',
@@ -368,44 +374,45 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                     display: 'grid',
                     gridTemplateColumns: '1fr 1fr',
                     gap: '12px',
-                    fontFamily: "'Press Start 2P', monospace",
-                    fontSize: '7px',
+                    fontFamily: "var(--font-body)",
+                    fontSize: '13px',
+                    lineHeight: 1.5,
                   }}
                 >
                   {/* Total Claimed */}
                   <div>
-                    <div style={{ color: '#8B8B8B', marginBottom: '4px' }}>CLAIMED</div>
-                    <div style={{ color: '#55CDFC', fontSize: '10px' }}>
+                    <div style={{ color: 'var(--dusk-text-dim)', marginBottom: '4px' }}>CLAIMED</div>
+                    <div style={{ color: 'var(--teal)', fontSize: '14px', fontFamily: "var(--font-pixel)" }}>
                       {totalClaimedSOL.toFixed(4)}
                     </div>
-                    <div style={{ color: '#5B5B5B', fontSize: '6px' }}>SOL</div>
+                    <div style={{ color: 'var(--dusk-text-faint)', fontSize: '13px' }}>SOL</div>
                   </div>
 
                   {/* Mining Score */}
                   <div>
-                    <div style={{ color: '#8B8B8B', marginBottom: '4px' }}>SCORE</div>
-                    <div style={{ color: '#7DB356', fontSize: '10px' }}>
+                    <div style={{ color: 'var(--dusk-text-dim)', marginBottom: '4px' }}>SCORE</div>
+                    <div style={{ color: 'var(--teal)', fontSize: '14px', fontFamily: "var(--font-pixel)" }}>
                       {formatScore(weightedScore)}
                     </div>
-                    <div style={{ color: '#5B5B5B', fontSize: '6px' }}>WEIGHTED</div>
+                    <div style={{ color: 'var(--dusk-text-faint)', fontSize: '13px' }}>WEIGHTED</div>
                   </div>
 
                   {/* Pool Share */}
                   <div>
-                    <div style={{ color: '#8B8B8B', marginBottom: '4px' }}>SHARE</div>
-                    <div style={{ color: '#FFAA00', fontSize: '10px' }}>
+                    <div style={{ color: 'var(--dusk-text-dim)', marginBottom: '4px' }}>SHARE</div>
+                    <div style={{ color: 'var(--amber)', fontSize: '14px', fontFamily: "var(--font-pixel)" }}>
                       {sharePercent.toFixed(2)}%
                     </div>
-                    <div style={{ color: '#5B5B5B', fontSize: '6px' }}>OF POOL</div>
+                    <div style={{ color: 'var(--dusk-text-faint)', fontSize: '13px' }}>OF POOL</div>
                   </div>
 
                   {/* Rank */}
                   <div>
-                    <div style={{ color: '#8B8B8B', marginBottom: '4px' }}>RANK</div>
-                    <div style={{ color: '#55CDFC', fontSize: '10px' }}>
+                    <div style={{ color: 'var(--dusk-text-dim)', marginBottom: '4px' }}>RANK</div>
+                    <div style={{ color: 'var(--teal)', fontSize: '14px', fontFamily: "var(--font-pixel)" }}>
                       {formatRank(rank)}
                     </div>
-                    <div style={{ color: '#5B5B5B', fontSize: '6px' }}>
+                    <div style={{ color: 'var(--dusk-text-faint)', fontSize: '13px' }}>
                       TOP {percentile > 0 ? Math.ceil(100 - percentile) : '--'}%
                     </div>
                   </div>
@@ -416,11 +423,11 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
               <section
                 style={{
                   padding: '12px',
-                  background: 'rgba(0, 0, 0, 0.2)',
-                  fontFamily: "'Press Start 2P', monospace",
-                  fontSize: '6px',
-                  color: '#6B6B6B',
-                  lineHeight: '1.8',
+                  background: 'rgba(14, 16, 26, 0.2)',
+                  fontFamily: "var(--font-body)",
+                  fontSize: '13px',
+                  color: 'var(--dusk-text-faint)',
+                  lineHeight: '1.5',
                 }}
               >
                 <p style={{ marginBottom: '8px' }}>
@@ -443,9 +450,10 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
             padding: '8px 16px',
             background: 'var(--pixel-obsidian)',
             borderTop: '4px solid var(--pixel-stone-dark)',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '6px',
-            color: '#5F5F5F',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-faint)',
             textAlign: 'center',
           }}
         >

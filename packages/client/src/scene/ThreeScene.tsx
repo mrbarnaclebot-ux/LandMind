@@ -16,6 +16,15 @@
 import { useRef, useEffect, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Sky } from '@react-three/drei';
+import {
+  EffectComposer,
+  Bloom,
+  ToneMapping,
+  HueSaturation,
+  Vignette,
+  SMAA,
+} from '@react-three/postprocessing';
+import { ToneMappingMode } from 'postprocessing';
 import * as THREE from 'three';
 import { ChunkedHexWorld } from '../rendering/ChunkedHexWorld';
 import { PerformanceAdapter } from '../rendering/PerformanceAdapter';
@@ -47,56 +56,111 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
     case 'low':
       return {
         dpr: Math.min(baseDpr, 1),
-        antialias: false,
         cloudsEnabled: false,
+        effectsEnabled: false,
+        shadows: false,
       };
     case 'medium':
       return {
         dpr: Math.min(baseDpr, isMobile ? 1.5 : 2),
-        antialias: !isMobile,
         cloudsEnabled: true,
+        effectsEnabled: !isMobile,
+        shadows: false,
       };
     case 'high':
       return {
         dpr: Math.min(baseDpr, 2),
-        antialias: true,
         cloudsEnabled: true,
+        effectsEnabled: true,
+        shadows: true,
       };
     default:
       return {
         dpr: Math.min(baseDpr, isMobile ? 1.5 : 2),
-        antialias: !isMobile,
         cloudsEnabled: true,
+        effectsEnabled: !isMobile,
+        shadows: false,
       };
   }
 }
 
 /**
- * Scene lighting component - bright and contrasty for Minecraft-style look
- * Higher contrast lighting makes the beveled edges pop and colors vibrant
+ * Scene lighting — "Golden-Hour Dusk" (ART-DIRECTION.md).
+ *  - low warm sun #FFB86B intensity 2.4 at ~22° elevation (long cool shadows)
+ *  - cool ambient #4A5A78 0.45 (no black shadows)
+ *  - PCFSoft shadows, frustum ±80, mapSize 2048, bias -0.0005, normalBias 0.02
  */
-function Lighting() {
+function Lighting({ shadows }: { shadows: boolean }) {
+  const sunRef = useRef<THREE.DirectionalLight>(null);
+
+  // ~22° elevation warm sun. Distance chosen so the ortho frustum ±80 covers the
+  // near world while keeping long shadows.
+  const sunDist = 120;
+  const elevRad = (22 * Math.PI) / 180;
+  const sunPos: [number, number, number] = [
+    Math.cos(elevRad) * sunDist * 0.8,
+    Math.sin(elevRad) * sunDist,
+    Math.cos(elevRad) * sunDist * 0.6,
+  ];
+
+  useEffect(() => {
+    const sun = sunRef.current;
+    if (!sun) return;
+    sun.shadow.bias = -0.0005;
+    sun.shadow.normalBias = 0.02;
+    sun.shadow.camera.updateProjectionMatrix();
+  }, []);
+
   return (
     <>
-      {/* Ambient light - higher for better color visibility */}
-      <ambientLight intensity={0.6} color="#ffffff" />
+      {/* Cool ambient fill so crevices stay indigo, never black. */}
+      <ambientLight intensity={0.45} color="#4A5A78" />
 
-      {/* Main directional "sun" light - bright white for color accuracy */}
+      {/* Low warm sun. */}
       <directionalLight
-        position={[50, 100, 30]}
-        intensity={1.8}
-        color="#ffffff"
-        castShadow={false}
-      />
-
-      {/* Secondary fill light - subtle warm fill from opposite side */}
-      <directionalLight
-        position={[-30, 50, -20]}
-        intensity={0.4}
-        color="#fff0d0"
+        ref={sunRef}
+        position={sunPos}
+        intensity={2.4}
+        color="#FFB86B"
+        castShadow={shadows}
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-near={0.5}
+        shadow-camera-far={200}
+        shadow-camera-left={-80}
+        shadow-camera-right={80}
+        shadow-camera-top={80}
+        shadow-camera-bottom={-80}
       />
     </>
   );
+}
+
+/**
+ * DuskEnvironment — sets NeutralToneMapping + exposure, SRGB output, PCFSoft
+ * shadow map, and the warm horizon fog. Fog color MUST equal the sky horizon
+ * band (#E8A26B), linear 50 → 320.
+ */
+function DuskEnvironment({ shadows }: { shadows: boolean }) {
+  const { gl, scene } = useThree();
+
+  useEffect(() => {
+    // three r182 supports NeutralToneMapping.
+    gl.toneMapping = THREE.NeutralToneMapping;
+    gl.toneMappingExposure = 0.95;
+    gl.outputColorSpace = THREE.SRGBColorSpace;
+    gl.shadowMap.enabled = shadows;
+    gl.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    scene.fog = new THREE.Fog('#E8A26B', 50, 320);
+    scene.background = new THREE.Color('#E8A26B');
+
+    return () => {
+      scene.fog = null;
+    };
+  }, [gl, scene, shadows]);
+
+  return null;
 }
 
 /**
@@ -214,10 +278,14 @@ function SceneContent({
   heatMapVisible = false,
   isMobile,
   cloudsEnabled,
+  effectsEnabled,
+  shadows,
 }: {
   heatMapVisible?: boolean;
   isMobile: boolean;
   cloudsEnabled: boolean;
+  effectsEnabled: boolean;
+  shadows: boolean;
 }) {
   // Initialize agent loading and subscription
   useUserAgents();
@@ -227,22 +295,28 @@ function SceneContent({
 
   return (
     <>
-      {/* Sky backdrop */}
+      {/* Dusk tone mapping, fog, shadow map config */}
+      <DuskEnvironment shadows={shadows} />
+
+      {/* Dusk sky: low warm sun near the horizon, zenith deep indigo. */}
       <Sky
         distance={450000}
-        sunPosition={[50, 80, 30]}
-        inclination={0.6}
+        sunPosition={[80, 18, 40]}
+        inclination={0.49}
         azimuth={0.25}
-        rayleigh={0.5}
+        rayleigh={2.2}
+        turbidity={9}
+        mieCoefficient={0.006}
+        mieDirectionalG={0.85}
       />
 
-      {/* Minecraft-style blocky clouds - disabled on low quality */}
+      {/* Dusk-tinted blocky clouds - disabled on low quality */}
       {cloudsEnabled && (
         <Clouds count={isMobile ? 10 : 20} height={40} spread={120} speed={0.6} />
       )}
 
       {/* Scene lighting */}
-      <Lighting />
+      <Lighting shadows={shadows} />
 
       {/* Camera controls with mobile touch support */}
       <CameraControls isMobile={isMobile} />
@@ -264,6 +338,23 @@ function SceneContent({
 
       {/* Tooltip shown on hex hover */}
       <HexTooltip visible={hoveredHex !== null} hexInfo={hoveredHex} />
+
+      {/* Post chain: Bloom → ToneMapping → HueSaturation → Vignette → SMAA.
+          Tonemapping lives in the composer (gl tonemapping is bypassed by it). */}
+      {effectsEnabled && (
+        <EffectComposer enableNormalPass={false} multisampling={0}>
+          <Bloom
+            mipmapBlur
+            intensity={0.5}
+            luminanceThreshold={0.9}
+            luminanceSmoothing={0.05}
+          />
+          <ToneMapping mode={ToneMappingMode.NEUTRAL} />
+          <HueSaturation saturation={-0.06} />
+          <Vignette offset={0.25} darkness={0.7} />
+          <SMAA />
+        </EffectComposer>
+      )}
     </>
   );
 }
@@ -299,6 +390,10 @@ export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
 
   return (
     <Canvas
+      // `flat` prevents R3F from forcing ACESFilmic tone mapping; DuskEnvironment
+      // sets NeutralToneMapping + exposure explicitly.
+      flat
+      shadows={settings.shadows ? 'soft' : false}
       camera={{
         position: [30, 40, 30],
         fov: 50,
@@ -308,12 +403,12 @@ export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
       style={{
         width: '100%',
         height: '100%',
-        background: '#1a2533',
+        background: '#E8A26B', // dusk horizon (matches fog)
         display: 'block',
         touchAction: isMobile ? 'none' : 'auto', // Prevent browser gestures on mobile
       }}
       gl={{
-        antialias: settings.antialias,
+        antialias: false, // SMAA handles AA in the composer
         powerPreference: isMobile ? 'default' : 'high-performance',
       }}
       dpr={settings.dpr}
@@ -324,6 +419,8 @@ export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
           heatMapVisible={heatMapVisible}
           isMobile={isMobile}
           cloudsEnabled={settings.cloudsEnabled}
+          effectsEnabled={settings.effectsEnabled}
+          shadows={settings.shadows}
         />
       </PerformanceAdapter>
     </Canvas>

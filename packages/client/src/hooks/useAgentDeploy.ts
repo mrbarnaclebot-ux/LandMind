@@ -18,6 +18,7 @@ import {
 } from '../lib/agents';
 import { useAgentStore } from '../stores/agentStore';
 import { useWalletStore } from '../stores/walletStore';
+import { useConfigStore } from '../stores/configStore';
 import { useSendAndConfirm, instructionsFromBase64, type SendStatus } from './useSendAndConfirm';
 import { useTransactionFlowToast } from './useTransactionFlowToast';
 
@@ -63,6 +64,7 @@ export function useAgentDeploy(): UseAgentDeployResult {
   const wallet = useWallet();
   const { isAuthenticated } = useWalletStore();
   const { addAgent } = useAgentStore();
+  const fakeSolMode = useConfigStore((s) => s.fakeSolMode);
 
   const send = useSendAndConfirm();
 
@@ -83,7 +85,9 @@ export function useAgentDeploy(): UseAgentDeployResult {
   });
 
   const deploy = useCallback(async (): Promise<Agent | null> => {
-    if (!wallet.publicKey || !wallet.signTransaction) {
+    // In fake-SOL test mode there is no wallet extension: authentication comes
+    // from the test session cookie, so we only require an authenticated session.
+    if (!fakeSolMode && (!wallet.publicKey || !wallet.signTransaction)) {
       setFlowError('Wallet not connected');
       return null;
     }
@@ -101,6 +105,33 @@ export function useAgentDeploy(): UseAgentDeployResult {
       const deployData = await requestDeployTransaction();
       if (deployData.warning) {
         console.warn('Deploy warning:', deployData.warning);
+      }
+
+      // FAKE-SOL TEST MODE: the server returns a FAKE- signature instead of a
+      // real transaction. Skip all wallet signing / on-chain send and confirm
+      // directly with the fake signature.
+      if (deployData.fake || deployData.deployTxSig) {
+        setRequesting(false);
+        const signature = deployData.deployTxSig;
+        if (!signature) {
+          throw new Error('Test-mode deploy did not return a signature');
+        }
+        const confirmation = await confirmDeployment(signature);
+        if (!confirmation.success) {
+          throw new Error('Server confirmation failed');
+        }
+        const newAgent = buildDeployedAgent(confirmation);
+        addAgent(newAgent);
+        return newAgent;
+      }
+
+      // Real path: the server must have returned a serialized transaction.
+      if (
+        !deployData.transaction ||
+        !deployData.blockhash ||
+        deployData.lastValidBlockHeight === undefined
+      ) {
+        throw new Error('Server did not return a deployment transaction');
       }
 
       const originalInstructions = instructionsFromBase64(deployData.transaction);
@@ -135,7 +166,7 @@ export function useAgentDeploy(): UseAgentDeployResult {
     } finally {
       setRequesting(false);
     }
-  }, [wallet.publicKey, wallet.signTransaction, isAuthenticated, addAgent, send]);
+  }, [fakeSolMode, wallet.publicKey, wallet.signTransaction, isAuthenticated, addAgent, send]);
 
   return {
     deploy,

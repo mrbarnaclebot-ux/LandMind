@@ -52,7 +52,7 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(14, 16, 26, 0.7)',
     zIndex: 999,
     opacity: isOpen ? 1 : 0,
     visibility: isOpen ? 'visible' : 'hidden',
@@ -73,7 +73,7 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
     flexDirection: 'column',
     background: 'var(--pixel-inventory-dark)',
     border: '4px solid var(--pixel-obsidian)',
-    boxShadow: '8px 0 0 0 var(--pixel-inventory), inset -4px 4px 0 0 rgba(0, 0, 0, 0.5)',
+    boxShadow: '8px 0 0 0 var(--pixel-inventory), inset -4px 4px 0 0 rgba(14, 16, 26, 0.5)',
   };
 
   const headerStyle: React.CSSProperties = {
@@ -97,16 +97,16 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
         <header style={headerStyle}>
           <span
             style={{
-              fontFamily: "'Press Start 2P', monospace",
+              fontFamily: "var(--font-pixel)",
               fontSize: '12px',
-              color: '#FFFFFF',
-              textShadow: '2px 2px 0 #3F3F3F',
+              color: 'var(--dusk-text)',
+              textShadow: '2px 2px 0 var(--dusk-text-shadow)',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
             }}
           >
-            <span style={{ color: '#4CAF50' }}>[+]</span>
+            <span style={{ color: 'var(--teal)' }}>[+]</span>
             AGENTS
           </span>
           <button
@@ -126,7 +126,7 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
         <section
           style={{
             padding: '16px',
-            background: '#2D2D31',
+            background: 'var(--dusk-panel-2)',
             borderBottom: '4px solid var(--pixel-stone-dark)',
           }}
         >
@@ -135,19 +135,20 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: '12px',
-              fontFamily: "'Press Start 2P', monospace",
-              fontSize: '8px',
+              fontFamily: "var(--font-body)",
+              fontSize: '13px',
+              lineHeight: 1.5,
             }}
           >
             <div>
-              <div style={{ color: '#8B8B8B', marginBottom: '4px' }}>AGENTS</div>
-              <div style={{ color: '#4CAF50', fontSize: '14px' }}>
+              <div style={{ color: 'var(--dusk-text-dim)', marginBottom: '4px' }}>AGENTS</div>
+              <div style={{ color: 'var(--teal)', fontSize: '14px', fontFamily: "var(--font-pixel)" }}>
                 {miningAgents}/{getAgentCount()}
               </div>
             </div>
             <div>
-              <div style={{ color: '#8B8B8B', marginBottom: '4px' }}>MINING</div>
-              <div style={{ color: miningAgents > 0 ? '#4CAF50' : '#9E9E9E', fontSize: '14px' }}>
+              <div style={{ color: 'var(--dusk-text-dim)', marginBottom: '4px' }}>MINING</div>
+              <div style={{ color: miningAgents > 0 ? 'var(--teal)' : 'var(--dusk-text-faint)', fontSize: '14px', fontFamily: "var(--font-pixel)" }}>
                 {miningAgents > 0 ? 'ACTIVE' : 'IDLE'}
               </div>
             </div>
@@ -158,12 +159,13 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
             style={{
               marginTop: '12px',
               padding: '8px',
-              background: 'rgba(0, 0, 0, 0.3)',
-              fontFamily: "'Press Start 2P', monospace",
-              fontSize: '7px',
+              background: 'rgba(14, 16, 26, 0.3)',
+              fontFamily: "var(--font-body)",
+              fontSize: '13px',
+              lineHeight: 1.5,
             }}
           >
-            <div style={{ color: '#8B8B8B', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ color: 'var(--dusk-text-dim)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>TOTAL MINED</span>
               {miningAgents > 0 && (
                 <span
@@ -171,8 +173,8 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
-                    color: '#4CAF50',
-                    fontSize: '6px',
+                    color: 'var(--teal)',
+                    fontSize: '13px',
                   }}
                 >
                   <span
@@ -180,7 +182,7 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
                       width: '6px',
                       height: '6px',
                       borderRadius: '50%',
-                      backgroundColor: '#4CAF50',
+                      backgroundColor: 'var(--teal)',
                       animation: 'pulse 2s infinite',
                     }}
                   />
@@ -194,7 +196,7 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
                 justifyContent: 'space-between',
                 flexWrap: 'wrap',
                 gap: '4px',
-                color: '#E0E0E0',
+                color: 'var(--dusk-text)',
                 transition: 'opacity 0.3s ease-in-out',
               }}
             >
@@ -219,9 +221,10 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
               style={{
                 textAlign: 'center',
                 padding: '24px',
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: '8px',
-                color: '#8B8B8B',
+                fontFamily: "var(--font-body)",
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--dusk-text-dim)',
               }}
             >
               No agents deployed yet.
@@ -246,9 +249,10 @@ export const AgentDashboard: FC<AgentDashboardProps> = ({
             padding: '8px 16px',
             background: 'var(--pixel-obsidian)',
             borderTop: '4px solid var(--pixel-stone-dark)',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '6px',
-            color: '#5F5F5F',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-faint)',
             textAlign: 'center',
           }}
         >

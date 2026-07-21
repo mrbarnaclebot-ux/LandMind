@@ -33,8 +33,22 @@ export interface WorldPosition {
 /** Hex outer radius (distance from center to corner) */
 export const HEX_SIZE = 1.0;
 
-/** Height per elevation tier - subtle for rolling hills feel */
-export const ELEVATION_STEP = 0.15;
+/**
+ * Height per visual elevation tier (world units).
+ * With 5 tiers (water..peak) this gives stepped columns from y=0 up to ~1.12.
+ * NOTE: AgentLayer positions agents at `elevation * ELEVATION_STEP + 0.35`, so
+ * changing this stays consistent for agents automatically.
+ */
+export const ELEVATION_STEP = 0.28;
+
+/** Height of a hex tile's top face above its base (matches hexMesh height). */
+export const HEX_TILE_HEIGHT = 0.35;
+
+/**
+ * Fixed world Y of the water surface. Water tiles (tier 0) render a translucent
+ * animated plane at this level; land columns rise above it.
+ */
+export const WATER_LEVEL_Y = 0.18;
 
 /** Square root of 3, used frequently in hex math */
 const SQRT3 = Math.sqrt(3);

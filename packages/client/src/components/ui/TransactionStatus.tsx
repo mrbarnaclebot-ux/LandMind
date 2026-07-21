@@ -30,15 +30,15 @@ function truncateSignature(signature: string): string {
 function getBorderColor(type: ToastType): string {
   switch (type) {
     case 'info':
-      return 'var(--pixel-diamond)';
+      return 'var(--amber)';
     case 'success':
-      return 'var(--pixel-grass)';
+      return 'var(--teal)';
     case 'warning':
-      return 'var(--pixel-gold)';
+      return 'var(--amber)';
     case 'error':
-      return 'var(--pixel-redstone)';
+      return 'var(--ember)';
     default:
-      return 'var(--pixel-stone)';
+      return 'var(--dusk-panel-3)';
   }
 }
 
@@ -82,18 +82,18 @@ function TransactionToastItem({ toast, onClose }: ToastItemProps) {
   return (
     <div
       style={{
-        background: 'var(--pixel-inventory-dark)',
+        background: 'var(--dusk-panel)',
         border: `4px solid ${borderColor}`,
         boxShadow: `
-          inset 4px 4px 0 0 rgba(0, 0, 0, 0.5),
-          4px 4px 0 0 rgba(0, 0, 0, 0.3)
+          inset 4px 4px 0 0 rgba(14, 16, 26, 0.5),
+          4px 4px 0 0 rgba(14, 16, 26, 0.3)
         `,
         padding: '12px',
         marginBottom: '8px',
-        fontFamily: "'Press Start 2P', monospace",
-        fontSize: '8px',
-        color: 'white',
-        lineHeight: '1.6',
+        fontFamily: "var(--font-body)",
+        fontSize: '14px',
+        color: 'var(--dusk-text)',
+        lineHeight: '1.5',
         minWidth: '240px',
         maxWidth: '320px',
         position: 'relative',
@@ -109,15 +109,15 @@ function TransactionToastItem({ toast, onClose }: ToastItemProps) {
           position: 'absolute',
           top: '8px',
           right: '8px',
-          background: 'var(--pixel-stone-dark)',
+          background: 'var(--dusk-panel-lo)',
           border: 'none',
-          color: 'var(--pixel-stone-light)',
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '8px',
+          color: 'var(--dusk-text-dim)',
+          fontFamily: "var(--font-body)",
+          fontSize: '13px',
           cursor: 'pointer',
           padding: '2px 6px',
           boxShadow:
-            'inset -2px -2px 0 0 var(--pixel-obsidian), inset 2px 2px 0 0 var(--pixel-stone)',
+            'inset -2px -2px 0 0 var(--dusk-panel-lo), inset 2px 2px 0 0 var(--dusk-panel-hi)',
         }}
       >
         X
@@ -135,17 +135,19 @@ function TransactionToastItem({ toast, onClose }: ToastItemProps) {
         <span
           style={{
             background: borderColor,
-            color: toast.type === 'warning' ? 'var(--pixel-obsidian)' : 'white',
+            color: 'var(--dusk-on-amber)',
+            fontFamily: "var(--font-pixel)",
             padding: '2px 6px',
-            fontSize: '7px',
+            fontSize: '13px',
           }}
         >
           {icon}
         </span>
         <span
           style={{
+            fontFamily: "var(--font-pixel)",
             color: borderColor,
-            textShadow: `2px 2px 0 rgba(0, 0, 0, 0.5)`,
+            textShadow: `2px 2px 0 var(--dusk-text-shadow)`,
           }}
         >
           {toast.title.toUpperCase()}
@@ -155,7 +157,7 @@ function TransactionToastItem({ toast, onClose }: ToastItemProps) {
       {/* Message */}
       <div
         style={{
-          color: 'var(--pixel-stone-light)',
+          color: 'var(--dusk-text-dim)',
           wordBreak: 'break-word',
         }}
       >
@@ -171,9 +173,9 @@ function TransactionToastItem({ toast, onClose }: ToastItemProps) {
           style={{
             display: 'inline-block',
             marginTop: '8px',
-            color: 'var(--pixel-diamond)',
+            color: 'var(--teal)',
             textDecoration: 'none',
-            fontSize: '7px',
+            fontSize: '13px',
           }}
         >
           VIEW: {truncateSignature(toast.signature)}

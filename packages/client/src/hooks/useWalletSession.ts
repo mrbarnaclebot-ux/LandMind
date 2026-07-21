@@ -95,6 +95,36 @@ export function useWalletSession() {
   }, [publicKey, signMessage, setSession, setAuthenticating, setAuthError]);
 
   /**
+   * TEST MODE ONLY: start a fake-SOL session with no wallet extension.
+   * Calls POST /auth/test-session (credentials included so the JWT cookie is
+   * set), then stores the returned test wallet address in the session store so
+   * the rest of the app treats the user as authenticated. The server returns 404
+   * when FAKE_SOL_MODE is off, so this is a no-op in production.
+   */
+  const startTestSession = useCallback(async (): Promise<boolean> => {
+    setAuthenticating(true);
+    setAuthError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/test-session`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Test session unavailable');
+      }
+
+      const { address, userId, expiresAt } = await response.json();
+      setSession(address, userId, expiresAt);
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Test session failed';
+      setAuthError(message);
+      return false;
+    }
+  }, [setSession, setAuthenticating, setAuthError]);
+
+  /**
    * Logout - clear session and disconnect wallet.
    */
   const logout = useCallback(async () => {
@@ -168,6 +198,7 @@ export function useWalletSession() {
 
     // Actions
     authenticate,
+    startTestSession,
     logout,
     checkSession,
 

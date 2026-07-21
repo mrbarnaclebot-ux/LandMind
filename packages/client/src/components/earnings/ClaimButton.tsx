@@ -84,12 +84,12 @@ export const ClaimButton: FC<ClaimButtonProps> = ({
 
         {/* Success checkmark */}
         {isSuccess && (
-          <span style={{ color: '#7DB356' }}>[OK]</span>
+          <span style={{ color: 'var(--teal)' }}>[OK]</span>
         )}
 
         {/* Error indicator */}
         {isError && (
-          <span style={{ color: '#FF6666' }}>[!]</span>
+          <span style={{ color: 'var(--ember-light)' }}>[!]</span>
         )}
 
         {buttonText}
@@ -100,9 +100,10 @@ export const ClaimButton: FC<ClaimButtonProps> = ({
         <div
           style={{
             marginTop: '8px',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '6px',
-            color: '#8B8B8B',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-dim)',
             textAlign: 'center',
           }}
         >

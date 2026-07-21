@@ -23,10 +23,11 @@ export const NetworkBadge: FC<NetworkBadgeProps> = ({ network }) => {
     <span
       className={`pixel-badge ${isDevnet ? 'pixel-badge-devnet' : 'pixel-badge-testnet'}`}
       style={{
-        fontFamily: "'Press Start 2P', monospace",
-        fontSize: '7px',
+        fontFamily: "var(--font-body)",
+        fontSize: '13px',
+        lineHeight: 1.5,
         padding: '6px 10px',
-        color: isDevnet ? '#1D1D21' : '#1D1D21',
+        color: 'var(--dusk-panel-lo)',
         display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',

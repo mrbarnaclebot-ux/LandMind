@@ -22,6 +22,7 @@ import { leaderboardRouter } from './routes/leaderboard.js';
 import { adminRouter } from './routes/admin.js';
 import { setupSocket } from './lib/socket.js';
 import { assertJwtSecret } from './lib/jwtSecret.js';
+import { isFakeSolMode, logFakeSolModeWarning } from './lib/testMode.js';
 import { startTickLoop, stopTickLoop } from './simulation/tickLoop.js';
 import { flushToPostgres } from './cache/persistence.js';
 import { redis, redisPub, redisSub } from './lib/redis.js';
@@ -66,6 +67,9 @@ function warnDegradedFeatures(): void {
 }
 
 warnDegradedFeatures();
+
+// Loud warning when fake-SOL test mode is enabled.
+logFakeSolModeWarning();
 
 const app = express();
 const httpServer = createServer(app);
@@ -126,6 +130,12 @@ const generalLimiter = rateLimit({
 });
 
 app.use(generalLimiter);
+
+// Public runtime config — always available. The client uses this to switch UI
+// into fake-SOL test mode. Never leaks secrets; only advertises the mode/network.
+app.get('/api/config', (_req, res) => {
+  res.json({ fakeSolMode: isFakeSolMode(), network: 'devnet' });
+});
 
 // Routes
 app.use('/health', healthRouter);

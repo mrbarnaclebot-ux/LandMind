@@ -54,7 +54,7 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
           padding: '10px 16px',
           ...(isOpen && {
             transform: 'translate(2px, 2px)',
-            boxShadow: '2px 2px 0 0 rgba(0, 0, 0, 0.5), inset 0 2px 0 0 rgba(0, 0, 0, 0.2)',
+            boxShadow: '2px 2px 0 0 rgba(14, 16, 26, 0.5), inset 0 2px 0 0 rgba(14, 16, 26, 0.2)',
           }),
         }}
       >
@@ -89,9 +89,10 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
           >
             <div
               style={{
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: '7px',
-                color: '#8B8B8B',
+                fontFamily: "var(--font-body)",
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--dusk-text-dim)',
                 textTransform: 'uppercase',
                 marginBottom: '10px',
                 letterSpacing: '0.5px',
@@ -111,17 +112,18 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
                 className="pixel-balance"
                 style={{
                   fontSize: '16px',
-                  fontFamily: "'Press Start 2P', monospace",
+                  fontFamily: "var(--font-pixel)",
                 }}
               >
                 {balance !== null ? `${balance.toFixed(4)}` : '---'}
               </span>
               <span
                 style={{
-                  fontSize: '10px',
-                  color: '#FFAA00',
-                  fontFamily: "'Press Start 2P', monospace",
-                  textShadow: '1px 1px 0 #CC8800',
+                  fontSize: '13px',
+                  lineHeight: 1.5,
+                  color: 'var(--amber)',
+                  fontFamily: "var(--font-body)",
+                  textShadow: '1px 1px 0 var(--amber-dark)',
                 }}
               >
                 SOL
@@ -144,7 +146,7 @@ export const AccountMenu: FC<AccountMenuProps> = ({ address, balance, onDisconne
             {copiedFeedback ? (
               <>
                 <span className="pixel-check" style={{ transform: 'scale(1)' }} />
-                <span style={{ color: '#5D8C3E' }}>COPIED!</span>
+                <span style={{ color: 'var(--teal)' }}>COPIED!</span>
               </>
             ) : (
               <>

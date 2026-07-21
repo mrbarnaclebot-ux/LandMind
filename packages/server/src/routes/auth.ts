@@ -6,6 +6,7 @@ import { verifySignature } from '../lib/solana.js';
 import { prisma } from '../lib/prisma.js';
 import { isAdminWallet } from '../middleware/adminAuth.js';
 import { JWT_SECRET, SESSION_COOKIE_NAME } from '../lib/jwtSecret.js';
+import { isFakeSolMode, generateTestWallet } from '../lib/testMode.js';
 
 const router = Router();
 const NONCE_TTL = 300; // 5 minutes
@@ -119,6 +120,60 @@ router.post('/verify', async (req: Request, res: Response) => {
     address,
     userId: user.id,
     expiresAt: (now * 1000) + SESSION_DURATION_MS
+  });
+});
+
+/**
+ * POST /auth/test-session
+ * TEST MODE ONLY (FAKE_SOL_MODE === 'true'). Returns 404 when the flag is off so
+ * this path is invisible in production.
+ *
+ * Creates-or-finds a User with a freshly generated deterministic-per-call test
+ * wallet and issues the normal JWT session cookie using the exact same signing +
+ * cookie machinery as /auth/verify. No signature, nonce, or wallet extension
+ * required — this is the entry point for the "PLAY TEST MODE" button.
+ *
+ * Rate-limited by the authLimiter applied to the whole /auth router.
+ */
+router.post('/test-session', async (_req: Request, res: Response) => {
+  if (!isFakeSolMode()) {
+    res.status(404).json({ error: 'Not found' });
+    return;
+  }
+
+  // Generate a fresh fake wallet ('TEST' + base58 of random bytes) and create
+  // the user. Collisions are astronomically unlikely; upsert keeps it idempotent.
+  const address = generateTestWallet();
+  const user = await prisma.user.upsert({
+    where: { walletPubkey: address },
+    update: { updatedAt: new Date() },
+    create: { walletPubkey: address },
+  });
+
+  // Issue JWT — identical claims/settings to the real /auth/verify path.
+  const now = Math.floor(Date.now() / 1000);
+  const accessToken = await new SignJWT({
+    sub: address,
+    userId: user.id,
+    iat: now,
+  })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime(SESSION_DURATION)
+    .sign(JWT_SECRET);
+
+  res.cookie(SESSION_COOKIE_NAME, accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: SESSION_DURATION_MS,
+  });
+
+  res.json({
+    success: true,
+    testMode: true,
+    address,
+    userId: user.id,
+    expiresAt: now * 1000 + SESSION_DURATION_MS,
   });
 });
 

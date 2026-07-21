@@ -6,6 +6,7 @@ import { FC, useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletStore } from '../../stores/walletStore';
 import { useAgentStore } from '../../stores/agentStore';
+import { useConfigStore } from '../../stores/configStore';
 import { useAgentDeploy, DeployStatus } from '../../hooks/useAgentDeploy';
 import { DEPLOY_COST_SOL } from '../../lib/umi';
 import '../../styles/pixel-theme.css';
@@ -25,6 +26,7 @@ export const DeployButton: FC = () => {
   const { connected } = useWallet();
   const { isAuthenticated } = useWalletStore();
   const { getAgentCount } = useAgentStore();
+  const fakeSolMode = useConfigStore((s) => s.fakeSolMode);
   const { deploy, status, error, isDeploying } = useAgentDeploy();
 
   const [showTooltip, setShowTooltip] = useState(false);
@@ -60,8 +62,9 @@ export const DeployButton: FC = () => {
     }
   }, [error]);
 
-  // Don't render if not authenticated
-  if (!connected || !isAuthenticated) {
+  // Don't render if not authenticated. In fake-SOL test mode there is no wallet
+  // extension, so a valid test session (isAuthenticated) is sufficient.
+  if (!isAuthenticated || (!fakeSolMode && !connected)) {
     return null;
   }
 
@@ -99,27 +102,28 @@ export const DeployButton: FC = () => {
             right: 0,
             marginTop: '8px',
             padding: '10px 14px',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '8px',
-            color: 'white',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text)',
             whiteSpace: 'nowrap',
             zIndex: 1000,
             minWidth: '140px',
           }}
         >
-          <div style={{ marginBottom: '6px', color: '#FFAA00' }}>
+          <div style={{ marginBottom: '6px', color: 'var(--amber)' }}>
             COST: {DEPLOY_COST_SOL} SOL
           </div>
-          <div style={{ color: '#8B8B8B' }}>
+          <div style={{ color: 'var(--dusk-text-dim)' }}>
             AGENTS: {agentCount}/20
           </div>
           {isAtSoftCap && !isAtHardCap && (
-            <div style={{ marginTop: '6px', color: '#FF6B6B', fontSize: '7px' }}>
+            <div style={{ marginTop: '6px', color: 'var(--ember-light)', fontSize: '13px' }}>
               Approaching limit
             </div>
           )}
           {isAtHardCap && (
-            <div style={{ marginTop: '6px', color: '#FF6B6B', fontSize: '7px' }}>
+            <div style={{ marginTop: '6px', color: 'var(--ember-light)', fontSize: '13px' }}>
               Limit reached
             </div>
           )}
@@ -134,12 +138,13 @@ export const DeployButton: FC = () => {
             top: '80px',
             right: '20px',
             padding: '12px 20px',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '10px',
-            color: 'white',
-            background: toastType === 'success' ? '#4CAF50' :
-                        toastType === 'error' ? '#F44336' : '#2196F3',
-            boxShadow: '4px 4px 0 rgba(0,0,0,0.3)',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-on-amber)',
+            background: toastType === 'success' ? 'var(--teal)' :
+                        toastType === 'error' ? 'var(--ember)' : 'var(--teal)',
+            boxShadow: '4px 4px 0 rgba(14, 16, 26, 0.3)',
             zIndex: 2000,
             animation: 'fadeIn 0.2s ease-out',
           }}

@@ -35,3 +35,66 @@ function resolveApiUrl(): string {
  * Base URL for all HTTP + WebSocket traffic to the LandMind server.
  */
 export const API_URL = resolveApiUrl();
+
+/**
+ * Public server runtime config returned by GET /api/config.
+ */
+export interface ServerConfig {
+  /** When true, the client switches into fake-SOL test mode. */
+  fakeSolMode: boolean;
+  /** Solana network the server is operating against. */
+  network: 'devnet' | 'mainnet-beta';
+}
+
+const DEFAULT_SERVER_CONFIG: ServerConfig = {
+  fakeSolMode: false,
+  network: 'devnet',
+};
+
+// Module-level cache so the config is fetched once per session and read
+// synchronously afterwards by hooks/components.
+let cachedConfig: ServerConfig = DEFAULT_SERVER_CONFIG;
+let configFetched = false;
+let inFlight: Promise<ServerConfig> | null = null;
+
+/**
+ * Fetch the public server config (GET /api/config) and cache it. Safe to call
+ * repeatedly — concurrent callers share a single in-flight request, and a
+ * successful result is cached for the rest of the session.
+ */
+export async function fetchServerConfig(): Promise<ServerConfig> {
+  if (configFetched) return cachedConfig;
+  if (inFlight) return inFlight;
+
+  inFlight = (async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/config`, { credentials: 'include' });
+      if (!res.ok) throw new Error(`config request failed: ${res.status}`);
+      const data = (await res.json()) as Partial<ServerConfig>;
+      cachedConfig = {
+        fakeSolMode: Boolean(data.fakeSolMode),
+        network: data.network === 'mainnet-beta' ? 'mainnet-beta' : 'devnet',
+      };
+      configFetched = true;
+      return cachedConfig;
+    } catch (err) {
+      // Fail safe: assume production (no fake mode) if the config can't be read.
+      console.error('[config] Failed to fetch server config:', err);
+      return cachedConfig;
+    } finally {
+      inFlight = null;
+    }
+  })();
+
+  return inFlight;
+}
+
+/** Synchronous read of the last-fetched server config (defaults until fetched). */
+export function getServerConfig(): ServerConfig {
+  return cachedConfig;
+}
+
+/** Convenience: whether fake-SOL test mode is active (per last fetched config). */
+export function isFakeSolModeClient(): boolean {
+  return cachedConfig.fakeSolMode;
+}

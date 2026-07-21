@@ -24,12 +24,15 @@ export interface Agent {
 }
 
 export interface DeployTransactionResponse {
-  transaction: string; // base64 serialized
-  treasuryAddress: string;
+  transaction?: string; // base64 serialized (real path only)
+  treasuryAddress?: string;
   cost: number;
-  blockhash: string;
-  lastValidBlockHeight: number;
+  blockhash?: string;
+  lastValidBlockHeight?: number;
   warning?: string;
+  // Fake-SOL test mode: server skips building a real tx and returns a fake sig.
+  fake?: boolean;
+  deployTxSig?: string;
 }
 
 export interface ConfirmResponse {

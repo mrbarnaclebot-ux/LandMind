@@ -149,8 +149,8 @@ export const ConnectButton: FC = () => {
               <span>{shortAddress}</span>
               <span
                 style={{
-                  fontSize: '7px',
-                  background: 'rgba(0,0,0,0.3)',
+                  fontSize: '13px',
+                  background: 'rgba(14,16,26,0.4)',
                   padding: '2px 6px',
                   marginLeft: '4px',
                 }}

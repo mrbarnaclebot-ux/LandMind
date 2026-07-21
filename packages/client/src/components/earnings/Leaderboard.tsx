@@ -33,27 +33,27 @@ function getRankStyle(rank: number): { bg: string; border: string; text: string 
   switch (rank) {
     case 1:
       return {
-        bg: 'linear-gradient(180deg, #FFCC44 0%, #FFAA00 100%)',
-        border: '#CC8800',
-        text: '#1D1D21',
+        bg: 'var(--amber)',
+        border: 'var(--amber-dark)',
+        text: 'var(--dusk-on-amber)',
       };
     case 2:
       return {
-        bg: 'linear-gradient(180deg, #DFDFDF 0%, #AFAFAF 100%)',
+        bg: '#AFAFAF',
         border: '#7F7F7F',
-        text: '#1D1D21',
+        text: 'var(--dusk-on-amber)',
       };
     case 3:
       return {
-        bg: 'linear-gradient(180deg, #CD7F32 0%, #8B5A2B 100%)',
+        bg: '#8B5A2B',
         border: '#5D3A1A',
-        text: '#FFFFFF',
+        text: 'var(--dusk-text)',
       };
     default:
       return {
-        bg: 'linear-gradient(180deg, #5F5F5F 0%, #373737 100%)',
-        border: '#1D1D21',
-        text: '#FFFFFF',
+        bg: 'var(--dusk-panel-2)',
+        border: 'var(--dusk-panel-lo)',
+        text: 'var(--dusk-text)',
       };
   }
 }
@@ -74,8 +74,9 @@ function RankBadge({ rank }: { rank: number }) {
         height: '24px',
         background: style.bg,
         border: `2px solid ${style.border}`,
-        fontFamily: "'Press Start 2P', monospace",
-        fontSize: '8px',
+        fontFamily: "var(--font-body)",
+        fontSize: '13px',
+        lineHeight: 1.5,
         color: style.text,
         flexShrink: 0,
       }}
@@ -97,18 +98,19 @@ function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
         gap: '8px',
         padding: '6px 8px',
         background: entry.isCurrentUser
-          ? 'linear-gradient(90deg, rgba(93, 140, 62, 0.3) 0%, transparent 100%)'
+          ? 'rgba(63, 182, 168, 0.15)'
           : 'transparent',
-        borderLeft: entry.isCurrentUser ? '3px solid #5D8C3E' : '3px solid transparent',
+        borderLeft: entry.isCurrentUser ? '3px solid var(--teal)' : '3px solid transparent',
       }}
     >
       <RankBadge rank={entry.rank} />
       <span
         style={{
           flex: 1,
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '8px',
-          color: entry.isCurrentUser ? '#7DB356' : '#FFFFFF',
+          fontFamily: "var(--font-body)",
+          fontSize: '13px',
+          lineHeight: 1.5,
+          color: entry.isCurrentUser ? 'var(--teal-light)' : 'var(--dusk-text)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -118,10 +120,11 @@ function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
       </span>
       <span
         style={{
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '8px',
-          color: '#FFAA00',
-          textShadow: '1px 1px 0 #CC8800',
+          fontFamily: "var(--font-body)",
+          fontSize: '13px',
+          lineHeight: 1.5,
+          color: 'var(--amber)',
+          textShadow: '1px 1px 0 var(--amber-dark)',
         }}
       >
         {formatScore(entry.score)}
@@ -140,7 +143,7 @@ function UserRankRow({ userRank, percentile }: { userRank: UserRankInfo; percent
       <div
         style={{
           height: '2px',
-          background: 'linear-gradient(90deg, transparent 0%, #5F5F5F 50%, transparent 100%)',
+          background: 'var(--dusk-panel-hi)',
           margin: '8px 0',
         }}
       />
@@ -148,9 +151,10 @@ function UserRankRow({ userRank, percentile }: { userRank: UserRankInfo; percent
       <div
         style={{
           textAlign: 'center',
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '8px',
-          color: '#5F5F5F',
+          fontFamily: "var(--font-body)",
+          fontSize: '13px',
+          lineHeight: 1.5,
+          color: 'var(--dusk-text-faint)',
           padding: '4px 0',
         }}
       >
@@ -163,27 +167,29 @@ function UserRankRow({ userRank, percentile }: { userRank: UserRankInfo; percent
           alignItems: 'center',
           gap: '8px',
           padding: '6px 8px',
-          background: 'linear-gradient(90deg, rgba(93, 140, 62, 0.3) 0%, transparent 100%)',
-          borderLeft: '3px solid #5D8C3E',
+          background: 'rgba(63, 182, 168, 0.15)',
+          borderLeft: '3px solid var(--teal)',
         }}
       >
         <RankBadge rank={userRank.rank} />
         <span
           style={{
             flex: 1,
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '8px',
-            color: '#7DB356',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--teal-light)',
           }}
         >
           YOU
         </span>
         <span
           style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '8px',
-            color: '#FFAA00',
-            textShadow: '1px 1px 0 #CC8800',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--amber)',
+            textShadow: '1px 1px 0 var(--amber-dark)',
           }}
         >
           {formatScore(userRank.score)}
@@ -194,9 +200,10 @@ function UserRankRow({ userRank, percentile }: { userRank: UserRankInfo; percent
         <div
           style={{
             textAlign: 'center',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '7px',
-            color: '#8B8B8B',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-dim)',
             padding: '4px 0',
           }}
         >
@@ -228,21 +235,21 @@ function LoadingSkeleton() {
             style={{
               width: '24px',
               height: '24px',
-              background: '#373737',
+              background: 'var(--dusk-panel-2)',
             }}
           />
           <div
             style={{
               flex: 1,
               height: '12px',
-              background: '#373737',
+              background: 'var(--dusk-panel-2)',
             }}
           />
           <div
             style={{
               width: '40px',
               height: '12px',
-              background: '#373737',
+              background: 'var(--dusk-panel-2)',
             }}
           />
         </div>
@@ -276,24 +283,25 @@ export function Leaderboard() {
           justifyContent: 'space-between',
           marginBottom: '12px',
           paddingBottom: '8px',
-          borderBottom: '2px solid #5F5F5F',
+          borderBottom: '2px solid var(--dusk-line)',
         }}
       >
         <span
           style={{
-            fontFamily: "'Press Start 2P', monospace",
+            fontFamily: "var(--font-pixel)",
             fontSize: '10px',
-            color: '#FFAA00',
-            textShadow: '2px 2px 0 #CC8800',
+            color: 'var(--amber)',
+            textShadow: '2px 2px 0 var(--amber-dark)',
           }}
         >
           LEADERBOARD
         </span>
         <span
           style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '7px',
-            color: '#8B8B8B',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-dim)',
           }}
         >
           {totalUsers} miners
@@ -306,9 +314,10 @@ export function Leaderboard() {
       ) : error ? (
         <div
           style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '8px',
-            color: '#FF3333',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--ember)',
             textAlign: 'center',
             padding: '16px',
           }}
@@ -318,9 +327,10 @@ export function Leaderboard() {
       ) : top10.length === 0 ? (
         <div
           style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '8px',
-            color: '#8B8B8B',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-dim)',
             textAlign: 'center',
             padding: '16px',
           }}

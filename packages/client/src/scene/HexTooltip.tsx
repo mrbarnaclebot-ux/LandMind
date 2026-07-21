@@ -79,14 +79,15 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
         className="pixel-inventory-panel"
         style={{
           padding: '10px 14px',
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '7px',
-          color: 'white',
-          minWidth: '130px',
+          fontFamily: 'var(--font-body)',
+          fontSize: '13px',
+          lineHeight: 1.5,
+          color: 'var(--dusk-text)',
+          minWidth: '140px',
         }}
       >
         {/* Coordinates */}
-        <div style={{ marginBottom: '8px', color: '#8B8B8B', fontSize: '6px' }}>
+        <div style={{ marginBottom: '8px', color: 'var(--dusk-text-dim)', fontSize: '12px' }}>
           HEX ({hexInfo.q}, {hexInfo.r})
         </div>
 
@@ -99,7 +100,7 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
                 height: '8px',
                 background: biomeColors[hexInfo.biome],
                 display: 'inline-block',
-                boxShadow: 'inset -1px -1px 0 rgba(0,0,0,0.3)',
+                boxShadow: 'inset -1px -1px 0 rgba(14,16,26,0.4)',
               }}
             />
             <span style={{ color: biomeColors[hexInfo.biome] }}>
@@ -110,7 +111,7 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
 
         {/* Elevation */}
         {hexInfo.elevation !== undefined && (
-          <div style={{ marginBottom: '6px', color: '#9E9E9E', fontSize: '6px' }}>
+          <div style={{ marginBottom: '6px', color: 'var(--dusk-text-dim)', fontSize: '12px' }}>
             ELEV: {elevationNames[hexInfo.elevation]}
           </div>
         )}
@@ -125,7 +126,7 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
                 style={{
                   color: resource.color,
                   fontWeight: 'bold',
-                  textShadow: `1px 1px 0 rgba(0,0,0,0.5)`,
+                  textShadow: `1px 1px 0 rgba(14,16,26,0.6)`,
                 }}
               >
                 [{resource.icon}]
@@ -135,7 +136,7 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
 
             {/* Amount */}
             {hexInfo.resourceAmount !== undefined && (
-              <div style={{ marginBottom: '4px', color: '#FFAA00', fontSize: '6px' }}>
+              <div style={{ marginBottom: '4px', color: 'var(--amber)', fontSize: '12px' }}>
                 {hexInfo.resourceAmount.toLocaleString()} remaining
               </div>
             )}
@@ -144,7 +145,7 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
 
         {/* No resource */}
         {(!resource || hexInfo.resourceType === 'NONE') && (
-          <div style={{ color: '#666', fontSize: '6px' }}>
+          <div style={{ color: 'var(--dusk-text-faint)', fontSize: '12px' }}>
             NO RESOURCES
           </div>
         )}
@@ -155,9 +156,9 @@ export const HexTooltip: FC<HexTooltipProps> = ({ visible, hexInfo }) => {
             style={{
               marginTop: '6px',
               padding: '4px 6px',
-              background: 'rgba(76, 175, 80, 0.2)',
-              color: '#4CAF50',
-              fontSize: '6px',
+              background: 'rgba(63, 182, 168, 0.18)',
+              color: 'var(--teal)',
+              fontSize: '12px',
             }}
           >
             {hexInfo.agentCount} AGENT{hexInfo.agentCount > 1 ? 'S' : ''} MINING

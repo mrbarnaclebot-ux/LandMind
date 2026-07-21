@@ -27,13 +27,14 @@ interface CloudsProps {
 /** Single cloud block dimensions - Minecraft clouds are flat and wide */
 const BLOCK_SIZE = { x: 6, y: 2, z: 6 };
 
-/** Cloud material - soft white with lighting response */
+/**
+ * Cloud material — dusk-tinted, matte. Warm dusty rose so clouds sit in the
+ * golden-hour horizon band; no emissive (only the agent amber core may bloom).
+ */
 const cloudMaterial = new THREE.MeshLambertMaterial({
-  color: 0xfafafa,
+  color: 0xe8c8a8, // warm dusk cloud
   transparent: true,
-  opacity: 0.92,
-  emissive: 0xffffff,
-  emissiveIntensity: 0.1,
+  opacity: 0.85,
 });
 
 /**

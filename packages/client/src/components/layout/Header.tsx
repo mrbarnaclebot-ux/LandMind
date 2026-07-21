@@ -1,5 +1,53 @@
 import { DeployButton } from '../agents/DeployButton';
 import { ConnectButton } from '../wallet/ConnectButton';
+import { useConfigStore } from '../../stores/configStore';
+import { useWalletStore } from '../../stores/walletStore';
+import { useWalletSession } from '../../hooks/useWalletSession';
+
+/**
+ * TEST MODE badge + "PLAY TEST MODE" button. Only renders when the server is in
+ * fake-SOL mode (GET /api/config). The button starts a lightweight test session
+ * (no wallet adapter) via useWalletSession().startTestSession().
+ */
+function TestModeControls() {
+  const fakeSolMode = useConfigStore((s) => s.fakeSolMode);
+  const { isAuthenticated } = useWalletStore();
+  const { startTestSession, isAuthenticating } = useWalletSession();
+
+  if (!fakeSolMode) return null;
+
+  return (
+    <>
+      <span
+        className="pixel-btn pixel-btn-gold"
+        title="Fake-SOL test mode is active — no real SOL or wallet required"
+        style={{
+          padding: '8px 12px',
+          fontSize: '13px',
+          cursor: 'default',
+          pointerEvents: 'none',
+        }}
+      >
+        TEST MODE — FAKE SOL
+      </span>
+      {!isAuthenticated && (
+        <button
+          onClick={() => { void startTestSession(); }}
+          disabled={isAuthenticating}
+          className="pixel-btn pixel-btn-primary"
+          style={{
+            padding: '8px 12px',
+            fontSize: '10px',
+            opacity: isAuthenticating ? 0.7 : 1,
+            cursor: isAuthenticating ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {isAuthenticating ? 'STARTING...' : 'PLAY TEST MODE'}
+        </button>
+      )}
+    </>
+  );
+}
 
 export interface HeaderProps {
   onOpenAgentDashboard: () => void;
@@ -39,16 +87,15 @@ export function Header({
         zIndex: 100,
       }}
     >
-      {/* Logo - pixel font with emerald glow */}
+      {/* Logo - amber pixel brand, hard pixel shadow (no gaussian glow) */}
       <div
         style={{
-          fontFamily: "'Press Start 2P', monospace",
+          fontFamily: "var(--font-pixel)",
           fontSize: '16px',
-          color: '#5D8C3E',
+          color: 'var(--amber)',
           textShadow: `
-            2px 2px 0 #3D5C2E,
-            -1px -1px 0 #7DB356,
-            0 0 20px rgba(93, 140, 62, 0.5)
+            2px 2px 0 var(--amber-dark),
+            -1px -1px 0 var(--amber-light)
           `,
           display: 'flex',
           alignItems: 'center',
@@ -68,8 +115,8 @@ export function Header({
               padding: '8px 12px',
               fontSize: '10px',
               opacity: 0.9,
-              background: '#5D8C3E',
-              borderColor: '#7DB356',
+              background: 'var(--amber)',
+              borderColor: 'var(--amber-light)',
             }}
           >
             ADMIN
@@ -108,6 +155,7 @@ export function Header({
         >
           MY AGENTS
         </button>
+        <TestModeControls />
         <DeployButton />
         <ConnectButton />
       </div>

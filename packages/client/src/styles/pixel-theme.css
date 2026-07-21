@@ -1,265 +1,384 @@
 /**
- * LandMind Pixel/Voxel Theme
- * Minecraft-inspired UI with blocky 3D effects
- * Enhanced voxel aesthetic with CSS pixel art
+ * LandMind UI Theme — "Golden-Hour Dusk" (LOCKED 2026-07-21)
+ * Moody premium-retro: dark indigo/amber pixel UI where exactly one glow (amber) earns its keep.
+ * Anti-slop contract: flat fills + hard bevels, no gradient/blur/glassmorphism, single bevel treatment,
+ * hard 1px-offset pixel shadows, amber "glow" = hard-edged pixel-bloom (layered solid box-shadow steps).
  */
 
-/* Import Press Start 2P pixel font */
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
-:root {
-  /* Minecraft-inspired color palette */
-  --pixel-grass: #5D8C3E;
-  --pixel-grass-light: #7DB356;
-  --pixel-grass-dark: #3D5C2E;
-
-  --pixel-dirt: #8B6834;
-  --pixel-dirt-light: #AB8854;
-  --pixel-dirt-dark: #5B3814;
-
-  --pixel-stone: #7F7F7F;
-  --pixel-stone-light: #9F9F9F;
-  --pixel-stone-dark: #4F4F4F;
-
-  --pixel-diamond: #55CDFC;
-  --pixel-diamond-light: #85EDFF;
-  --pixel-diamond-dark: #35ADDC;
-
-  --pixel-gold: #FFAA00;
-  --pixel-gold-light: #FFCC44;
-  --pixel-gold-dark: #CC8800;
-
-  --pixel-redstone: #FF3333;
-  --pixel-redstone-light: #FF6666;
-  --pixel-redstone-dark: #CC0000;
-
-  --pixel-obsidian: #1D1D21;
-  --pixel-obsidian-light: #3D3D41;
-  --pixel-obsidian-dark: #0D0D11;
-
-  --pixel-inventory: #8B8B8B;
-  --pixel-inventory-dark: #373737;
-  --pixel-inventory-slot: #8B8B8B;
-
-  /* Enhanced Minecraft colors */
-  --pixel-emerald: #17DD62;
-  --pixel-emerald-light: #4AFF8C;
-  --pixel-emerald-dark: #0CAA42;
-
-  --pixel-lapis: #345EC3;
-  --pixel-lapis-light: #5B82E6;
-  --pixel-lapis-dark: #233E82;
-
-  --pixel-netherite: #443A3B;
-  --pixel-netherite-light: #5D5254;
-  --pixel-netherite-dark: #2B2324;
-
-  /* UI colors */
-  --pixel-text: #FFFFFF;
-  --pixel-text-shadow: #3F3F3F;
-  --pixel-border-light: #FFFFFF;
-  --pixel-border-dark: #000000;
-
-  /* Spacing based on 4px grid */
-  --pixel-unit: 4px;
-  --pixel-border: 4px;
+/* ============================================
+   SELF-HOSTED FONTS
+   Press Start 2P — titles / logo / hero numbers ONLY (integer sizes 8/16/24)
+   Manrope (variable) — body / stats / addresses / history
+   ============================================ */
+@font-face {
+  font-family: 'Press Start 2P';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/press-start-2p-v15-latin-regular.woff2') format('woff2');
 }
 
-/* Pixel font for all wallet UI */
-.pixel-ui {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
-  line-height: 1.6;
-  image-rendering: pixelated;
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-latin-variable.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212,
+    U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/manrope-latin-ext-variable.woff2') format('woff2');
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  /* ---- DUSK GROUND & PANEL LEVELS (near-black indigo) ---- */
+  --dusk-ground: #14161F;        /* app background */
+  --dusk-panel: #1B1E2C;         /* base panel fill */
+  --dusk-panel-2: #232840;       /* raised panel / row fill */
+  --dusk-panel-3: #2C3350;       /* hover / selected fill */
+  --dusk-panel-hi: #3A4468;      /* bevel highlight edge */
+  --dusk-panel-lo: #0E101A;      /* bevel shadow edge */
+  --dusk-line: #2C3350;          /* dividers / borders */
+
+  /* ---- ACCENTS (3 only) ---- */
+  --amber: #F0A63C;              /* primary / rewards / the ONE glow */
+  --amber-light: #FFC46A;
+  --amber-dark: #B4761F;
+  --teal: #3FB6A8;               /* info / positive */
+  --teal-light: #6FD8CB;
+  --teal-dark: #248077;
+  --ember: #E0553C;              /* danger */
+  --ember-light: #F0836E;
+  --ember-dark: #A2331F;
+
+  /* ---- TEXT ---- */
+  --dusk-text: #EDE7DA;          /* warm off-white body */
+  --dusk-text-dim: #9AA0B8;      /* muted / secondary (cool) */
+  --dusk-text-faint: #626981;    /* hints / disabled */
+  --dusk-text-shadow: #0E101A;   /* pixel text shadow (cool, never black) */
+  --dusk-on-amber: #14161F;      /* text on amber fills */
+
+  /* ---- FONTS ---- */
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-body: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* ---- SPACING (8px grid) ---- */
+  --pixel-unit: 8px;
+  --pixel-border: 4px;
+
+  /* ============================================
+     LEGACY TOKEN ALIASES — remapped to dusk system
+     (kept so component classNames / inline var() refs keep working)
+     ============================================ */
+  --pixel-grass: var(--amber);
+  --pixel-grass-light: var(--amber-light);
+  --pixel-grass-dark: var(--amber-dark);
+
+  --pixel-dirt: var(--dusk-panel-2);
+  --pixel-dirt-light: var(--dusk-panel-3);
+  --pixel-dirt-dark: var(--dusk-panel-lo);
+
+  --pixel-stone: var(--dusk-panel-2);
+  --pixel-stone-light: var(--dusk-panel-hi);
+  --pixel-stone-dark: var(--dusk-panel-lo);
+
+  --pixel-diamond: var(--teal);
+  --pixel-diamond-light: var(--teal-light);
+  --pixel-diamond-dark: var(--teal-dark);
+
+  --pixel-gold: var(--amber);
+  --pixel-gold-light: var(--amber-light);
+  --pixel-gold-dark: var(--amber-dark);
+
+  --pixel-redstone: var(--ember);
+  --pixel-redstone-light: var(--ember-light);
+  --pixel-redstone-dark: var(--ember-dark);
+
+  --pixel-obsidian: var(--dusk-ground);
+  --pixel-obsidian-light: var(--dusk-panel);
+  --pixel-obsidian-dark: #0A0B12;
+
+  --pixel-inventory: var(--dusk-panel-hi);
+  --pixel-inventory-dark: var(--dusk-panel);
+  --pixel-inventory-slot: var(--dusk-panel-2);
+
+  --pixel-emerald: var(--teal);
+  --pixel-emerald-light: var(--teal-light);
+  --pixel-emerald-dark: var(--teal-dark);
+
+  --pixel-lapis: var(--dusk-panel-2);
+  --pixel-lapis-light: var(--dusk-panel-3);
+  --pixel-lapis-dark: var(--dusk-panel-lo);
+
+  --pixel-netherite: var(--dusk-panel);
+  --pixel-netherite-light: var(--dusk-panel-2);
+  --pixel-netherite-dark: var(--dusk-panel-lo);
+
+  --pixel-text: var(--dusk-text);
+  --pixel-text-shadow: var(--dusk-text-shadow);
+  --pixel-border-light: var(--dusk-panel-hi);
+  --pixel-border-dark: var(--dusk-panel-lo);
+}
+
+body {
+  background: var(--dusk-ground);
+  color: var(--dusk-text);
+  font-family: var(--font-body);
+}
+
+/* ============================================
+   FONT ROLE UTILITIES
+   ============================================ */
+
+/* Pixel font — titles / logo / hero numbers only */
+.pixel-title {
+  font-family: var(--font-pixel);
+  line-height: 1.4;
   -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* 3D Minecraft-style button */
+/* Body font — stats / addresses / history / hints */
+.dusk-body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--dusk-text);
+}
+
+/* pixel-ui: chrome text. Now defaults to body font at readable size. */
+.pixel-ui {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ============================================
+   BUTTONS — flat fill + hard bevel (no gradients)
+   ============================================ */
 .pixel-btn {
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-pixel);
   font-size: 10px;
-  color: var(--pixel-text);
-  background: var(--pixel-stone);
+  color: var(--dusk-text);
+  background: var(--dusk-panel-2);
   border: none;
   padding: 12px 16px;
   cursor: pointer;
   position: relative;
-  text-shadow: 2px 2px 0 var(--pixel-text-shadow);
-  transition: none;
+  text-shadow: 1px 1px 0 var(--dusk-text-shadow);
+  transition: background 140ms ease, box-shadow 140ms ease, transform 120ms ease;
 
-  /* 3D border effect */
+  /* single hard bevel treatment */
   box-shadow:
-    inset -4px -4px 0 0 var(--pixel-stone-dark),
-    inset 4px 4px 0 0 var(--pixel-stone-light);
+    inset -3px -3px 0 0 var(--dusk-panel-lo),
+    inset 3px 3px 0 0 var(--dusk-panel-hi);
 }
 
 .pixel-btn:hover {
-  background: var(--pixel-stone-light);
+  background: var(--dusk-panel-3);
+  /* amber hover edge */
   box-shadow:
-    inset -4px -4px 0 0 var(--pixel-stone),
-    inset 4px 4px 0 0 var(--pixel-border-light);
+    inset -3px -3px 0 0 var(--dusk-panel-lo),
+    inset 3px 3px 0 0 var(--dusk-panel-hi),
+    inset 0 0 0 2px var(--amber);
 }
 
 .pixel-btn:active,
 .pixel-btn.pressed {
-  background: var(--pixel-stone-dark);
+  background: var(--dusk-panel-lo);
   box-shadow:
-    inset 4px 4px 0 0 var(--pixel-stone-dark),
-    inset -4px -4px 0 0 var(--pixel-stone);
-  transform: translate(2px, 2px);
+    inset 3px 3px 0 0 var(--dusk-panel-lo),
+    inset -3px -3px 0 0 var(--dusk-panel-hi);
+  transform: translateY(1px);
 }
 
 .pixel-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow:
+    inset -3px -3px 0 0 var(--dusk-panel-lo),
+    inset 3px 3px 0 0 var(--dusk-panel-hi);
 }
 
-/* Green variant (grass/emerald) */
+/* Primary = amber (the earned glow: hard-edged pixel-bloom, not gaussian) */
 .pixel-btn-primary {
-  background: var(--pixel-grass);
+  background: var(--amber);
+  color: var(--dusk-on-amber);
+  text-shadow: none;
   box-shadow:
-    inset -4px -4px 0 0 var(--pixel-grass-dark),
-    inset 4px 4px 0 0 var(--pixel-grass-light);
+    inset -3px -3px 0 0 var(--amber-dark),
+    inset 3px 3px 0 0 var(--amber-light);
 }
 
 .pixel-btn-primary:hover {
-  background: var(--pixel-grass-light);
+  background: var(--amber-light);
+  color: var(--dusk-on-amber);
+  /* hard 4px pixel-bloom in solid steps */
   box-shadow:
-    inset -4px -4px 0 0 var(--pixel-grass),
-    inset 4px 4px 0 0 #9DD376;
+    inset -3px -3px 0 0 var(--amber-dark),
+    inset 3px 3px 0 0 var(--amber-light),
+    0 0 0 2px rgba(240, 166, 60, 0.55),
+    0 0 0 4px rgba(240, 166, 60, 0.25);
 }
 
 .pixel-btn-primary:active {
-  background: var(--pixel-grass-dark);
+  background: var(--amber-dark);
   box-shadow:
-    inset 4px 4px 0 0 var(--pixel-grass-dark),
-    inset -4px -4px 0 0 var(--pixel-grass);
+    inset 3px 3px 0 0 var(--amber-dark),
+    inset -3px -3px 0 0 var(--amber-light);
+  transform: translateY(1px);
 }
 
-/* Gold variant */
+/* Gold variant → amber (alias, same earned glow) */
 .pixel-btn-gold {
-  background: var(--pixel-gold);
-  color: var(--pixel-obsidian);
+  background: var(--amber);
+  color: var(--dusk-on-amber);
   text-shadow: none;
   box-shadow:
-    inset -4px -4px 0 0 var(--pixel-gold-dark),
-    inset 4px 4px 0 0 var(--pixel-gold-light);
+    inset -3px -3px 0 0 var(--amber-dark),
+    inset 3px 3px 0 0 var(--amber-light);
 }
 
 .pixel-btn-gold:hover {
-  background: var(--pixel-gold-light);
+  background: var(--amber-light);
+  color: var(--dusk-on-amber);
+  box-shadow:
+    inset -3px -3px 0 0 var(--amber-dark),
+    inset 3px 3px 0 0 var(--amber-light),
+    0 0 0 2px rgba(240, 166, 60, 0.55),
+    0 0 0 4px rgba(240, 166, 60, 0.25);
 }
 
-/* Redstone/Error variant */
+/* Danger = ember */
 .pixel-btn-danger {
-  background: var(--pixel-redstone);
+  background: var(--ember);
+  color: var(--dusk-text);
   box-shadow:
-    inset -4px -4px 0 0 var(--pixel-redstone-dark),
-    inset 4px 4px 0 0 var(--pixel-redstone-light);
+    inset -3px -3px 0 0 var(--ember-dark),
+    inset 3px 3px 0 0 var(--ember-light);
 }
 
 .pixel-btn-danger:hover {
-  background: var(--pixel-redstone-light);
+  background: var(--ember-light);
+  box-shadow:
+    inset -3px -3px 0 0 var(--ember-dark),
+    inset 3px 3px 0 0 var(--ember-light),
+    inset 0 0 0 2px var(--ember);
 }
 
-/* Inventory slot container */
+/* ============================================
+   PANELS — 9-slice-feel indigo, 1px amber-highlight top edge
+   ============================================ */
 .pixel-inventory-bg {
-  background: var(--pixel-inventory-dark);
-  border: 4px solid var(--pixel-obsidian);
+  background: var(--dusk-panel);
+  border: none;
   box-shadow:
-    inset 4px 4px 0 0 rgba(0, 0, 0, 0.5),
-    0 0 0 4px var(--pixel-inventory);
+    inset 0 1px 0 0 var(--amber),          /* 1px amber highlight top edge */
+    inset 3px 3px 0 0 var(--dusk-panel-hi),
+    inset -3px -3px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo);
 }
 
 /* Single inventory slot */
 .pixel-slot {
-  background: var(--pixel-inventory-slot);
-  border: 2px solid var(--pixel-obsidian);
+  background: var(--dusk-panel-2);
+  border: none;
   box-shadow:
-    inset 2px 2px 0 0 #5F5F5F,
-    inset -2px -2px 0 0 #AFAFAF;
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo);
   padding: 8px;
 }
 
 .pixel-slot:hover {
-  background: #9F9F9F;
+  background: var(--dusk-panel-3);
   box-shadow:
-    inset 2px 2px 0 0 #6F6F6F,
-    inset -2px -2px 0 0 #CFCFCF;
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    inset 0 0 0 1px var(--amber);
 }
 
-/* Pixel badge */
+/* Pixel badge — teal info by default */
 .pixel-badge {
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-pixel);
   font-size: 8px;
   padding: 4px 8px;
-  background: var(--pixel-diamond);
-  color: var(--pixel-obsidian);
+  background: var(--teal);
+  color: var(--dusk-on-amber);
   box-shadow:
-    inset -2px -2px 0 0 var(--pixel-diamond-dark),
-    inset 2px 2px 0 0 var(--pixel-diamond-light);
+    inset -2px -2px 0 0 var(--teal-dark),
+    inset 2px 2px 0 0 var(--teal-light);
 }
 
-/* Dropdown menu (inventory style) */
+/* Dropdown menu (panel style) */
 .pixel-dropdown {
-  font-family: 'Press Start 2P', monospace;
-  background: var(--pixel-inventory-dark);
-  border: 4px solid var(--pixel-obsidian);
+  font-family: var(--font-body);
+  background: var(--dusk-panel);
+  border: none;
   box-shadow:
-    0 0 0 4px var(--pixel-inventory),
-    8px 8px 0 0 rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 0 var(--amber),
+    inset 0 0 0 2px var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo),
+    6px 6px 0 0 rgba(14, 16, 26, 0.5);
   padding: 4px;
 }
 
 .pixel-dropdown-item {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
-  color: var(--pixel-text);
-  background: var(--pixel-inventory-slot);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--dusk-text);
+  background: var(--dusk-panel-2);
   padding: 10px 12px;
   margin: 2px 0;
   cursor: pointer;
-  text-shadow: 2px 2px 0 var(--pixel-text-shadow);
+  text-shadow: none;
   box-shadow:
-    inset 2px 2px 0 0 #AFAFAF,
-    inset -2px -2px 0 0 #5F5F5F;
-  transition: none;
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo);
+  transition: background 140ms ease, box-shadow 140ms ease;
 }
 
 .pixel-dropdown-item:hover {
-  background: #AFAFAF;
+  background: var(--dusk-panel-3);
   box-shadow:
-    inset 2px 2px 0 0 #CFCFCF,
-    inset -2px -2px 0 0 #7F7F7F;
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    inset 0 0 0 1px var(--amber);
 }
 
 .pixel-dropdown-item:active {
   box-shadow:
-    inset -2px -2px 0 0 #AFAFAF,
-    inset 2px 2px 0 0 #5F5F5F;
+    inset -2px -2px 0 0 var(--dusk-panel-hi),
+    inset 2px 2px 0 0 var(--dusk-panel-lo);
 }
 
 .pixel-dropdown-item.danger {
-  color: var(--pixel-redstone-light);
+  color: var(--ember-light);
 }
 
 .pixel-dropdown-item.danger:hover {
-  background: var(--pixel-redstone);
-  color: white;
+  background: var(--ember);
+  color: var(--dusk-text);
+  box-shadow:
+    inset 2px 2px 0 0 var(--ember-light),
+    inset -2px -2px 0 0 var(--ember-dark);
 }
 
-/* Divider */
+/* Divider — flat 2-step, no gradient */
 .pixel-divider {
-  height: 4px;
-  background: linear-gradient(
-    to bottom,
-    var(--pixel-obsidian) 0%,
-    var(--pixel-obsidian) 50%,
-    var(--pixel-inventory) 50%,
-    var(--pixel-inventory) 100%
-  );
-  margin: 4px 0;
+  height: 2px;
+  background: var(--dusk-panel-lo);
+  border-top: 1px solid var(--dusk-panel-hi);
+  margin: 8px 0;
 }
 
 /* Animated pickaxe loader */
@@ -275,7 +394,6 @@
   animation: pixel-mine 0.6s ease-in-out infinite;
 }
 
-/* Pixel icons (using emoji/text for now) */
 .pixel-icon {
   font-style: normal;
   display: inline-block;
@@ -285,52 +403,56 @@
   line-height: 16px;
 }
 
-/* Header bar Minecraft style */
+/* Header bar — dusk chrome */
 .pixel-header {
-  background: var(--pixel-obsidian);
-  border-bottom: 4px solid var(--pixel-stone-dark);
+  background: var(--dusk-panel);
+  border-bottom: 3px solid var(--dusk-panel-lo);
   box-shadow:
-    inset 0 4px 0 0 var(--pixel-obsidian-light),
-    0 4px 0 0 rgba(0, 0, 0, 0.3);
+    inset 0 1px 0 0 var(--amber),
+    0 2px 0 0 rgba(14, 16, 26, 0.4);
 }
 
-/* Tooltip */
+/* Tooltip — dusk with teal edge */
 .pixel-tooltip {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  background: var(--pixel-obsidian);
-  color: var(--pixel-text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--dusk-panel);
+  color: var(--dusk-text);
   padding: 8px;
-  border: 2px solid var(--pixel-diamond);
-  box-shadow: 4px 4px 0 0 rgba(0, 0, 0, 0.5);
+  border: none;
+  box-shadow:
+    inset 0 1px 0 0 var(--amber),
+    inset 0 0 0 1px var(--teal),
+    3px 3px 0 0 rgba(14, 16, 26, 0.5);
 }
 
-/* Balance display */
+/* Balance display — amber hero number */
 .pixel-balance {
-  font-family: 'Press Start 2P', monospace;
-  color: var(--pixel-gold);
-  text-shadow: 2px 2px 0 var(--pixel-gold-dark);
+  font-family: var(--font-pixel);
+  color: var(--amber);
+  text-shadow: 2px 2px 0 var(--amber-dark);
 }
 
 /* SOL icon representation */
 .pixel-sol-icon::before {
   content: '◎';
-  color: var(--pixel-diamond);
+  color: var(--teal);
   margin-right: 4px;
 }
 
 /* ============================================
-   PIXEL ART ICONS (CSS-based)
+   PIXEL ART ICONS (CSS box-shadow) — re-paletted amber/teal/ember
+   palette: handle=amber-dark, metal=teal ramp, accent=amber, danger=ember
    ============================================ */
 
-/* Base pixel icon container */
 .pixel-art-icon {
   display: inline-block;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
-/* Pickaxe icon using box-shadow pixel art */
+/* Pickaxe */
 .pixel-pickaxe {
   width: 12px;
   height: 12px;
@@ -344,19 +466,17 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    /* Handle */
-    0px 10px 0 #8B6834,
-    2px 8px 0 #8B6834,
-    4px 6px 0 #8B6834,
-    /* Head */
-    6px 4px 0 #55CDFC,
-    8px 2px 0 #55CDFC,
-    10px 0px 0 #35ADDC,
-    8px 4px 0 #35ADDC,
-    6px 2px 0 #85EDFF;
+    0px 10px 0 #B4761F,
+    2px 8px 0 #B4761F,
+    4px 6px 0 #B4761F,
+    6px 4px 0 #3FB6A8,
+    8px 2px 0 #3FB6A8,
+    10px 0px 0 #248077,
+    8px 4px 0 #248077,
+    6px 2px 0 #6FD8CB;
 }
 
-/* Sword icon */
+/* Sword */
 .pixel-sword {
   width: 14px;
   height: 14px;
@@ -370,20 +490,17 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    /* Blade */
-    2px 0px 0 #9F9F9F,
-    4px 2px 0 #9F9F9F,
-    6px 4px 0 #7F7F7F,
-    8px 6px 0 #7F7F7F,
-    /* Guard */
-    8px 8px 0 #5B3814,
-    10px 8px 0 #5B3814,
-    /* Handle */
-    10px 10px 0 #8B6834,
-    12px 12px 0 #8B6834;
+    2px 0px 0 #6FD8CB,
+    4px 2px 0 #3FB6A8,
+    6px 4px 0 #3FB6A8,
+    8px 6px 0 #248077,
+    8px 8px 0 #B4761F,
+    10px 8px 0 #B4761F,
+    10px 10px 0 #F0A63C,
+    12px 12px 0 #B4761F;
 }
 
-/* Chest icon */
+/* Chest */
 .pixel-chest {
   width: 14px;
   height: 12px;
@@ -397,35 +514,33 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    /* Body */
-    0px 4px 0 #8B6834,
-    2px 4px 0 #8B6834,
-    4px 4px 0 #8B6834,
-    6px 4px 0 #8B6834,
-    8px 4px 0 #8B6834,
-    10px 4px 0 #8B6834,
-    0px 6px 0 #5B3814,
-    2px 6px 0 #5B3814,
-    4px 6px 0 #FFAA00,
-    6px 6px 0 #FFAA00,
-    8px 6px 0 #5B3814,
-    10px 6px 0 #5B3814,
-    0px 8px 0 #5B3814,
-    2px 8px 0 #5B3814,
-    4px 8px 0 #5B3814,
-    6px 8px 0 #5B3814,
-    8px 8px 0 #5B3814,
-    10px 8px 0 #5B3814,
-    /* Top */
-    0px 2px 0 #AB8854,
-    2px 2px 0 #AB8854,
-    4px 2px 0 #AB8854,
-    6px 2px 0 #AB8854,
-    8px 2px 0 #AB8854,
-    10px 2px 0 #AB8854;
+    0px 4px 0 #B4761F,
+    2px 4px 0 #B4761F,
+    4px 4px 0 #B4761F,
+    6px 4px 0 #B4761F,
+    8px 4px 0 #B4761F,
+    10px 4px 0 #B4761F,
+    0px 6px 0 #A2331F,
+    2px 6px 0 #A2331F,
+    4px 6px 0 #F0A63C,
+    6px 6px 0 #F0A63C,
+    8px 6px 0 #A2331F,
+    10px 6px 0 #A2331F,
+    0px 8px 0 #A2331F,
+    2px 8px 0 #A2331F,
+    4px 8px 0 #A2331F,
+    6px 8px 0 #A2331F,
+    8px 8px 0 #A2331F,
+    10px 8px 0 #A2331F,
+    0px 2px 0 #F0A63C,
+    2px 2px 0 #F0A63C,
+    4px 2px 0 #F0A63C,
+    6px 2px 0 #F0A63C,
+    8px 2px 0 #F0A63C,
+    10px 2px 0 #F0A63C;
 }
 
-/* Link/Chain icon */
+/* Link/Chain — teal */
 .pixel-link {
   width: 12px;
   height: 12px;
@@ -439,23 +554,21 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    /* First ring */
-    0px 2px 0 #5D8C3E,
-    0px 4px 0 #5D8C3E,
-    2px 0px 0 #7DB356,
-    2px 6px 0 #3D5C2E,
-    4px 2px 0 #5D8C3E,
-    4px 4px 0 #5D8C3E,
-    /* Second ring */
-    6px 6px 0 #5D8C3E,
-    6px 8px 0 #5D8C3E,
-    8px 4px 0 #7DB356,
-    8px 10px 0 #3D5C2E,
-    10px 6px 0 #5D8C3E,
-    10px 8px 0 #5D8C3E;
+    0px 2px 0 #3FB6A8,
+    0px 4px 0 #3FB6A8,
+    2px 0px 0 #6FD8CB,
+    2px 6px 0 #248077,
+    4px 2px 0 #3FB6A8,
+    4px 4px 0 #3FB6A8,
+    6px 6px 0 #3FB6A8,
+    6px 8px 0 #3FB6A8,
+    8px 4px 0 #6FD8CB,
+    8px 10px 0 #248077,
+    10px 6px 0 #3FB6A8,
+    10px 8px 0 #3FB6A8;
 }
 
-/* Solana SOL icon (pixel art) */
+/* Solana SOL — teal ramp */
 .pixel-sol {
   width: 12px;
   height: 12px;
@@ -469,33 +582,30 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    /* Top bar */
-    0px 0px 0 #85EDFF,
-    2px 0px 0 #55CDFC,
-    4px 0px 0 #55CDFC,
-    6px 0px 0 #55CDFC,
-    8px 0px 0 #55CDFC,
-    10px 0px 0 #35ADDC,
-    0px 2px 0 #35ADDC,
-    /* Middle bar */
-    0px 4px 0 #35ADDC,
-    2px 4px 0 #55CDFC,
-    4px 4px 0 #55CDFC,
-    6px 4px 0 #55CDFC,
-    8px 4px 0 #55CDFC,
-    10px 4px 0 #85EDFF,
-    10px 6px 0 #35ADDC,
-    /* Bottom bar */
-    0px 8px 0 #85EDFF,
-    2px 8px 0 #55CDFC,
-    4px 8px 0 #55CDFC,
-    6px 8px 0 #55CDFC,
-    8px 8px 0 #55CDFC,
-    10px 8px 0 #35ADDC,
-    0px 10px 0 #35ADDC;
+    0px 0px 0 #6FD8CB,
+    2px 0px 0 #3FB6A8,
+    4px 0px 0 #3FB6A8,
+    6px 0px 0 #3FB6A8,
+    8px 0px 0 #3FB6A8,
+    10px 0px 0 #248077,
+    0px 2px 0 #248077,
+    0px 4px 0 #248077,
+    2px 4px 0 #3FB6A8,
+    4px 4px 0 #3FB6A8,
+    6px 4px 0 #3FB6A8,
+    8px 4px 0 #3FB6A8,
+    10px 4px 0 #6FD8CB,
+    10px 6px 0 #248077,
+    0px 8px 0 #6FD8CB,
+    2px 8px 0 #3FB6A8,
+    4px 8px 0 #3FB6A8,
+    6px 8px 0 #3FB6A8,
+    8px 8px 0 #3FB6A8,
+    10px 8px 0 #248077,
+    0px 10px 0 #248077;
 }
 
-/* Warning/Alert icon */
+/* Warning/Alert — amber */
 .pixel-warning {
   width: 12px;
   height: 12px;
@@ -509,33 +619,33 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    4px 0px 0 #FFAA00,
-    6px 0px 0 #FFAA00,
-    2px 2px 0 #FFAA00,
-    4px 2px 0 #FFCC44,
-    6px 2px 0 #FFCC44,
-    8px 2px 0 #FFAA00,
-    0px 4px 0 #FFAA00,
-    2px 4px 0 #FFCC44,
-    4px 4px 0 #1D1D21,
-    6px 4px 0 #1D1D21,
-    8px 4px 0 #FFCC44,
-    10px 4px 0 #FFAA00,
-    0px 6px 0 #CC8800,
-    2px 6px 0 #FFAA00,
-    4px 6px 0 #1D1D21,
-    6px 6px 0 #1D1D21,
-    8px 6px 0 #FFAA00,
-    10px 6px 0 #CC8800,
-    2px 8px 0 #CC8800,
-    4px 8px 0 #FFAA00,
-    6px 8px 0 #FFAA00,
-    8px 8px 0 #CC8800,
-    4px 10px 0 #CC8800,
-    6px 10px 0 #CC8800;
+    4px 0px 0 #F0A63C,
+    6px 0px 0 #F0A63C,
+    2px 2px 0 #F0A63C,
+    4px 2px 0 #FFC46A,
+    6px 2px 0 #FFC46A,
+    8px 2px 0 #F0A63C,
+    0px 4px 0 #F0A63C,
+    2px 4px 0 #FFC46A,
+    4px 4px 0 #14161F,
+    6px 4px 0 #14161F,
+    8px 4px 0 #FFC46A,
+    10px 4px 0 #F0A63C,
+    0px 6px 0 #B4761F,
+    2px 6px 0 #F0A63C,
+    4px 6px 0 #14161F,
+    6px 6px 0 #14161F,
+    8px 6px 0 #F0A63C,
+    10px 6px 0 #B4761F,
+    2px 8px 0 #B4761F,
+    4px 8px 0 #F0A63C,
+    6px 8px 0 #F0A63C,
+    8px 8px 0 #B4761F,
+    4px 10px 0 #B4761F,
+    6px 10px 0 #B4761F;
 }
 
-/* Disconnect/Power icon */
+/* Disconnect/Power — ember */
 .pixel-power {
   width: 10px;
   height: 12px;
@@ -549,23 +659,23 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    4px 0px 0 #FF3333,
-    4px 2px 0 #FF3333,
-    4px 4px 0 #FF3333,
-    2px 2px 0 #FF6666,
-    6px 2px 0 #FF6666,
-    0px 4px 0 #FF3333,
-    8px 4px 0 #FF3333,
-    0px 6px 0 #FF3333,
-    8px 6px 0 #FF3333,
-    0px 8px 0 #CC0000,
-    8px 8px 0 #CC0000,
-    2px 10px 0 #CC0000,
-    4px 10px 0 #CC0000,
-    6px 10px 0 #CC0000;
+    4px 0px 0 #E0553C,
+    4px 2px 0 #E0553C,
+    4px 4px 0 #E0553C,
+    2px 2px 0 #F0836E,
+    6px 2px 0 #F0836E,
+    0px 4px 0 #E0553C,
+    8px 4px 0 #E0553C,
+    0px 6px 0 #E0553C,
+    8px 6px 0 #E0553C,
+    0px 8px 0 #A2331F,
+    8px 8px 0 #A2331F,
+    2px 10px 0 #A2331F,
+    4px 10px 0 #A2331F,
+    6px 10px 0 #A2331F;
 }
 
-/* Copy/Clipboard icon */
+/* Copy/Clipboard — cool indigo/paper */
 .pixel-copy {
   width: 10px;
   height: 12px;
@@ -579,37 +689,35 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    /* Back page */
-    2px 0px 0 #9F9F9F,
-    4px 0px 0 #9F9F9F,
-    6px 0px 0 #9F9F9F,
-    8px 0px 0 #9F9F9F,
-    8px 2px 0 #7F7F7F,
-    8px 4px 0 #7F7F7F,
-    /* Front page */
-    0px 2px 0 #FFFFFF,
-    2px 2px 0 #FFFFFF,
-    4px 2px 0 #FFFFFF,
-    6px 2px 0 #FFFFFF,
-    0px 4px 0 #FFFFFF,
-    2px 4px 0 #DFDFDF,
-    4px 4px 0 #DFDFDF,
-    6px 4px 0 #FFFFFF,
-    0px 6px 0 #FFFFFF,
-    2px 6px 0 #DFDFDF,
-    4px 6px 0 #DFDFDF,
-    6px 6px 0 #FFFFFF,
-    0px 8px 0 #FFFFFF,
-    2px 8px 0 #DFDFDF,
-    4px 8px 0 #DFDFDF,
-    6px 8px 0 #FFFFFF,
-    0px 10px 0 #9F9F9F,
-    2px 10px 0 #9F9F9F,
-    4px 10px 0 #9F9F9F,
-    6px 10px 0 #9F9F9F;
+    2px 0px 0 #3A4468,
+    4px 0px 0 #3A4468,
+    6px 0px 0 #3A4468,
+    8px 0px 0 #3A4468,
+    8px 2px 0 #232840,
+    8px 4px 0 #232840,
+    0px 2px 0 #EDE7DA,
+    2px 2px 0 #EDE7DA,
+    4px 2px 0 #EDE7DA,
+    6px 2px 0 #EDE7DA,
+    0px 4px 0 #EDE7DA,
+    2px 4px 0 #9AA0B8,
+    4px 4px 0 #9AA0B8,
+    6px 4px 0 #EDE7DA,
+    0px 6px 0 #EDE7DA,
+    2px 6px 0 #9AA0B8,
+    4px 6px 0 #9AA0B8,
+    6px 6px 0 #EDE7DA,
+    0px 8px 0 #EDE7DA,
+    2px 8px 0 #9AA0B8,
+    4px 8px 0 #9AA0B8,
+    6px 8px 0 #EDE7DA,
+    0px 10px 0 #3A4468,
+    2px 10px 0 #3A4468,
+    4px 10px 0 #3A4468,
+    6px 10px 0 #3A4468;
 }
 
-/* Search/Explorer icon */
+/* Search/Explorer — teal lens, amber handle */
 .pixel-search {
   width: 12px;
   height: 12px;
@@ -623,21 +731,19 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    /* Lens */
-    2px 0px 0 #85EDFF,
-    4px 0px 0 #55CDFC,
-    0px 2px 0 #55CDFC,
-    6px 2px 0 #55CDFC,
-    0px 4px 0 #35ADDC,
-    6px 4px 0 #35ADDC,
-    2px 6px 0 #35ADDC,
-    4px 6px 0 #35ADDC,
-    /* Handle */
-    6px 8px 0 #8B6834,
-    8px 10px 0 #5B3814;
+    2px 0px 0 #6FD8CB,
+    4px 0px 0 #3FB6A8,
+    0px 2px 0 #3FB6A8,
+    6px 2px 0 #3FB6A8,
+    0px 4px 0 #248077,
+    6px 4px 0 #248077,
+    2px 6px 0 #248077,
+    4px 6px 0 #248077,
+    6px 8px 0 #B4761F,
+    8px 10px 0 #F0A63C;
 }
 
-/* Checkmark icon */
+/* Checkmark — teal (positive) */
 .pixel-check {
   width: 12px;
   height: 10px;
@@ -651,15 +757,15 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    10px 0px 0 #5D8C3E,
-    8px 2px 0 #5D8C3E,
-    6px 4px 0 #7DB356,
-    4px 6px 0 #5D8C3E,
-    2px 4px 0 #5D8C3E,
-    0px 2px 0 #3D5C2E;
+    10px 0px 0 #3FB6A8,
+    8px 2px 0 #3FB6A8,
+    6px 4px 0 #6FD8CB,
+    4px 6px 0 #3FB6A8,
+    2px 4px 0 #3FB6A8,
+    0px 2px 0 #248077;
 }
 
-/* Scroll/History icon */
+/* Scroll/History — parchment on amber */
 .pixel-scroll {
   width: 10px;
   height: 12px;
@@ -673,205 +779,194 @@
   height: 2px;
   background: transparent;
   box-shadow:
-    /* Top curl */
-    0px 0px 0 #AB8854,
-    2px 0px 0 #AB8854,
-    4px 0px 0 #8B6834,
-    6px 2px 0 #8B6834,
-    /* Body */
-    0px 2px 0 #AB8854,
-    2px 2px 0 #DFDFDF,
-    4px 2px 0 #DFDFDF,
-    0px 4px 0 #8B6834,
-    2px 4px 0 #DFDFDF,
-    4px 4px 0 #9F9F9F,
-    0px 6px 0 #8B6834,
-    2px 6px 0 #DFDFDF,
-    4px 6px 0 #9F9F9F,
-    0px 8px 0 #5B3814,
-    2px 8px 0 #DFDFDF,
-    4px 8px 0 #9F9F9F,
-    /* Bottom curl */
-    2px 10px 0 #8B6834,
-    4px 10px 0 #AB8854,
-    6px 10px 0 #AB8854,
-    8px 8px 0 #8B6834;
+    0px 0px 0 #F0A63C,
+    2px 0px 0 #F0A63C,
+    4px 0px 0 #B4761F,
+    6px 2px 0 #B4761F,
+    0px 2px 0 #F0A63C,
+    2px 2px 0 #EDE7DA,
+    4px 2px 0 #EDE7DA,
+    0px 4px 0 #B4761F,
+    2px 4px 0 #EDE7DA,
+    4px 4px 0 #9AA0B8,
+    0px 6px 0 #B4761F,
+    2px 6px 0 #EDE7DA,
+    4px 6px 0 #9AA0B8,
+    0px 8px 0 #A2331F,
+    2px 8px 0 #EDE7DA,
+    4px 8px 0 #9AA0B8,
+    2px 10px 0 #B4761F,
+    4px 10px 0 #F0A63C,
+    6px 10px 0 #F0A63C,
+    8px 8px 0 #B4761F;
 }
 
 /* ============================================
-   ENHANCED 3D BUTTON STYLES
+   3D BUTTONS — flat fill + hard bevel (gradients killed)
    ============================================ */
-
-/* Deeper 3D Minecraft button */
 .pixel-btn-3d {
-  font-family: 'Press Start 2P', monospace;
+  font-family: var(--font-pixel);
   font-size: 10px;
-  color: var(--pixel-text);
-  background: linear-gradient(180deg, var(--pixel-stone-light) 0%, var(--pixel-stone) 50%, var(--pixel-stone-dark) 100%);
+  color: var(--dusk-text);
+  background: var(--dusk-panel-2);
   border: none;
   padding: 12px 20px;
   cursor: pointer;
   position: relative;
-  text-shadow: 2px 2px 0 var(--pixel-text-shadow);
-  transition: none;
+  text-shadow: 1px 1px 0 var(--dusk-text-shadow);
+  transition: background 140ms ease, box-shadow 140ms ease, transform 120ms ease;
 
-  /* Chunky 3D border */
-  border-top: 4px solid var(--pixel-stone-light);
-  border-left: 4px solid var(--pixel-stone-light);
-  border-right: 4px solid var(--pixel-stone-dark);
-  border-bottom: 4px solid var(--pixel-stone-dark);
+  /* single hard bevel: light top/left, dark bottom/right */
+  border-top: 3px solid var(--dusk-panel-hi);
+  border-left: 3px solid var(--dusk-panel-hi);
+  border-right: 3px solid var(--dusk-panel-lo);
+  border-bottom: 3px solid var(--dusk-panel-lo);
 
-  /* Outer shadow for depth */
   box-shadow:
-    4px 4px 0 0 rgba(0, 0, 0, 0.5),
-    inset 0 2px 0 0 rgba(255, 255, 255, 0.2);
+    3px 3px 0 0 rgba(14, 16, 26, 0.5),
+    inset 0 1px 0 0 rgba(58, 68, 104, 0.6);
 }
 
 .pixel-btn-3d:hover {
-  background: linear-gradient(180deg, #AFAFAF 0%, var(--pixel-stone-light) 50%, var(--pixel-stone) 100%);
-  border-top-color: #CFCFCF;
-  border-left-color: #CFCFCF;
+  background: var(--dusk-panel-3);
+  border-top-color: var(--amber);
+  border-left-color: var(--amber);
 }
 
 .pixel-btn-3d:active {
-  background: linear-gradient(180deg, var(--pixel-stone-dark) 0%, var(--pixel-stone) 100%);
-  border-top: 4px solid var(--pixel-stone-dark);
-  border-left: 4px solid var(--pixel-stone-dark);
-  border-right: 4px solid var(--pixel-stone-light);
-  border-bottom: 4px solid var(--pixel-stone-light);
+  background: var(--dusk-panel-lo);
+  border-top: 3px solid var(--dusk-panel-lo);
+  border-left: 3px solid var(--dusk-panel-lo);
+  border-right: 3px solid var(--dusk-panel-hi);
+  border-bottom: 3px solid var(--dusk-panel-hi);
   box-shadow:
-    2px 2px 0 0 rgba(0, 0, 0, 0.5),
-    inset 0 2px 0 0 rgba(0, 0, 0, 0.2);
-  transform: translate(2px, 2px);
+    2px 2px 0 0 rgba(14, 16, 26, 0.5);
+  transform: translateY(1px);
 }
 
-/* Emerald/Primary 3D button */
+.pixel-btn-3d:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Primary 3D = amber (earned glow on hover) */
 .pixel-btn-3d-primary {
-  background: linear-gradient(180deg, var(--pixel-grass-light) 0%, var(--pixel-grass) 50%, var(--pixel-grass-dark) 100%);
-  border-top: 4px solid var(--pixel-grass-light);
-  border-left: 4px solid var(--pixel-grass-light);
-  border-right: 4px solid var(--pixel-grass-dark);
-  border-bottom: 4px solid var(--pixel-grass-dark);
+  background: var(--amber);
+  color: var(--dusk-on-amber);
+  text-shadow: none;
+  border-top: 3px solid var(--amber-light);
+  border-left: 3px solid var(--amber-light);
+  border-right: 3px solid var(--amber-dark);
+  border-bottom: 3px solid var(--amber-dark);
 }
 
 .pixel-btn-3d-primary:hover {
-  background: linear-gradient(180deg, #9DD376 0%, var(--pixel-grass-light) 50%, var(--pixel-grass) 100%);
-  border-top-color: #9DD376;
-  border-left-color: #9DD376;
+  background: var(--amber-light);
+  color: var(--dusk-on-amber);
+  border-top-color: var(--amber-light);
+  border-left-color: var(--amber-light);
+  /* hard 4px pixel-bloom */
+  box-shadow:
+    3px 3px 0 0 rgba(14, 16, 26, 0.5),
+    0 0 0 2px rgba(240, 166, 60, 0.55),
+    0 0 0 4px rgba(240, 166, 60, 0.25);
 }
 
 .pixel-btn-3d-primary:active {
-  background: linear-gradient(180deg, var(--pixel-grass-dark) 0%, var(--pixel-grass) 100%);
-  border-top: 4px solid var(--pixel-grass-dark);
-  border-left: 4px solid var(--pixel-grass-dark);
-  border-right: 4px solid var(--pixel-grass-light);
-  border-bottom: 4px solid var(--pixel-grass-light);
+  background: var(--amber-dark);
+  border-top: 3px solid var(--amber-dark);
+  border-left: 3px solid var(--amber-dark);
+  border-right: 3px solid var(--amber-light);
+  border-bottom: 3px solid var(--amber-light);
+  transform: translateY(1px);
 }
 
-/* Diamond/Info 3D button */
+/* Info 3D = teal */
 .pixel-btn-3d-diamond {
-  background: linear-gradient(180deg, var(--pixel-diamond-light) 0%, var(--pixel-diamond) 50%, var(--pixel-diamond-dark) 100%);
-  color: var(--pixel-obsidian);
+  background: var(--teal);
+  color: var(--dusk-on-amber);
   text-shadow: none;
-  border-top: 4px solid var(--pixel-diamond-light);
-  border-left: 4px solid var(--pixel-diamond-light);
-  border-right: 4px solid var(--pixel-diamond-dark);
-  border-bottom: 4px solid var(--pixel-diamond-dark);
+  border-top: 3px solid var(--teal-light);
+  border-left: 3px solid var(--teal-light);
+  border-right: 3px solid var(--teal-dark);
+  border-bottom: 3px solid var(--teal-dark);
 }
 
-/* Redstone/Danger 3D button */
+/* Danger 3D = ember */
 .pixel-btn-3d-danger {
-  background: linear-gradient(180deg, var(--pixel-redstone-light) 0%, var(--pixel-redstone) 50%, var(--pixel-redstone-dark) 100%);
-  border-top: 4px solid var(--pixel-redstone-light);
-  border-left: 4px solid var(--pixel-redstone-light);
-  border-right: 4px solid var(--pixel-redstone-dark);
-  border-bottom: 4px solid var(--pixel-redstone-dark);
+  background: var(--ember);
+  color: var(--dusk-text);
+  border-top: 3px solid var(--ember-light);
+  border-left: 3px solid var(--ember-light);
+  border-right: 3px solid var(--ember-dark);
+  border-bottom: 3px solid var(--ember-dark);
 }
 
 /* ============================================
-   MINECRAFT INVENTORY PANEL STYLES
+   PANEL VARIANTS
    ============================================ */
-
-/* Enhanced inventory background with dirt texture effect */
 .pixel-inventory-panel {
-  background:
-    repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 2px,
-      rgba(0, 0, 0, 0.03) 2px,
-      rgba(0, 0, 0, 0.03) 4px
-    ),
-    var(--pixel-inventory-dark);
-  border: 4px solid var(--pixel-obsidian);
+  background: var(--dusk-panel);
+  border: none;
   box-shadow:
-    inset 4px 4px 0 0 rgba(0, 0, 0, 0.5),
-    0 0 0 4px var(--pixel-inventory),
-    8px 8px 0 0 rgba(0, 0, 0, 0.4);
+    inset 0 1px 0 0 var(--amber),
+    inset 3px 3px 0 0 var(--dusk-panel-hi),
+    inset -3px -3px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo),
+    6px 6px 0 0 rgba(14, 16, 26, 0.4);
   padding: 8px;
 }
 
-/* Enhanced slot with item hover glow */
 .pixel-slot-enhanced {
-  background: linear-gradient(135deg, #6F6F6F 0%, var(--pixel-inventory-slot) 50%, #AFAFAF 100%);
-  border: 2px solid var(--pixel-obsidian);
+  background: var(--dusk-panel-2);
+  border: none;
   box-shadow:
-    inset 2px 2px 0 0 #5F5F5F,
-    inset -2px -2px 0 0 #BFBFBF;
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo);
   padding: 8px;
   position: relative;
 }
 
 .pixel-slot-enhanced:hover {
-  background: linear-gradient(135deg, #8F8F8F 0%, #AFAFAF 50%, #CFCFCF 100%);
+  background: var(--dusk-panel-3);
   box-shadow:
-    inset 2px 2px 0 0 #7F7F7F,
-    inset -2px -2px 0 0 #DFDFDF,
-    0 0 8px rgba(85, 205, 252, 0.4);
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    inset 0 0 0 1px var(--amber);
 }
 
-/* Slot with item (glowing border) */
 .pixel-slot-enhanced.has-item {
   box-shadow:
-    inset 2px 2px 0 0 #5F5F5F,
-    inset -2px -2px 0 0 #BFBFBF,
-    0 0 0 2px var(--pixel-diamond),
-    0 0 12px rgba(85, 205, 252, 0.3);
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    inset 0 0 0 2px var(--teal);
 }
 
 /* ============================================
-   NETWORK BADGE ENHANCEMENTS
+   NETWORK BADGES — flat fill + hard bevel
    ============================================ */
-
-/* Devnet badge - diamond style */
 .pixel-badge-devnet {
-  background: linear-gradient(180deg, var(--pixel-diamond-light) 0%, var(--pixel-diamond) 100%);
-  border: 2px solid var(--pixel-diamond-dark);
+  background: var(--teal);
+  color: var(--dusk-on-amber);
+  border: none;
   box-shadow:
-    inset 0 2px 0 0 rgba(255, 255, 255, 0.4),
-    2px 2px 0 0 rgba(0, 0, 0, 0.3);
-  animation: badge-shimmer 3s ease-in-out infinite;
+    inset 2px 2px 0 0 var(--teal-light),
+    inset -2px -2px 0 0 var(--teal-dark);
 }
 
-/* Testnet badge - gold style */
 .pixel-badge-testnet {
-  background: linear-gradient(180deg, var(--pixel-gold-light) 0%, var(--pixel-gold) 100%);
-  border: 2px solid var(--pixel-gold-dark);
+  background: var(--amber);
+  color: var(--dusk-on-amber);
+  border: none;
   box-shadow:
-    inset 0 2px 0 0 rgba(255, 255, 255, 0.4),
-    2px 2px 0 0 rgba(0, 0, 0, 0.3);
-}
-
-@keyframes badge-shimmer {
-  0%, 100% { filter: brightness(1); }
-  50% { filter: brightness(1.15); }
+    inset 2px 2px 0 0 var(--amber-light),
+    inset -2px -2px 0 0 var(--amber-dark);
 }
 
 /* ============================================
    ANIMATED EFFECTS
    ============================================ */
-
-/* Enhanced pickaxe mining animation */
 @keyframes pixel-mine-enhanced {
   0% { transform: rotate(0deg) translateY(0); }
   15% { transform: rotate(-25deg) translateY(-2px); }
@@ -886,16 +981,9 @@
   animation: pixel-mine-enhanced 0.8s ease-in-out infinite;
 }
 
-/* Block breaking particles effect */
 @keyframes pixel-particles {
-  0% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.5) translateY(-10px);
-  }
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.5) translateY(-10px); }
 }
 
 /* Tooltip arrow pointing up */
@@ -909,12 +997,8 @@
   height: 0;
   border-left: 8px solid transparent;
   border-right: 8px solid transparent;
-  border-bottom: 8px solid var(--pixel-obsidian);
+  border-bottom: 8px solid var(--dusk-panel);
 }
-
-/* ============================================
-   DROPDOWN ARROW
-   ============================================ */
 
 .pixel-dropdown-arrow {
   display: inline-block;
@@ -922,8 +1006,8 @@
   height: 0;
   border-left: 4px solid transparent;
   border-right: 4px solid transparent;
-  border-top: 6px solid var(--pixel-text);
-  transition: transform 0.15s ease;
+  border-top: 6px solid var(--dusk-text);
+  transition: transform 150ms ease;
 }
 
 .pixel-dropdown-arrow.open {
@@ -931,11 +1015,55 @@
 }
 
 /* ============================================
-   LIVE INDICATOR PULSE
+   LIVE / MINING INDICATOR — amber earned glow (hard pixel-bloom)
    ============================================ */
-
-/* Pulsing animation for live data indicators */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+/* LIVE mining dot: solid amber with hard-edged bloom, pulsing */
+.dusk-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--amber);
+  box-shadow:
+    0 0 0 2px rgba(240, 166, 60, 0.5),
+    0 0 0 4px rgba(240, 166, 60, 0.2);
+  animation: dusk-live-pulse 1.2s steps(2, end) infinite;
+}
+
+@keyframes dusk-live-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(240, 166, 60, 0.5),
+      0 0 0 4px rgba(240, 166, 60, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(240, 166, 60, 0.85),
+      0 0 0 4px rgba(240, 166, 60, 0.4);
+  }
+}
+
+/* ============================================
+   PANEL ENTER / EXIT MOTION (CSS-level)
+   ============================================ */
+@keyframes dusk-panel-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes dusk-panel-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(6px); }
+}
+
+.dusk-panel-enter {
+  animation: dusk-panel-in 300ms ease-out;
+}
+
+.dusk-panel-exit {
+  animation: dusk-panel-out 260ms ease-in forwards;
 }

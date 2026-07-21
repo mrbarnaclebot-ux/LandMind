@@ -62,7 +62,7 @@ export const WalletDrawer: FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(14, 16, 26, 0.75)',
     zIndex: 999,
     opacity: isOpen ? 1 : 0,
     visibility: isOpen ? 'visible' : 'hidden',
@@ -83,29 +83,20 @@ export const WalletDrawer: FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
     display: 'flex',
     flexDirection: 'column',
     // Enhanced Minecraft inventory styling
-    background: `
-      repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.03) 2px,
-        rgba(0, 0, 0, 0.03) 4px
-      ),
-      var(--pixel-inventory-dark)
-    `,
-    borderLeft: '4px solid var(--pixel-obsidian)',
-    boxShadow: '-8px 0 0 0 var(--pixel-inventory), -12px 0 20px rgba(0, 0, 0, 0.5), inset 4px 4px 0 0 rgba(0, 0, 0, 0.5)',
+    background: 'var(--dusk-panel)',
+    borderLeft: '4px solid var(--dusk-panel-lo)',
+    boxShadow: '-8px 0 0 0 var(--dusk-panel-hi), inset 4px 4px 0 0 rgba(14, 16, 26, 0.5)',
   };
 
   // Header styles
   const headerStyle: React.CSSProperties = {
     padding: '18px 16px',
-    background: 'var(--pixel-obsidian)',
-    borderBottom: '4px solid var(--pixel-stone-dark)',
+    background: 'var(--dusk-panel-lo)',
+    borderBottom: '4px solid var(--dusk-panel-lo)',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    boxShadow: 'inset 0 4px 0 0 var(--pixel-obsidian-light)',
+    boxShadow: 'inset 0 4px 0 0 var(--dusk-panel)',
   };
 
   return (
@@ -119,10 +110,10 @@ export const WalletDrawer: FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
         <header style={headerStyle}>
           <span
             style={{
-              fontFamily: "'Press Start 2P', monospace",
+              fontFamily: "var(--font-pixel)",
               fontSize: '12px',
-              color: '#FFFFFF',
-              textShadow: '2px 2px 0 #3F3F3F',
+              color: 'var(--dusk-text)',
+              textShadow: '2px 2px 0 var(--dusk-text-shadow)',
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
@@ -148,15 +139,16 @@ export const WalletDrawer: FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
         <section
           style={{
             padding: '20px 16px',
-            borderBottom: '4px solid var(--pixel-stone-dark)',
+            borderBottom: '4px solid var(--dusk-panel-lo)',
           }}
         >
           <div className="pixel-slot-enhanced" style={{ padding: '16px', textAlign: 'center' }}>
             <div
               style={{
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: '8px',
-                color: '#8B8B8B',
+                fontFamily: "var(--font-body)",
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--dusk-text-dim)',
                 textTransform: 'uppercase',
                 marginBottom: '14px',
                 letterSpacing: '0.5px',
@@ -178,17 +170,18 @@ export const WalletDrawer: FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
                 className="pixel-balance"
                 style={{
                   fontSize: '22px',
-                  fontFamily: "'Press Start 2P', monospace",
+                  fontFamily: "var(--font-pixel)",
                 }}
               >
                 {balance !== null ? balance.toFixed(4) : '---'}
               </span>
               <span
                 style={{
-                  fontSize: '12px',
-                  color: '#FFAA00',
-                  fontFamily: "'Press Start 2P', monospace",
-                  textShadow: '1px 1px 0 #CC8800',
+                  fontSize: '13px',
+                  lineHeight: 1.5,
+                  color: 'var(--amber)',
+                  fontFamily: "var(--font-body)",
+                  textShadow: '1px 1px 0 var(--amber-dark)',
                 }}
               >
                 SOL
@@ -196,12 +189,13 @@ export const WalletDrawer: FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
             </div>
             <div
               style={{
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: '8px',
-                color: '#8B8B8B',
+                fontFamily: "var(--font-body)",
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--dusk-text-dim)',
                 padding: '8px 12px',
-                background: 'rgba(0, 0, 0, 0.4)',
-                boxShadow: 'inset 2px 2px 0 0 rgba(0, 0, 0, 0.3)',
+                background: 'rgba(14, 16, 26, 0.4)',
+                boxShadow: 'inset 2px 2px 0 0 rgba(14, 16, 26, 0.3)',
               }}
             >
               {formatAddress(publicKey.toBase58(), 8)}
@@ -224,11 +218,12 @@ export const WalletDrawer: FC<WalletDrawerProps> = ({ isOpen, onClose }) => {
         <div
           style={{
             padding: '10px 16px',
-            background: 'var(--pixel-obsidian)',
-            borderTop: '4px solid var(--pixel-stone-dark)',
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '6px',
-            color: '#5F5F5F',
+            background: 'var(--dusk-panel-lo)',
+            borderTop: '4px solid var(--dusk-panel-lo)',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text-faint)',
             textAlign: 'center',
             letterSpacing: '0.3px',
           }}

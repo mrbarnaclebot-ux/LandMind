@@ -36,7 +36,7 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(14, 16, 26, 0.8)',
     zIndex: 1100,
     display: 'flex',
     alignItems: 'center',
@@ -47,7 +47,7 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
   const dialogStyle: React.CSSProperties = {
     background: 'var(--pixel-inventory-dark)',
     border: '4px solid var(--pixel-obsidian)',
-    boxShadow: '0 0 0 4px var(--pixel-inventory), 8px 8px 0 0 rgba(0, 0, 0, 0.4)',
+    boxShadow: '0 0 0 4px var(--pixel-inventory), 8px 8px 0 0 rgba(14, 16, 26, 0.4)',
     padding: '0',
     maxWidth: '340px',
     width: '90%',
@@ -70,7 +70,7 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
 
   const footerStyle: React.CSSProperties = {
     padding: '12px 16px',
-    background: '#2D2D31',
+    background: 'var(--dusk-panel-2)',
     borderTop: '4px solid var(--pixel-stone-dark)',
     display: 'flex',
     gap: '12px',
@@ -88,16 +88,16 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
         <header style={headerStyle}>
           <span
             style={{
-              fontFamily: "'Press Start 2P', monospace",
+              fontFamily: "var(--font-pixel)",
               fontSize: '10px',
-              color: '#FFFFFF',
-              textShadow: '2px 2px 0 #3F3F3F',
+              color: 'var(--dusk-text)',
+              textShadow: '2px 2px 0 var(--dusk-text-shadow)',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
             }}
           >
-            <span style={{ color: '#FFAA00' }}>[!]</span>
+            <span style={{ color: 'var(--amber)' }}>[!]</span>
             CONFIRM CLAIM
           </span>
           {!isProcessing && (
@@ -120,7 +120,7 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
           {/* Amount display */}
           <div
             style={{
-              background: 'rgba(0, 0, 0, 0.3)',
+              background: 'rgba(14, 16, 26, 0.3)',
               padding: '16px',
               marginBottom: '16px',
               textAlign: 'center',
@@ -128,9 +128,10 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
           >
             <div
               style={{
-                fontFamily: "'Press Start 2P', monospace",
-                fontSize: '7px',
-                color: '#8B8B8B',
+                fontFamily: "var(--font-body)",
+                fontSize: '13px',
+                lineHeight: 1.5,
+                color: 'var(--dusk-text-dim)',
                 marginBottom: '8px',
               }}
             >
@@ -138,10 +139,10 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
             </div>
             <div
               style={{
-                fontFamily: "'Press Start 2P', monospace",
+                fontFamily: "var(--font-pixel)",
                 fontSize: '16px',
-                color: '#FFAA00',
-                textShadow: '2px 2px 0 #CC8800',
+                color: 'var(--amber)',
+                textShadow: '2px 2px 0 var(--amber-dark)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -156,16 +157,16 @@ export const ClaimConfirmDialog: FC<ClaimConfirmDialogProps> = ({
           {/* Warning text */}
           <div
             style={{
-              fontFamily: "'Press Start 2P', monospace",
-              fontSize: '7px',
-              color: '#9E9E9E',
-              lineHeight: '1.8',
+              fontFamily: "var(--font-body)",
+              fontSize: '13px',
+              color: 'var(--dusk-text-dim)',
+              lineHeight: '1.5',
             }}
           >
             <p style={{ marginBottom: '8px' }}>
               This will transfer SOL from the LandMind treasury to your wallet.
             </p>
-            <p style={{ color: '#FFAA00' }}>
+            <p style={{ color: 'var(--amber)' }}>
               Transaction fee: ~0.000005 SOL
             </p>
           </div>

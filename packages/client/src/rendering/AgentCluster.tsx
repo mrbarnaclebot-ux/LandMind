@@ -13,7 +13,7 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { Text } from '@react-three/drei';
 import { CHUNK_SIZE } from './ChunkManager';
-import { hexToPixel } from '../hex/hexMath';
+import { hexToPixel, HEX_TILE_HEIGHT } from '../hex/hexMath';
 
 /** Agent data needed for clustering - compatible with lib/agents.ts Agent type */
 export interface ClusterableAgent {
@@ -124,18 +124,21 @@ export function useAgentClusters(
 }
 
 /**
- * Cluster marker appearance
+ * Cluster marker appearance — Golden-Hour Dusk: a small pile of dark matte agent bodies
+ * with ONE shared amber core glow (the only bloomer). No gold metallic sphere, no pointLight.
  */
-const CLUSTER_COLOR = '#FFD700'; // Golden
-const CLUSTER_EMISSIVE = '#FFA500';
-const MIN_SCALE = 0.5;
-const MAX_SCALE = 2.0;
+const BODY_DARK = '#232838'; // deep indigo-charcoal (matches AgentLayer body)
+const CORE_AMBER = '#F0A63C'; // shared amber core — the only bloomer
+const LABEL_AMBER = '#F0A63C'; // count label amber-on-dark
+const LABEL_OUTLINE = '#14161F'; // near-black indigo (UI ground tone)
+const MIN_SCALE = 0.6;
+const MAX_SCALE = 1.8;
 
 /**
  * Calculate cluster marker scale based on agent count
  */
 function getClusterScale(count: number): number {
-  // Scale logarithmically: 1 -> 0.5, 5 -> 1.0, 20+ -> 2.0
+  // Scale logarithmically: 1 -> 0.6, 5 -> ~1.1, 20+ -> 1.8
   const scale = MIN_SCALE + (Math.log10(count + 1) / Math.log10(21)) * (MAX_SCALE - MIN_SCALE);
   return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
 }
@@ -145,44 +148,61 @@ interface ClusterMarkerProps {
 }
 
 /**
- * ClusterMarker - renders a single cluster as golden sphere with count
+ * Deterministic stacked-pile offsets so the pile reads as a huddle rather than random noise.
+ * Kept small and fixed (no Math.random) for stable frames.
+ */
+const PILE_OFFSETS: Array<[number, number, number, number]> = [
+  // [x, y, z, scale]
+  [0, 0, 0, 0.42],
+  [0.28, 0, 0.12, 0.36],
+  [-0.26, 0, 0.16, 0.34],
+  [0.05, 0, -0.28, 0.32],
+  [-0.14, 0.34, -0.02, 0.3],
+];
+
+/**
+ * ClusterMarker - renders a cluster as a small pile of dark matte bodies sharing one amber core.
  */
 export function ClusterMarker({ cluster }: ClusterMarkerProps) {
   const scale = getClusterScale(cluster.count);
+  // How many bodies to show in the pile scales gently with count (max = pile slots).
+  const bodyCount = Math.min(PILE_OFFSETS.length, Math.max(2, Math.ceil(Math.log2(cluster.count + 1))));
 
   return (
-    <group position={[cluster.centerX, 1.5, cluster.centerZ]}>
-      {/* Golden sphere */}
-      <mesh scale={[scale, scale, scale]}>
-        <sphereGeometry args={[0.5, 16, 16]} />
+    <group position={[cluster.centerX, HEX_TILE_HEIGHT + 0.02, cluster.centerZ]} scale={[scale, scale, scale]}>
+      {/* Pile of dark matte agent bodies */}
+      {PILE_OFFSETS.slice(0, bodyCount).map((o, i) => (
+        <mesh key={i} position={[o[0], o[3] * 0.5 + o[1], o[2]]} castShadow>
+          <boxGeometry args={[o[3] * 0.8, o[3], o[3] * 0.55]} />
+          <meshStandardMaterial color={BODY_DARK} roughness={0.95} metalness={0.0} />
+        </mesh>
+      ))}
+
+      {/* Single shared amber core glow — the ONLY bloomer on the cluster. */}
+      <mesh position={[0, 0.3, 0.16]}>
+        <boxGeometry args={[0.16, 0.16, 0.12]} />
         <meshStandardMaterial
-          color={CLUSTER_COLOR}
-          emissive={CLUSTER_EMISSIVE}
-          emissiveIntensity={0.5}
-          roughness={0.3}
-          metalness={0.8}
+          color="#3A2A12"
+          emissive={CORE_AMBER}
+          emissiveIntensity={1.4}
+          toneMapped={false}
+          roughness={0.4}
+          metalness={0.0}
         />
       </mesh>
 
-      {/* Count label */}
+      {/* Count label — amber on dark */}
       <Text
-        position={[0, scale * 0.6 + 0.3, 0]}
-        fontSize={0.4}
-        color="#FFFFFF"
+        position={[0, 1.05, 0]}
+        fontSize={0.42}
+        color={LABEL_AMBER}
         anchorX="center"
         anchorY="middle"
-        outlineWidth={0.05}
-        outlineColor="#000000"
+        outlineWidth={0.045}
+        outlineColor={LABEL_OUTLINE}
       >
         x{cluster.count}
       </Text>
-
-      {/* Glow effect */}
-      <pointLight
-        color={CLUSTER_COLOR}
-        intensity={0.5 * scale}
-        distance={3}
-      />
     </group>
   );
 }

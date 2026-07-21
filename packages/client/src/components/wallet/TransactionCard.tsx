@@ -20,8 +20,8 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
   };
 
   // Status colors from pixel theme
-  const statusColor = status === 'success' ? '#5D8C3E' : '#FF3333';
-  const statusBg = status === 'success' ? 'rgba(93, 140, 62, 0.25)' : 'rgba(255, 51, 51, 0.25)';
+  const statusColor = status === 'success' ? 'var(--teal)' : 'var(--ember)';
+  const statusBg = status === 'success' ? 'rgba(63, 182, 168, 0.25)' : 'rgba(224, 85, 60, 0.25)';
 
   // Transaction type display
   const typeDisplay = {
@@ -53,9 +53,10 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
       >
         <span
           style={{
-            fontFamily: "'Press Start 2P', monospace",
-            fontSize: '9px',
-            color: '#FFFFFF',
+            fontFamily: "var(--font-body)",
+            fontSize: '13px',
+            lineHeight: 1.5,
+            color: 'var(--dusk-text)',
             textTransform: 'uppercase',
             display: 'flex',
             alignItems: 'center',
@@ -67,13 +68,14 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
         </span>
         <span
           style={{
-            fontFamily: "'Press Start 2P', monospace",
+            fontFamily: "var(--font-body)",
             background: statusBg,
             color: statusColor,
-            fontSize: '7px',
+            fontSize: '13px',
+            lineHeight: 1.5,
             padding: '4px 8px',
             border: `2px solid ${statusColor}`,
-            boxShadow: `inset 0 1px 0 0 ${status === 'success' ? '#7DB356' : '#FF6666'}`,
+            boxShadow: `inset 0 1px 0 0 ${status === 'success' ? 'var(--teal-light)' : 'var(--ember-light)'}`,
           }}
         >
           {status === 'success' ? 'OK' : 'FAIL'}
@@ -86,19 +88,21 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '8px',
+          fontFamily: "var(--font-body)",
+          fontSize: '13px',
+          lineHeight: 1.5,
         }}
       >
-        <span style={{ color: '#8B8B8B' }}>
+        <span style={{ color: 'var(--dusk-text-dim)' }}>
           {formatTimestamp(blockTime)}
         </span>
         {amount !== null && (
           <span
             style={{
-              fontSize: '8px',
-              color: amount >= 0 ? '#5D8C3E' : '#FFAA00',
-              textShadow: amount >= 0 ? '1px 1px 0 #3D5C2E' : '1px 1px 0 #CC8800',
+              fontSize: '13px',
+              lineHeight: 1.5,
+              color: amount >= 0 ? 'var(--teal)' : 'var(--amber)',
+              textShadow: amount >= 0 ? '1px 1px 0 var(--teal-dark)' : '1px 1px 0 var(--amber-dark)',
             }}
           >
             {amount >= 0 ? '+' : ''}{amount.toFixed(4)} SOL
@@ -110,11 +114,12 @@ export const TransactionCard: FC<TransactionCardProps> = ({ transaction }) => {
       <div
         style={{
           marginTop: '8px',
-          fontFamily: "'Press Start 2P', monospace",
-          fontSize: '6px',
-          color: '#5F5F5F',
+          fontFamily: "var(--font-body)",
+          fontSize: '13px',
+          lineHeight: 1.5,
+          color: 'var(--dusk-text-faint)',
           letterSpacing: '0.3px',
-          background: 'rgba(0, 0, 0, 0.2)',
+          background: 'rgba(14, 16, 26, 0.2)',
           padding: '4px 6px',
         }}
       >

@@ -12,18 +12,19 @@ export function ControlsOverlay() {
         padding: '12px 16px',
         pointerEvents: 'none',
         zIndex: 100,
-        fontFamily: "'Press Start 2P', monospace",
-        fontSize: '8px',
-        color: 'white',
-        lineHeight: '2',
+        fontFamily: "var(--font-body)",
+        fontSize: '13px',
+        color: 'var(--dusk-text)',
+        lineHeight: '1.5',
       }}
     >
       <div
         style={{
-          fontSize: '10px',
+          fontFamily: "var(--font-pixel)",
+          fontSize: '13px',
           marginBottom: '8px',
-          color: '#FFAA00',
-          textShadow: '2px 2px 0 #CC8800',
+          color: 'var(--amber)',
+          textShadow: '2px 2px 0 var(--amber-dark)',
         }}
       >
         CONTROLS
@@ -36,12 +37,13 @@ export function ControlsOverlay() {
             padding: '4px 8px',
             minWidth: '90px',
             textAlign: 'center',
-            fontSize: '7px',
+            fontFamily: "var(--font-pixel)",
+            fontSize: '13px',
           }}
         >
           LEFT-DRAG
         </span>
-        <span style={{ color: '#8B8B8B' }}>Rotate</span>
+        <span style={{ color: 'var(--dusk-text-dim)' }}>Rotate</span>
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
@@ -51,12 +53,13 @@ export function ControlsOverlay() {
             padding: '4px 8px',
             minWidth: '90px',
             textAlign: 'center',
-            fontSize: '7px',
+            fontFamily: "var(--font-pixel)",
+            fontSize: '13px',
           }}
         >
           RIGHT-DRAG
         </span>
-        <span style={{ color: '#8B8B8B' }}>Pan</span>
+        <span style={{ color: 'var(--dusk-text-dim)' }}>Pan</span>
       </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
@@ -66,12 +69,13 @@ export function ControlsOverlay() {
             padding: '4px 8px',
             minWidth: '90px',
             textAlign: 'center',
-            fontSize: '7px',
+            fontFamily: "var(--font-pixel)",
+            fontSize: '13px',
           }}
         >
           SCROLL
         </span>
-        <span style={{ color: '#8B8B8B' }}>Zoom</span>
+        <span style={{ color: 'var(--dusk-text-dim)' }}>Zoom</span>
       </div>
     </div>
   );
