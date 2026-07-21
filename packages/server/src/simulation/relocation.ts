@@ -5,6 +5,7 @@
 
 import { prisma } from '../lib/prisma.js';
 import { hexDistance, type HexCoord } from './hexMath.js';
+import type { Biome } from '@prisma/client';
 
 export interface HexWithResources {
   id: number;
@@ -16,6 +17,8 @@ export interface HexWithResources {
   elevation: number;
   /** Pit/cave-adjacent hex — gets the night 1.2x "deep" modifier. */
   isDeep: boolean;
+  /** Biome band (from the terrain sync) — drives the Phase B weather modifier. */
+  biome: Biome;
 }
 
 /**
@@ -48,6 +51,7 @@ export async function findNearestHexWithResources(
       resourceAmount: true,
       elevation: true,
       isDeep: true,
+      biome: true,
     },
   });
 
@@ -91,6 +95,7 @@ export async function getHexById(hexId: number): Promise<HexWithResources | null
       resourceAmount: true,
       elevation: true,
       isDeep: true,
+      biome: true,
     },
   });
 

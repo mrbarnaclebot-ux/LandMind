@@ -36,6 +36,9 @@ model Agent {
   hex          Hex?     @relation(fields: [hexId], references: [id])
   status       AgentStatus @default(IDLE)
   deployedAt   DateTime @default(now()) @map("deployed_at")
+  // Phase B (Weather): last time this agent was manually relocated by its owner.
+  // Enforces the 10-min relocation cooldown. Null = never relocated (no cooldown).
+  lastRelocatedAt DateTime? @map("last_relocated_at")
   miningState  MiningState?
 
   // cNFT fields - added for Phase 5
@@ -55,6 +58,10 @@ model Hex {
   resourceAmount BigInt   @default(1000000) @map("resource_amount")
   elevation      Int      @default(0)   // Visual terrain tier 0..6 (from client terrain generator)
   isDeep         Boolean  @default(false) // Pit floor OR cave-mouth-adjacent hex — "deep" night real estate
+  // Phase B (Weather): biome band from the client generator's getBiome (single
+  // source of truth). Drives the per-front weather yield modifier (weatherTable).
+  // Populated by scripts/syncTerrain.ts; GRASSLAND default keeps existing rows valid.
+  biome          Biome    @default(GRASSLAND)
   currentAgent   Agent[]
 
   @@unique([q, r])
@@ -87,6 +94,17 @@ enum ResourceType {
   COPPER
   IRON
   EMPTY
+}
+
+// Biome bands — mirror the client terrain generator's Biome type (getBiome).
+// Server-side source for the Phase B weather modifier table (weatherTable).
+enum Biome {
+  GRASSLAND
+  MARSH
+  PLAINS
+  FOREST
+  ROCKY
+  ALPINE
 }
 
 enum FeeSource {

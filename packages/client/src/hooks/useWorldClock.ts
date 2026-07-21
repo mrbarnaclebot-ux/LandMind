@@ -13,22 +13,26 @@
 import { useEffect } from 'react';
 import { getSocket } from '../lib/socket';
 import { useWorldStore } from '../stores/worldStore';
-import type { WorldUpdateEvent } from '../lib/socketTypes';
+import type { WorldUpdateEvent, WeatherUpdateEvent } from '../lib/socketTypes';
 
 export function useWorldClock(): void {
   useEffect(() => {
-    const { loadWorld, applyUpdate } = useWorldStore.getState();
+    const { loadWorld, applyUpdate, applyWeatherUpdate } = useWorldStore.getState();
 
-    // Initial snapshot.
+    // Initial snapshot (world clock + seed weather fronts/table from /api/world).
     void loadWorld();
 
     // Live reconciliation.
     const sock = getSocket();
     const onUpdate = (data: WorldUpdateEvent) => applyUpdate(data);
+    const onWeather = (data: WeatherUpdateEvent) => applyWeatherUpdate(data);
     sock.on('world:update', onUpdate);
+    // Weather fronts (System 2) arrive on their own ~5s public broadcast.
+    sock.on('weather:update', onWeather);
 
     return () => {
       sock.off('world:update', onUpdate);
+      sock.off('weather:update', onWeather);
     };
   }, []);
 }

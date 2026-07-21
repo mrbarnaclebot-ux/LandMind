@@ -4,6 +4,7 @@
 import { useEffect, useCallback } from 'react';
 import { useWalletStore } from '../stores/walletStore';
 import { useAgentStore } from '../stores/agentStore';
+import { useRelocationStore } from '../stores/relocationStore';
 import { fetchUserAgents } from '../lib/agents';
 import { getSocket } from '../lib/socket';
 
@@ -21,6 +22,12 @@ export function useUserAgents() {
     try {
       const userAgents = await fetchUserAgents();
       setAgents(userAgents);
+      // Seed relocation cooldown anchors so the MOVE button countdown is correct
+      // straight after a load (without waiting for a socket event).
+      const { seedCooldownAnchor } = useRelocationStore.getState();
+      for (const a of userAgents) {
+        if (a.lastRelocatedAt != null) seedCooldownAnchor(a.id, a.lastRelocatedAt);
+      }
     } catch (err) {
       console.error('[useUserAgents] Error fetching agents:', err);
       setError(err instanceof Error ? err.message : 'Failed to load agents');
@@ -131,6 +138,24 @@ export function useUserAgents() {
       });
     });
 
+    // Handle player-initiated relocation landing (System 2). Mirrors placed but
+    // also refreshes the cooldown anchor for the MOVE-button countdown.
+    sock.on('agent:relocated', (data) => {
+      updateAgent(data.agentId, {
+        hexId: data.hexId,
+        status: 'MINING',
+        hex: {
+          q: data.hexQ,
+          r: data.hexR,
+          resourceType: 'GOLD', // Will be updated from server
+        },
+        lastRelocatedAt: data.lastRelocatedAt,
+      });
+      if (data.lastRelocatedAt != null) {
+        useRelocationStore.getState().setCooldownAnchor(data.agentId, data.lastRelocatedAt);
+      }
+    });
+
     return () => {
       sock.off('connect', subscribe);
       sock.off('mining:update');
@@ -138,6 +163,7 @@ export function useUserAgents() {
       sock.off('agent:arrived');
       sock.off('agent:deployed');
       sock.off('agent:placed');
+      sock.off('agent:relocated');
     };
   }, [isAuthenticated, walletAddress, updateAgent, addAgent, loadAgents]);
 

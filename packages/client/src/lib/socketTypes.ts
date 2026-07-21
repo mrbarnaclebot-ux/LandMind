@@ -90,6 +90,69 @@ export interface WorldUpdateEvent {
   modifiers: WorldModifiers;
   /** Published odds / modifier table for the popover. */
   table: WorldModifierTable;
+  /**
+   * System 2 (additive): GET /api/world now also returns the live weather fronts
+   * and the published per-biome weather effect table. Both optional so the
+   * client tolerates an older server / the socket-only world:update payload.
+   */
+  fronts?: WeatherFront[];
+  weatherTable?: WeatherTable;
+}
+
+// ---------------------------------------------------------------------------
+// Weather events (System 2 — regional, telegraphed weather fronts)
+// ---------------------------------------------------------------------------
+
+/** The four kinds of drifting weather front the server can spawn. */
+export type WeatherFrontType = 'rain' | 'dust' | 'snow' | 'ember';
+
+/** A fractional axial hex coordinate (fronts move continuously across the map). */
+export interface FractionalHex {
+  q: number;
+  r: number;
+}
+
+/**
+ * A single drifting weather cell. The server broadcasts the CURRENT `center`
+ * every ~5s, but the client extrapolates position between updates using
+ * `origin + velocity*(t - spawnedAt)` for smooth motion + telegraphing.
+ *
+ * Pinned interface (server codes against this):
+ *  - center:   current cell center (fractional axial), authoritative each tick.
+ *  - origin:   the cell center at `spawnedAt` (anchor for extrapolation).
+ *  - velocity: drift in hexes/MINUTE (axial q,r components).
+ *  - radius:   coverage radius in hex distance units.
+ *  - spawnedAt / expiresAt: epoch ms lifetime bounds (fade in/out at edges).
+ */
+export interface WeatherFront {
+  id: string;
+  type: WeatherFrontType;
+  center: FractionalHex;
+  origin: FractionalHex;
+  /** hexes per minute */
+  velocity: FractionalHex;
+  radius: number;
+  spawnedAt: number;
+  expiresAt: number;
+}
+
+/**
+ * Published per-biome yield multipliers for each front type. Shape is
+ * intentionally permissive: the server owns the exact contents (biome keys are
+ * upper-case biome names, plus an optional `default`) and the HUD renders
+ * whatever rows are present. Example (pinned defaults):
+ *   rain  { MARSH:1.15, GRASSLAND:1.15, ROCKY:0.9 }
+ *   dust  { PLAINS:0.8 }
+ *   snow  { ALPINE:1.2, FOREST:0.9 }
+ *   ember { default:1.5 }
+ */
+export type WeatherBiomeEffects = Partial<Record<string, number>>;
+
+export type WeatherTable = Partial<Record<WeatherFrontType, WeatherBiomeEffects>>;
+
+/** Broadcast every ~5s (public, no auth). Full replacement set of live fronts. */
+export interface WeatherUpdateEvent {
+  fronts: WeatherFront[];
 }
 
 // ---------------------------------------------------------------------------
@@ -135,12 +198,27 @@ export interface ServerToClientEvents {
   'agent:arrived': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
   'agent:deployed': (data: { agent: AgentUpdate }) => void;
   'agent:placed': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
+  /**
+   * Emitted after a player-initiated relocation lands (System 2). Mirrors
+   * agent:placed but carries the relocation cooldown anchor so the client can
+   * derive the MOVE-button countdown without a refetch.
+   */
+  'agent:relocated': (data: {
+    agentId: string;
+    hexId: number;
+    hexQ: number;
+    hexR: number;
+    lastRelocatedAt?: number;
+  }) => void;
 
   // Admin
   'admin:metrics': (data: PlatformMetrics) => void;
 
   // World clock (public broadcast, every ~5s)
   'world:update': (data: WorldUpdateEvent) => void;
+
+  // Weather fronts (System 2 — public broadcast, every ~5s)
+  'weather:update': (data: WeatherUpdateEvent) => void;
 }
 
 /**

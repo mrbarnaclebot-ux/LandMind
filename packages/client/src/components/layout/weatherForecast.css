@@ -1,0 +1,187 @@
+/**
+ * WeatherForecast strip styling — dusk tokens, flat fills + hard bevels only.
+ * Anti-slop: no gradients, no blur/glass, no gaussian shadows. Matches the
+ * PhaseClock panel treatment so the two widgets read as a stack.
+ */
+
+.wx-forecast {
+  width: 240px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--dusk-panel);
+  position: relative;
+  font-family: var(--font-body);
+  box-shadow:
+    inset 0 1px 0 0 var(--teal),
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo);
+}
+
+.wx-forecast__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0 0 6px 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.wx-forecast__title {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--dusk-text);
+  text-shadow: 1px 1px 0 var(--dusk-text-shadow);
+}
+
+.wx-forecast__count {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--dusk-text-dim);
+  white-space: nowrap;
+}
+
+.wx-forecast__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wx-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 6px;
+  background: var(--dusk-panel-2);
+  box-shadow: inset 1px 1px 0 0 var(--dusk-panel-hi), inset -1px -1px 0 0 var(--dusk-panel-lo);
+}
+
+/* Row highlight when a front covers (or will cover) my agents' hexes. */
+.wx-row--mine {
+  background: var(--dusk-panel-3);
+  box-shadow:
+    inset 1px 1px 0 0 var(--amber),
+    inset -1px -1px 0 0 var(--amber-dark),
+    0 0 0 1px var(--amber-dark);
+}
+
+.wx-row__icon {
+  font-size: 14px;
+  line-height: 1.2;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  /* Hard 1px pixel offset — matte, no glow. */
+  text-shadow: 1px 1px 0 var(--dusk-text-shadow);
+}
+
+.wx-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.wx-row__line {
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wx-row__type {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.wx-row__effect {
+  color: var(--dusk-text);
+  margin-left: 4px;
+}
+
+.wx-row__sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+  font-size: 11px;
+}
+
+.wx-row__heading {
+  color: var(--dusk-text-dim);
+  font-variant: small-caps;
+  letter-spacing: 0.03em;
+}
+
+.wx-row__tag {
+  font-family: var(--font-body);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  color: var(--dusk-on-amber);
+  background: var(--amber);
+  box-shadow: inset 1px 1px 0 0 rgba(255, 255, 255, 0.35), inset -1px -1px 0 0 rgba(14, 16, 26, 0.35);
+}
+
+/* Popover — reuses the pixel-dropdown panel look; below the strip. */
+.wx-forecast__popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  z-index: 200;
+  padding: 8px;
+}
+
+.wx-forecast__popover-title {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--teal);
+  text-shadow: 1px 1px 0 var(--teal-dark);
+  margin-bottom: 8px;
+}
+
+.wx-forecast__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+.wx-forecast__table td {
+  padding: 3px 4px;
+  color: var(--dusk-text);
+  border-bottom: 1px solid var(--dusk-panel-lo);
+  vertical-align: top;
+}
+
+.wx-forecast__table-type {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wx-forecast__table-cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.wx-forecast__chip {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.wx-forecast__table-none {
+  color: var(--dusk-text-faint);
+}
+
+.wx-forecast__popover-foot {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--dusk-text-faint);
+}

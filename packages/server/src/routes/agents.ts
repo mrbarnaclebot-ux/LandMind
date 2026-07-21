@@ -18,13 +18,19 @@ import {
   FAKE_SIG_PREFIX,
   FAKE_ASSET_PREFIX,
 } from '../lib/testMode.js';
-import { cacheAgent } from '../cache/agentCache.js';
+import { cacheAgent, getAgent, updateAgentFields } from '../cache/agentCache.js';
 import { getCurrentTick } from '../simulation/tickLoop.js';
 
 export const agentRouter = Router();
 
 // Max agents a single user may deploy.
 const MAX_AGENTS_PER_USER = 20;
+
+// Phase B: max agents allowed to occupy a single hex (relocation target cap).
+const MAX_AGENTS_PER_HEX = 20;
+
+// Phase B: per-agent manual relocation cooldown (10 minutes).
+const RELOCATE_COOLDOWN_MS = 10 * 60 * 1000;
 
 /**
  * Helper to serialize BigInt values to strings for JSON response
@@ -577,3 +583,166 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
     res.status(500).json({ error: 'Failed to confirm deployment' });
   }
 });
+
+/**
+ * POST /api/agents/:id/relocate — manually move an agent to a target hex.
+ *
+ * Phase B (Weather): relocation is a first-class player action — free but
+ * time-gated by a 10-minute per-agent cooldown, so choosing positions matters.
+ * Works identically for FAKE_SOL_MODE test agents (no payment involved).
+ *
+ * Body: { q, r } — target hex axial coordinates.
+ * Auth: required (requireAuth). The agent must belong to the caller.
+ *
+ * Responses:
+ *   200 { agent }                              — relocated
+ *   400 { error }                              — invalid target / no resources / hex at cap
+ *   401                                        — unauthenticated (requireAuth)
+ *   403 { error }                              — caller is not the owner
+ *   429 { error, retryAfterMs }                — on cooldown
+ *
+ * On success the agent is moved INSTANTLY (no travel time — this is the player's
+ * deliberate action, distinct from auto-relocation-on-depletion which travels).
+ * Mining state / resources are preserved; the Redis cache entry is updated in
+ * place so the tick loop keeps mining at the new hex. Emits `agent:relocated`.
+ */
+agentRouter.post(
+  '/:id/relocate',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const id = String(req.params.id);
+      const { q, r } = req.body ?? {};
+
+      // Validate target coordinates.
+      if (
+        typeof q !== 'number' ||
+        typeof r !== 'number' ||
+        !Number.isInteger(q) ||
+        !Number.isInteger(r)
+      ) {
+        return res.status(400).json({ error: 'Invalid target: q and r must be integers' });
+      }
+
+      // Load the agent (with owner + current hex) to authorize + check cooldown.
+      const agent = await prisma.agent.findUnique({
+        where: { id },
+        include: { hex: true },
+      });
+
+      if (!agent) {
+        return res.status(400).json({ error: 'Agent not found' });
+      }
+
+      // Ownership: the agent must belong to the caller.
+      if (agent.ownerId !== req.userId) {
+        return res.status(403).json({ error: 'Not the owner of this agent' });
+      }
+
+      // Cooldown: 10 min per agent since the last manual relocation.
+      if (agent.lastRelocatedAt) {
+        const elapsed = Date.now() - agent.lastRelocatedAt.getTime();
+        if (elapsed < RELOCATE_COOLDOWN_MS) {
+          const retryAfterMs = RELOCATE_COOLDOWN_MS - elapsed;
+          return res.status(429).json({
+            error: 'Agent is on relocation cooldown',
+            retryAfterMs,
+          });
+        }
+      }
+
+      // Target hex must exist with resources remaining.
+      const targetHex = await prisma.hex.findUnique({
+        where: { q_r: { q, r } },
+      });
+
+      if (!targetHex) {
+        return res.status(400).json({ error: 'Target hex does not exist' });
+      }
+      if (targetHex.resourceAmount <= 0n) {
+        return res.status(400).json({ error: 'Target hex has no resources remaining' });
+      }
+
+      // Occupancy cap: fewer than MAX_AGENTS_PER_HEX agents already on the target.
+      const occupants = await prisma.agent.count({ where: { hexId: targetHex.id } });
+      if (occupants >= MAX_AGENTS_PER_HEX) {
+        return res.status(400).json({ error: 'Target hex is full' });
+      }
+
+      const now = new Date();
+
+      // Persist the move + stamp the cooldown in DB.
+      await prisma.agent.update({
+        where: { id: agent.id },
+        data: {
+          hexId: targetHex.id,
+          status: 'MINING',
+          lastRelocatedAt: now,
+        },
+      });
+
+      // Update the Redis cache in place so the tick loop mines at the new hex.
+      // Preserve mining state / resources. If the agent wasn't cached (e.g. it
+      // was IDLE), register a fresh cache entry from its DB mining state so it
+      // starts being processed at the new hex.
+      const cached = await getAgent(agent.id);
+      if (cached) {
+        await updateAgentFields(agent.id, {
+          hexId: String(targetHex.id),
+          hexQ: String(targetHex.q),
+          hexR: String(targetHex.r),
+          status: 'MINING',
+          // Clear any in-flight auto-relocation fields.
+          targetHexId: '',
+          targetQ: '',
+          targetR: '',
+          arrivalTick: '',
+        });
+      } else {
+        const user = await prisma.user.findUnique({ where: { id: req.userId! } });
+        const miningState = await prisma.miningState.findUnique({
+          where: { agentId: agent.id },
+        });
+        await cacheAgent({
+          agentId: agent.id,
+          ownerId: req.userId!,
+          ownerWallet: user?.walletPubkey ?? '',
+          hexId: targetHex.id,
+          hexQ: targetHex.q,
+          hexR: targetHex.r,
+          gold: String(miningState?.gold ?? 0n),
+          silver: String(miningState?.silver ?? 0n),
+          copper: String(miningState?.copper ?? 0n),
+          iron: String(miningState?.iron ?? 0n),
+          status: 'MINING',
+          lastTick: getCurrentTick(),
+        });
+      }
+
+      // Notify the owner in real time.
+      const ownerWallet = req.walletAddress;
+      if (ownerWallet) {
+        getIO().to(`user:${ownerWallet}`).emit('agent:relocated', {
+          agentId: agent.id,
+          hexId: targetHex.id,
+          hexQ: targetHex.q,
+          hexR: targetHex.r,
+        });
+      }
+
+      return res.json({
+        agent: serializeBigInts({
+          id: agent.id,
+          hexId: targetHex.id,
+          hexQ: targetHex.q,
+          hexR: targetHex.r,
+          status: 'MINING',
+          lastRelocatedAt: now.toISOString(),
+        }),
+      });
+    } catch (error) {
+      console.error('Failed to relocate agent:', error);
+      return res.status(500).json({ error: 'Failed to relocate agent' });
+    }
+  }
+);

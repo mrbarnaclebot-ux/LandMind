@@ -8,6 +8,7 @@ import { MobileLayout } from './components/mobile/MobileLayout';
 import { Header } from './components/layout/Header';
 import { ControlsOverlay } from './components/layout/ControlsOverlay';
 import { PhaseClockContainer } from './components/layout/PhaseClockContainer';
+import { RelocationBanner } from './components/layout/RelocationBanner';
 import { useWorldClock } from './hooks/useWorldClock';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { useAdminCheck } from './admin/hooks/useAdminCheck';
@@ -62,6 +63,7 @@ function App() {
         >
           <ThreeScene heatMapVisible={heatMapVisible} />
         </MobileLayout>
+        <RelocationBanner />
         <TransactionToastContainer />
         <SessionExpiredToast />
       </>
@@ -111,6 +113,8 @@ function App() {
       {isAdminDashboardOpen && (
         <AdminDashboard onClose={() => setIsAdminDashboardOpen(false)} />
       )}
+      {/* Relocation MOVE-mode prompt (System 2). Fixed, top-center. */}
+      <RelocationBanner />
       {/* Transaction status toasts */}
       <TransactionToastContainer />
       {/* Global "session expired — reconnect" toast (fires on any authed 401) */}

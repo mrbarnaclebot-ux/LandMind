@@ -15,6 +15,11 @@
  * yields the same DB state. Safe to re-run.
  *
  * ------------------------------------------------------------------------------
+ * biome (Phase B — Weather): each hex's biome band from the generator's getBiome
+ *   is written into hexes.biome (uppercased to the Prisma Biome enum). This is the
+ *   server-authoritative source for the weather modifier table (weatherTable). The
+ *   generator's biome contract is fixed, so re-runs are idempotent.
+ *
  * isDeep DEFINITION (the "deep" night real estate — 1.2x at night vs 0.9x surface):
  *   A hex is DEEP if ANY of:
  *     1. it is a PIT floor            (HexData.isPit === true), OR
@@ -38,15 +43,30 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 dotenv.config({ path: resolve(__dirname, '../../../.env') });
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Biome as PrismaBiome } from '@prisma/client';
 // Cross-package import of the CLIENT terrain generator (tsx handles the TS).
 import {
   generateWorld,
   type HexData,
   type CaveMouth,
 } from '../../client/src/terrain/terrainGenerator.js';
+import type { Biome as ClientBiome } from '../../client/src/terrain/biomes.js';
 
 const prisma = new PrismaClient();
+
+/**
+ * Map the client generator's lowercase Biome string to the Prisma Biome enum.
+ * The set of biomes is fixed by getBiome (grassland/marsh/plains/forest/rocky/
+ * alpine), so this mapping is total and stable.
+ */
+const BIOME_TO_PRISMA: Record<ClientBiome, PrismaBiome> = {
+  grassland: 'GRASSLAND',
+  marsh: 'MARSH',
+  plains: 'PLAINS',
+  forest: 'FOREST',
+  rocky: 'ROCKY',
+  alpine: 'ALPINE',
+};
 
 // World radius — must match the seeded hex region (seed.ts / client HexWorld use 20).
 const WORLD_RADIUS = 20;
@@ -118,7 +138,7 @@ async function main(): Promise<void> {
   // Batch the per-hex updates in chunks inside transactions. Idempotent: writing
   // the same deterministic values on a re-run is a no-op in effect.
   const CHUNK = 200;
-  const ops: Array<{ id: number; elevation: number; isDeep: boolean }> = [];
+  const ops: Array<{ id: number; elevation: number; isDeep: boolean; biome: PrismaBiome }> = [];
 
   for (const h of hexes) {
     const id = idByKey.get(key(h.q, h.r));
@@ -126,7 +146,12 @@ async function main(): Promise<void> {
       missing++;
       continue;
     }
-    ops.push({ id, elevation: h.elevation, isDeep: deepKeys.has(key(h.q, h.r)) });
+    ops.push({
+      id,
+      elevation: h.elevation,
+      isDeep: deepKeys.has(key(h.q, h.r)),
+      biome: BIOME_TO_PRISMA[h.biome],
+    });
   }
 
   for (let i = 0; i < ops.length; i += CHUNK) {
@@ -135,7 +160,7 @@ async function main(): Promise<void> {
       slice.map((op) =>
         prisma.hex.update({
           where: { id: op.id },
-          data: { elevation: op.elevation, isDeep: op.isDeep },
+          data: { elevation: op.elevation, isDeep: op.isDeep, biome: op.biome },
         })
       )
     );

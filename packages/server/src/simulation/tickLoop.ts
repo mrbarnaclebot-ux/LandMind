@@ -23,6 +23,7 @@ import {
 import { flushToPostgres, loadHotAgentsFromPostgres } from '../cache/persistence.js';
 import { getEarningsForUser } from '../services/earningsService.js';
 import { getWorldState, getPhaseModifier, type WorldPhase } from './worldClock.js';
+import { tickWeather, getWeatherModifierAt, rehydrateWeather } from './weatherService.js';
 import type { AgentUpdate, EarningsUpdateData } from '../events/types.js';
 
 const TICK_INTERVAL = 5000; // 5 seconds
@@ -56,10 +57,18 @@ async function processTick(): Promise<void> {
     const currentPhase: WorldPhase = worldState.phase;
     io.emit('world:update', worldState);
 
+    // --- Weather fronts (System 2) ----------------------------------------
+    // Advance the drifting fronts (despawn/spawn/reposition), persist to Redis,
+    // and broadcast publicly every tick so clients can telegraph incoming
+    // fronts. Runs independently of whether any agents are active. The
+    // per-agent weather modifier below reads the same active-front set.
+    const activeFronts = await tickWeather(startTime);
+    io.emit('weather:update', { fronts: activeFronts });
+
     const agents = await getAllAgents();
 
     if (agents.length === 0) {
-      return; // No agents to process (world:update already broadcast above)
+      return; // No agents to process (world:update + weather:update already broadcast above)
     }
     const updates: Array<{ agentId: string; fields: Record<string, string> }> = [];
     const userUpdates: Map<string, AgentUpdate[]> = new Map();
@@ -75,7 +84,7 @@ async function processTick(): Promise<void> {
     // Process each agent
     for (const agent of agents) {
       if (agent.status === 'MINING') {
-        await processMiningAgent(agent, currentPhase, updates, userUpdates, hexDepletions, relocations);
+        await processMiningAgent(agent, currentPhase, startTime, updates, userUpdates, hexDepletions, relocations);
       } else if (agent.status === 'RELOCATING') {
         await processRelocatingAgent(agent, updates, userUpdates, arrivals);
       }
@@ -160,12 +169,13 @@ async function processTick(): Promise<void> {
 async function processMiningAgent(
   agent: CachedAgent,
   currentPhase: WorldPhase,
+  nowMs: number,
   updates: Array<{ agentId: string; fields: Record<string, string> }>,
   userUpdates: Map<string, AgentUpdate[]>,
   hexDepletions: Array<{ hexId: number; q: number; r: number }>,
   relocations: Array<{ agentId: string; fromHexId: number; toHexId: number; arrivalTick: number }>
 ): Promise<void> {
-  // Get hex data (carries elevation + isDeep from the terrain sync)
+  // Get hex data (carries elevation + isDeep + biome from the terrain sync)
   const hex = await getHexById(agent.hexId);
   if (!hex) {
     console.warn(`Agent ${agent.agentId} has invalid hexId ${agent.hexId}`);
@@ -174,9 +184,16 @@ async function processMiningAgent(
 
   // World-clock modifier: golden_hour 1.25x; night deep 1.2x / surface 0.9x;
   // else 1.0x. `isDeep` reaches us via the hex row (see relocation.getHexById).
-  const modifier = getPhaseModifier(currentPhase, hex.isDeep);
+  const phaseMod = getPhaseModifier(currentPhase, hex.isDeep);
 
-  // Calculate mining yield (with phase modifier applied)
+  // Weather modifier (System 2): getFrontAt(hex) × published weatherTable × biome.
+  // O(fronts) per agent (≤3 fronts). 1.0 when no front covers this hex.
+  const weatherMod = getWeatherModifierAt(hex.q, hex.r, hex.biome, nowMs);
+
+  // Combined yield multiplier: base × phaseMod × weatherMod.
+  const modifier = phaseMod * weatherMod;
+
+  // Calculate mining yield (with combined phase + weather modifier applied)
   const yield_ = calculateMiningYield(hex.resourceType as any, hex.resourceAmount, modifier);
 
   if (yield_.amount > 0n) {
@@ -349,6 +366,9 @@ export async function startTickLoop(): Promise<void> {
 
   // Load hot agents from PostgreSQL
   await loadHotAgentsFromPostgres();
+
+  // Rehydrate weather fronts from Redis so a restart doesn't hard-reset weather.
+  await rehydrateWeather();
 
   // Start processing
   console.log(`Tick loop started (interval: ${TICK_INTERVAL}ms)`);

@@ -4,10 +4,15 @@
  * GET /api/world — no auth, cheap (pure function of the wall clock, no I/O).
  * Returns the same WorldState payload the `world:update` socket event carries,
  * plus the published modifier `table` so the client can render "published odds".
+ *
+ * Phase B (Weather): also returns the currently-active `fronts` (so a fresh
+ * client can render weather immediately without waiting for the next tick) and
+ * the published `weatherTable` (readable per-biome weather odds).
  */
 
 import { Router, type Request, type Response } from 'express';
 import { getWorldState, MODIFIER_TABLE } from '../simulation/worldClock.js';
+import { getActiveFronts, WEATHER_TABLE } from '../simulation/weatherService.js';
 
 const router = Router();
 
@@ -17,6 +22,9 @@ router.get('/', (_req: Request, res: Response) => {
     ...state,
     // Published modifier table — readable odds for the in-game modifier UI.
     table: MODIFIER_TABLE,
+    // Phase B — active weather fronts + published weather modifier table.
+    fronts: getActiveFronts(),
+    weatherTable: WEATHER_TABLE,
   });
 });
 

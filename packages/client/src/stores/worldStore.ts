@@ -24,6 +24,9 @@ import type {
   WorldModifiers,
   WorldModifierTable,
   WorldUpdateEvent,
+  WeatherFront,
+  WeatherTable,
+  WeatherUpdateEvent,
 } from '../lib/socketTypes';
 
 // ---------------------------------------------------------------------------
@@ -76,6 +79,17 @@ const DEFAULT_TABLE: WorldModifierTable = {
   night: { surface: 0.9, deep: 1.2 },
 };
 
+/**
+ * Default published weather-effect table (System 2). Matches the pinned server
+ * interface; replaced by whatever the server sends via GET /api/world.
+ */
+const DEFAULT_WEATHER_TABLE: WeatherTable = {
+  rain: { MARSH: 1.15, GRASSLAND: 1.15, ROCKY: 0.9 },
+  dust: { PLAINS: 0.8 },
+  snow: { ALPINE: 1.2, FOREST: 0.9 },
+  ember: { default: 1.5 },
+};
+
 // ---------------------------------------------------------------------------
 // Local phase computation (from the anchor)
 // ---------------------------------------------------------------------------
@@ -122,6 +136,12 @@ interface WorldState {
   modifiers: WorldModifiers;
   table: WorldModifierTable;
 
+  // --- System 2 (weather fronts) — additive ---------------------------------
+  /** Live drifting weather fronts. Full-replacement set from weather:update. */
+  fronts: WeatherFront[];
+  /** Published per-front-type per-biome effect table (for the HUD popover). */
+  weatherTable: WeatherTable;
+
   /**
    * Reconciliation offset (ms). We add this to `Date.now()` before deriving the
    * local cycleT so the anchor-derived clock matches the server's reported
@@ -135,6 +155,8 @@ interface WorldState {
 
   /** Apply an authoritative snapshot (from socket or GET /api/world). */
   applyUpdate: (data: WorldUpdateEvent) => void;
+  /** Apply a weather:update broadcast (full-replacement fronts set). */
+  applyWeatherUpdate: (data: WeatherUpdateEvent) => void;
   /** Fetch the initial snapshot from GET /api/world. */
   loadWorld: () => Promise<void>;
 
@@ -156,6 +178,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   nextPhaseAt: 0,
   modifiers: { surface: 1.0, deep: 1.0 },
   table: DEFAULT_TABLE,
+  fronts: [],
+  weatherTable: DEFAULT_WEATHER_TABLE,
   clockOffsetMs: 0,
   devOverride: null,
 
@@ -172,7 +196,7 @@ export const useWorldStore = create<WorldState>((set, get) => ({
     if (deltaSec > CYCLE_SECONDS / 2) deltaSec -= CYCLE_SECONDS;
     if (deltaSec < -CYCLE_SECONDS / 2) deltaSec += CYCLE_SECONDS;
 
-    set({
+    set((state) => ({
       ready: true,
       phase: data.phase,
       phaseProgress: data.phaseProgress,
@@ -180,7 +204,19 @@ export const useWorldStore = create<WorldState>((set, get) => ({
       modifiers: data.modifiers,
       table: data.table && Object.keys(data.table).length > 0 ? data.table : DEFAULT_TABLE,
       clockOffsetMs: deltaSec * 1000,
-    });
+      // GET /api/world (System 2, additive) may also seed weather. Only overwrite
+      // when the field is present so a world:update socket payload without weather
+      // doesn't clobber fronts delivered by the separate weather:update stream.
+      fronts: data.fronts !== undefined ? data.fronts : state.fronts,
+      weatherTable:
+        data.weatherTable && Object.keys(data.weatherTable).length > 0
+          ? data.weatherTable
+          : state.weatherTable,
+    }));
+  },
+
+  applyWeatherUpdate: (data) => {
+    set({ fronts: Array.isArray(data.fronts) ? data.fronts : [] });
   },
 
   loadWorld: async () => {

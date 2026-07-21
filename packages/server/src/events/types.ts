@@ -1,9 +1,17 @@
 import type { WorldState } from '../simulation/worldClock.js';
+import type { WeatherFront } from '../simulation/weatherService.js';
 
 // World-clock update (System 1). Broadcast publicly every tick (5s) to ALL
 // sockets. Payload is the pinned WorldState shape:
 //   { phase, cycleT, phaseProgress, nextPhaseAt, modifiers: { surface, deep } }
 export type WorldUpdateData = WorldState;
+
+// Weather update (System 2). Broadcast publicly every tick to ALL sockets so
+// clients can telegraph incoming fronts. `fronts[].center` is the CURRENT
+// position; the client extrapolates the future path from origin + velocity.
+export interface WeatherUpdateData {
+  fronts: WeatherFront[];
+}
 
 // Mining update sent to user's agents
 export interface AgentUpdate {
@@ -55,6 +63,8 @@ export interface ClaimErrorData {
 export interface ServerToClientEvents {
   // Public world-clock broadcast (System 1) — every tick, to all sockets.
   'world:update': (data: WorldUpdateData) => void;
+  // Public weather broadcast (System 2) — every tick, to all sockets.
+  'weather:update': (data: WeatherUpdateData) => void;
   'mining:update': (data: { agents: AgentUpdate[] }) => void;
   'hex:depleted': (data: { hexId: number; q: number; r: number }) => void;
   'agent:relocating': (data: {
@@ -66,6 +76,8 @@ export interface ServerToClientEvents {
   'agent:arrived': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
   'agent:deployed': (data: { agent: AgentUpdate & { hexQ: number; hexR: number } }) => void;
   'agent:placed': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
+  // Manual relocation (System 2) — emitted to the owner when they move an agent.
+  'agent:relocated': (data: { agentId: string; hexId: number; hexQ: number; hexR: number }) => void;
   // Earnings and leaderboard events
   'earnings:update': (data: EarningsUpdateData) => void;
   'leaderboard:update': (data: LeaderboardUpdateData) => void;

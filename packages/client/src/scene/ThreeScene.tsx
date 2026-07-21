@@ -30,7 +30,9 @@ import { ChunkedHexWorld } from '../rendering/ChunkedHexWorld';
 import { PerformanceAdapter } from '../rendering/PerformanceAdapter';
 import { AgentLayer } from './AgentLayer';
 import { HeatMapOverlay } from './HeatMapOverlay';
+import { WeatherLayer } from './WeatherLayer';
 import { HexTooltip, useHexHover } from './HexTooltip';
+import { useHexPick } from '../hooks/useHexPick';
 import { Clouds } from './Clouds';
 import { useUserAgents } from '../hooks/useUserAgents';
 import { useCameraStore } from '../stores/cameraStore';
@@ -61,6 +63,9 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
         cloudsEnabled: false,
         effectsEnabled: false,
         shadows: false,
+        // Weather overlays disabled entirely at low tier (spec).
+        weatherEnabled: false,
+        weatherParticles: false,
       };
     case 'medium':
       return {
@@ -68,6 +73,9 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
         cloudsEnabled: true,
         effectsEnabled: !isMobile,
         shadows: false,
+        weatherEnabled: true,
+        // Particle streaks are cheap but skipped on mobile-medium.
+        weatherParticles: !isMobile,
       };
     case 'high':
       return {
@@ -75,6 +83,8 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
         cloudsEnabled: true,
         effectsEnabled: true,
         shadows: true,
+        weatherEnabled: true,
+        weatherParticles: true,
       };
     default:
       return {
@@ -82,6 +92,8 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
         cloudsEnabled: true,
         effectsEnabled: !isMobile,
         shadows: false,
+        weatherEnabled: true,
+        weatherParticles: !isMobile,
       };
   }
 }
@@ -281,9 +293,11 @@ const GRID_SIZE = GRID_RADIUS * 2 * 1.732 + 5;
 function PointerCaptureGround({
   onPointerMove,
   onPointerLeave,
+  onClick,
 }: {
   onPointerMove: (e: any) => void;
   onPointerLeave: () => void;
+  onClick?: (e: any) => void;
 }) {
   return (
     <mesh
@@ -291,6 +305,7 @@ function PointerCaptureGround({
       rotation={[-Math.PI / 2, 0, 0]}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
+      onClick={onClick}
     >
       <planeGeometry args={[GRID_SIZE, GRID_SIZE]} />
       <meshBasicMaterial visible={false} />
@@ -307,18 +322,25 @@ function SceneContent({
   cloudsEnabled,
   effectsEnabled,
   shadows,
+  weatherEnabled,
+  weatherParticles,
 }: {
   heatMapVisible?: boolean;
   isMobile: boolean;
   cloudsEnabled: boolean;
   effectsEnabled: boolean;
   shadows: boolean;
+  weatherEnabled: boolean;
+  weatherParticles: boolean;
 }) {
   // Initialize agent loading and subscription
   useUserAgents();
 
   // Hex hover state for tooltip
   const { hoveredHex, handlePointerMove, handlePointerLeave } = useHexHover();
+
+  // Relocation: while in MOVE mode a hex click on the ground picks the target.
+  const handleHexPick = useHexPick();
 
   return (
     <>
@@ -348,10 +370,11 @@ function SceneContent({
       {/* Camera controls with mobile touch support */}
       <CameraControls isMobile={isMobile} />
 
-      {/* Invisible ground for pointer events */}
+      {/* Invisible ground for pointer events (hover + relocation hex pick) */}
       <PointerCaptureGround
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
+        onClick={handleHexPick}
       />
 
       {/* Hex world terrain - chunked for scalability */}
@@ -359,6 +382,10 @@ function SceneContent({
 
       {/* Heat map overlay for resource visualization */}
       <HeatMapOverlay visible={heatMapVisible} />
+
+      {/* Weather fronts (System 2): drifting overlays + telegraph + particles.
+          Sibling in the Canvas tree; disabled at low quality tier. */}
+      <WeatherLayer qualityLow={!weatherEnabled} particlesEnabled={weatherParticles} />
 
       {/* Agents rendered on hexes */}
       <AgentLayer />
@@ -448,6 +475,8 @@ export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
           cloudsEnabled={settings.cloudsEnabled}
           effectsEnabled={settings.effectsEnabled}
           shadows={settings.shadows}
+          weatherEnabled={settings.weatherEnabled}
+          weatherParticles={settings.weatherParticles}
         />
       </PerformanceAdapter>
     </Canvas>

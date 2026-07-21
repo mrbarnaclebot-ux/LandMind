@@ -8,6 +8,7 @@
  */
 import { FC, useCallback, useState } from 'react';
 import { PhaseClock } from './PhaseClock';
+import { WeatherForecast } from './WeatherForecast';
 
 const TOAST_MS = 3600;
 
@@ -22,6 +23,9 @@ export const PhaseClockContainer: FC = () => {
   return (
     <>
       <PhaseClock onEnterGoldenHour={onEnterGoldenHour} />
+
+      {/* System 2: active-weather forecast strip, stacked under the phase clock. */}
+      <WeatherForecast />
 
       {toast && (
         <div
