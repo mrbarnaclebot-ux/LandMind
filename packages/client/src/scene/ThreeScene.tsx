@@ -15,7 +15,7 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Sky } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import {
   EffectComposer,
   Bloom,
@@ -39,7 +39,8 @@ import { useUserAgents } from '../hooks/useUserAgents';
 import { useCameraStore } from '../stores/cameraStore';
 import { useMobile } from '../hooks/useMobile';
 import { useWorldStore } from '../stores/worldStore';
-import { sampleSky, makeSkyTarget } from './worldPhases';
+import { sampleSky, makeSkyTarget, sunDirection } from './worldPhases';
+import { SkyDome } from './SkyDome';
 
 interface ThreeSceneProps {
   /** Whether the heat map overlay is visible */
@@ -67,6 +68,9 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
         // Weather overlays disabled entirely at low tier (spec).
         weatherEnabled: false,
         weatherParticles: false,
+        // Skybox: flat background fallback, no gradient dome / stars at low tier.
+        skyDomeEnabled: false,
+        starsEnabled: false,
       };
     case 'medium':
       return {
@@ -77,6 +81,8 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
         weatherEnabled: true,
         // Particle streaks are cheap but skipped on mobile-medium.
         weatherParticles: !isMobile,
+        skyDomeEnabled: true,
+        starsEnabled: true,
       };
     case 'high':
       return {
@@ -86,6 +92,8 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
         shadows: true,
         weatherEnabled: true,
         weatherParticles: true,
+        skyDomeEnabled: true,
+        starsEnabled: true,
       };
     default:
       return {
@@ -95,6 +103,8 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
         shadows: false,
         weatherEnabled: true,
         weatherParticles: !isMobile,
+        skyDomeEnabled: true,
+        starsEnabled: true,
       };
   }
 }
@@ -115,11 +125,12 @@ function getQualitySettings(level: QualityLevel, isMobile: boolean) {
  * `dusk` is the live anchor keyframe; if the world store never becomes ready the
  * dev override / anchor clock still yields a valid dusk-family look.
  */
-function WorldSky({ shadows }: { shadows: boolean }) {
+function WorldSky({ shadows, useBackground }: { shadows: boolean; useBackground: boolean }) {
   const { gl, scene } = useThree();
   const sunRef = useRef<THREE.DirectionalLight>(null);
   const ambientRef = useRef<THREE.AmbientLight>(null);
   const skyState = useRef(makeSkyTarget());
+  const sunDirRef = useRef(new THREE.Vector3());
 
   // Mutable fog/background so we mutate colors in-place each frame (no realloc).
   const fogRef = useRef<THREE.Fog>(new THREE.Fog('#E8A26B', 50, 320));
@@ -134,7 +145,9 @@ function WorldSky({ shadows }: { shadows: boolean }) {
     gl.shadowMap.type = THREE.PCFSoftShadowMap;
 
     scene.fog = fogRef.current;
-    scene.background = bgRef.current;
+    // The SkyDome renders the visible sky at medium+ quality; the flat background
+    // is only a fallback for low quality (where the dome is not mounted).
+    scene.background = useBackground ? bgRef.current : null;
 
     const sun = sunRef.current;
     if (sun) {
@@ -145,8 +158,9 @@ function WorldSky({ shadows }: { shadows: boolean }) {
 
     return () => {
       scene.fog = null;
+      scene.background = null;
     };
-  }, [gl, scene, shadows]);
+  }, [gl, scene, shadows, useBackground]);
 
   // Per-frame lerp between phase keyframes at the smooth cycleT.
   useFrame(() => {
@@ -157,14 +171,11 @@ function WorldSky({ shadows }: { shadows: boolean }) {
     if (sun) {
       sun.color.copy(s.sun);
       sun.intensity = s.sunIntensity;
-      // Keyframed elevation; azimuth held constant so shadows stay coherent.
+      // Direction shared with the visible SkyDome disc so lighting agrees with
+      // the visible sun/moon. Azimuth is fixed so shadows stay coherent.
+      const dir = sunDirection(s.sunElevationDeg, sunDirRef.current);
       const dist = 120;
-      const elev = (s.sunElevationDeg * Math.PI) / 180;
-      sun.position.set(
-        Math.cos(elev) * dist * 0.8,
-        Math.max(6, Math.sin(elev) * dist),
-        Math.cos(elev) * dist * 0.6,
-      );
+      sun.position.set(dir.x * dist, Math.max(6, dir.y * dist), dir.z * dist);
     }
 
     const amb = ambientRef.current;
@@ -173,9 +184,10 @@ function WorldSky({ shadows }: { shadows: boolean }) {
       amb.intensity = s.ambientIntensity;
     }
 
-    // Fog color === horizon (anti-slop). Background matches the fog band.
+    // Fog color === horizon (anti-slop). Background (low-quality fallback only)
+    // matches the fog band.
     fogRef.current.color.copy(s.fog);
-    bgRef.current.copy(s.horizon);
+    if (useBackground) bgRef.current.copy(s.horizon);
   });
 
   return (
@@ -325,6 +337,8 @@ function SceneContent({
   shadows,
   weatherEnabled,
   weatherParticles,
+  skyDomeEnabled,
+  starsEnabled,
 }: {
   heatMapVisible?: boolean;
   isMobile: boolean;
@@ -333,6 +347,8 @@ function SceneContent({
   shadows: boolean;
   weatherEnabled: boolean;
   weatherParticles: boolean;
+  skyDomeEnabled: boolean;
+  starsEnabled: boolean;
 }) {
   // Initialize agent loading and subscription
   useUserAgents();
@@ -346,22 +362,16 @@ function SceneContent({
   return (
     <>
       {/* Phase-keyframed sky / lighting / fog (World Clock, System 1).
-          Sets tone mapping, shadow map, fog, and drives sun + ambient + fog
-          color by lerping between phase keyframes at the smooth cycleT. */}
-      <WorldSky shadows={shadows} />
+          Sets tone mapping, shadow map, fog, and drives sun + ambient by lerping
+          between phase keyframes at the smooth cycleT. Owns fog color (== horizon).
+          The flat scene.background is only used as a low-quality fallback (where
+          the gradient dome is not mounted). */}
+      <WorldSky shadows={shadows} useBackground={!skyDomeEnabled} />
 
-      {/* Dusk sky dome: mostly masked by scene.background (which is driven by
-          WorldSky per-phase), kept for the horizon sun disc + Rayleigh feel. */}
-      <Sky
-        distance={450000}
-        sunPosition={[80, 18, 40]}
-        inclination={0.49}
-        azimuth={0.25}
-        rayleigh={2.2}
-        turbidity={9}
-        mieCoefficient={0.006}
-        mieDirectionalG={0.85}
-      />
+      {/* Phase-driven skybox: gradient dome + sun/moon disc + starfield. Renders
+          behind everything, toneMapped=false (never blooms), driven by the same
+          smooth cycleT so it matches the sun/fog. Off at low quality. */}
+      {skyDomeEnabled && <SkyDome starsEnabled={starsEnabled} />}
 
       {/* Dusk-tinted blocky clouds - disabled on low quality */}
       {cloudsEnabled && (
@@ -482,6 +492,8 @@ export function ThreeScene({ heatMapVisible = false }: ThreeSceneProps) {
           shadows={settings.shadows}
           weatherEnabled={settings.weatherEnabled}
           weatherParticles={settings.weatherParticles}
+          skyDomeEnabled={settings.skyDomeEnabled}
+          starsEnabled={settings.starsEnabled}
         />
       </PerformanceAdapter>
     </Canvas>

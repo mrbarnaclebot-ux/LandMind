@@ -30,6 +30,29 @@ export interface SkyKeyframe {
   ambientIntensity: number;
   /** Fog color — MUST equal horizon (kept in sync by construction). */
   fog: THREE.Color;
+
+  // --- Sky-dome / celestial params (skybox extension) ----------------------
+  /**
+   * How wide the horizon band bleeds up the dome (0..1 of the lower hemisphere).
+   * Wider at golden_hour / dusk for the layered "stacked bands" dusk look,
+   * tighter at day / night.
+   */
+  horizonBandWidth: number;
+  /** Visible celestial disc color (sun by day, moon at night). */
+  disc: THREE.Color;
+  /**
+   * Disc angular size on the dome (world radius at unit distance). Large + low
+   * at golden_hour / dusk (the signature frame), smaller/higher at day, small
+   * pale moon at night.
+   */
+  discSize: number;
+  /** Disc brightness (sub-bloom; never crosses the 0.9 bloom threshold). */
+  discIntensity: number;
+  /**
+   * Starfield opacity 0..1 for this keyframe: 0 during day/golden_hour, full at
+   * night, fading across dusk→night and night→dawn.
+   */
+  starOpacity: number;
 }
 
 interface KeyframeSpec {
@@ -41,6 +64,11 @@ interface KeyframeSpec {
   sunElevationDeg: number;
   ambient: string;
   ambientIntensity: number;
+  horizonBandWidth: number;
+  disc: string;
+  discSize: number;
+  discIntensity: number;
+  starOpacity: number;
 }
 
 /**
@@ -62,6 +90,12 @@ const KEYFRAME_SPECS: KeyframeSpec[] = [
     sunElevationDeg: 14,
     ambient: '#4A5A78',
     ambientIntensity: 0.42,
+    // Low pale sun rising, wide-ish soft horizon, stars nearly gone.
+    horizonBandWidth: 0.42,
+    disc: '#FFE2B4',
+    discSize: 0.15,
+    discIntensity: 0.72,
+    starOpacity: 0.12,
   },
   {
     phase: 'day',
@@ -72,6 +106,12 @@ const KEYFRAME_SPECS: KeyframeSpec[] = [
     sunElevationDeg: 45,
     ambient: '#5A6A88',
     ambientIntensity: 0.5,
+    // Tight bright band, small high sun, no stars.
+    horizonBandWidth: 0.26,
+    disc: '#FFEAC0',
+    discSize: 0.11,
+    discIntensity: 0.78,
+    starOpacity: 0,
   },
   {
     phase: 'golden_hour',
@@ -82,6 +122,12 @@ const KEYFRAME_SPECS: KeyframeSpec[] = [
     sunElevationDeg: 20,
     ambient: '#4A5A78',
     ambientIntensity: 0.46,
+    // Signature frame: fat layered dusk band, BIG low warm sun.
+    horizonBandWidth: 0.6,
+    disc: '#FFB262',
+    discSize: 0.26,
+    discIntensity: 0.82,
+    starOpacity: 0,
   },
   {
     phase: 'dusk',
@@ -92,6 +138,12 @@ const KEYFRAME_SPECS: KeyframeSpec[] = [
     sunElevationDeg: 22,
     ambient: '#4A5A78',
     ambientIntensity: 0.45,
+    // Still layered + warm, sun a touch smaller/higher; first stars appearing.
+    horizonBandWidth: 0.52,
+    disc: '#F5A45E',
+    discSize: 0.22,
+    discIntensity: 0.8,
+    starOpacity: 0.25,
   },
   {
     phase: 'night',
@@ -102,6 +154,12 @@ const KEYFRAME_SPECS: KeyframeSpec[] = [
     sunElevationDeg: 30,
     ambient: '#232840',
     ambientIntensity: 0.35,
+    // Deep indigo dome, thin cool horizon band, small pale-cool MOON, full stars.
+    horizonBandWidth: 0.3,
+    disc: '#C9D2E8',
+    discSize: 0.13,
+    discIntensity: 0.5,
+    starOpacity: 1,
   },
 ];
 
@@ -123,6 +181,11 @@ export const SKY_KEYFRAMES: SkyKeyframe[] = KEYFRAME_SPECS.map((s) => {
     ambient: new THREE.Color(s.ambient),
     ambientIntensity: s.ambientIntensity,
     fog: horizon.clone(), // fog === horizon, always
+    horizonBandWidth: s.horizonBandWidth,
+    disc: new THREE.Color(s.disc),
+    discSize: s.discSize,
+    discIntensity: s.discIntensity,
+    starOpacity: s.starOpacity,
   };
 })
   .slice()
@@ -169,11 +232,35 @@ export function sampleSky(cycleT: number, out: SkyKeyframe): SkyKeyframe {
   out.sun.copy(a.sun).lerp(b.sun, s);
   out.ambient.copy(a.ambient).lerp(b.ambient, s);
   out.fog.copy(out.horizon); // fog tracks horizon exactly
+  out.disc.copy(a.disc).lerp(b.disc, s);
   out.sunIntensity = THREE.MathUtils.lerp(a.sunIntensity, b.sunIntensity, s);
   out.ambientIntensity = THREE.MathUtils.lerp(a.ambientIntensity, b.ambientIntensity, s);
   out.sunElevationDeg = THREE.MathUtils.lerp(a.sunElevationDeg, b.sunElevationDeg, s);
+  out.horizonBandWidth = THREE.MathUtils.lerp(a.horizonBandWidth, b.horizonBandWidth, s);
+  out.discSize = THREE.MathUtils.lerp(a.discSize, b.discSize, s);
+  out.discIntensity = THREE.MathUtils.lerp(a.discIntensity, b.discIntensity, s);
+  out.starOpacity = THREE.MathUtils.lerp(a.starOpacity, b.starOpacity, s);
   out.t = t;
   return out;
+}
+
+/**
+ * Shared sun/moon azimuth (radians, around +Y). Both the visible sky-dome disc
+ * and the directional light derive their direction from this + the keyframed
+ * elevation so the visible sun and the lighting always agree.
+ */
+export const SUN_AZIMUTH = Math.atan2(0.6, 0.8); // matches the legacy light bias
+
+/**
+ * Unit direction (from origin toward the sun/moon) for a given elevation. Writes
+ * into `out` to avoid per-frame allocations. Azimuth is fixed (SUN_AZIMUTH) so
+ * shadows stay coherent; only elevation is keyframed.
+ */
+export function sunDirection(elevationDeg: number, out: THREE.Vector3): THREE.Vector3 {
+  const elev = (elevationDeg * Math.PI) / 180;
+  const cosE = Math.cos(elev);
+  out.set(cosE * Math.cos(SUN_AZIMUTH), Math.sin(elev), cosE * Math.sin(SUN_AZIMUTH));
+  return out.normalize();
 }
 
 /** Allocate a mutable keyframe target for `sampleSky` to write into. */
@@ -188,6 +275,11 @@ export function makeSkyTarget(): SkyKeyframe {
     ambient: new THREE.Color(),
     ambientIntensity: 0.45,
     fog: new THREE.Color(),
+    horizonBandWidth: 0.5,
+    disc: new THREE.Color(),
+    discSize: 0.2,
+    discIntensity: 0.8,
+    starOpacity: 0,
   };
 }
 
