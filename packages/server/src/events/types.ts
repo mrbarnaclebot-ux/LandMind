@@ -1,5 +1,6 @@
 import type { WorldState } from '../simulation/worldClock.js';
 import type { WeatherFront } from '../simulation/weatherService.js';
+import type { GoldRushState } from '../services/goldRushService.js';
 
 // World-clock update (System 1). Broadcast publicly every tick (5s) to ALL
 // sockets. Payload is the pinned WorldState shape:
@@ -101,6 +102,17 @@ export interface ServerToClientEvents {
   }) => void;
   // Hazards (System 3) — a rich vein expired. Broadcast to ALL sockets.
   'vein:expired': (data: { hexId: number }) => void;
+  // Engagement (System 4) — daily contract progress, to the owner's room.
+  // Throttled: emitted only when progress changes materially. BigInts as strings.
+  'contract:progress': (data: { progress: string; target: string }) => void;
+  // Engagement (System 4) — daily contract completed, to the owner's room.
+  'contract:completed': (data: {
+    streak: number;
+    reward: { yieldBoost: number; until: number };
+  }) => void;
+  // Engagement (System 4) — gold rush community event. Broadcast to ALL sockets
+  // each tick while active or while an achieved boost is still live.
+  'goldrush:update': (data: GoldRushState) => void;
   // Earnings and leaderboard events
   'earnings:update': (data: EarningsUpdateData) => void;
   'leaderboard:update': (data: LeaderboardUpdateData) => void;

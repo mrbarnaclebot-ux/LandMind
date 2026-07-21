@@ -19,9 +19,20 @@ model User {
   // Phase C (Hazards): throttled (≤1/min) last-seen timestamp. Cave-ins only
   // fire on agents whose owner was active within the last 60 min (offline grace).
   lastActiveAt DateTime? @map("last_active_at")
+  // Phase D (Engagement): resume-not-reset daily-contract streak. NEVER resets on
+  // a missed day (design System 4 — Egg Inc calendar model). Increments by 1 each
+  // day the user completes their contract.
+  contractStreak Int    @default(0) @map("contract_streak")
+  // Phase D (Seasons): permanent additive per-season yield bonus (+0.02 per closed
+  // season the user participated in). Joins the tick-loop yield product as
+  // (1 + seasonBonusPct). Never a hard wipe (design anti-pattern rule 7).
+  seasonBonusPct Float  @default(0) @map("season_bonus_pct")
   agents    Agent[]
   claims    Claim[]
   earningsSnapshot EarningsSnapshot?
+  contracts Contract[]
+  surveys   Survey[]
+  seasonResults SeasonResult[]
 
   @@map("users")
 }
@@ -172,4 +183,74 @@ model EconomyConfig {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@map("economy_config")
+}
+
+// Phase D (Engagement) — daily per-user contract (System 4).
+// One row per (user, UTC day). Generated lazily on GET /api/contracts and
+// deterministic per (userId, dateUTC). Progress accumulates from the tick loop
+// as the owner's agents mine the matching resource; on reaching target it is
+// marked complete (completedAt set) and the user's contractStreak increments.
+model Contract {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String   @map("user_id")
+  // UTC calendar day this contract belongs to, 'YYYY-MM-DD'.
+  dateUTC      String   @map("date_utc")
+  resourceType ResourceType @map("resource_type")
+  // Resource units required to complete (scaled to the user's agent count).
+  target       BigInt
+  // Resource units mined toward the target so far (flushed from Redis).
+  progress     BigInt   @default(0)
+  // When the contract was completed (NULL = still in progress).
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, dateUTC])
+  @@index([userId])
+  @@map("contracts")
+}
+
+// Phase D (Engagement) — Prospecting / Survey (System 4).
+// Durable per-user knowledge of a surveyed hex. One row per (user, q, r). The
+// snapshot returned to the client always reads CURRENT hex data (join at read),
+// so "surveyed" is a durable unlock, never a stale copy.
+model Survey {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String   @map("user_id")
+  q          Int
+  r          Int
+  surveyedAt DateTime @default(now()) @map("surveyed_at")
+
+  @@unique([userId, q, r])
+  @@index([userId])
+  @@map("surveys")
+}
+
+// Phase D (Seasons) — soft-prestige snapshot (System 4).
+// A season is closed manually (scripts/closeSeason.ts): the leaderboard ZSET is
+// snapshotted into SeasonResult rows, the ZSET is reset, and every participant's
+// seasonBonusPct increments by 0.02. Never a hard wipe (assets/agents carry over).
+model Season {
+  id        String   @id @default(uuid())
+  number    Int      @unique
+  closedAt  DateTime @default(now()) @map("closed_at")
+  totalPool BigInt   @default(0) @map("total_pool")
+  results   SeasonResult[]
+
+  @@map("seasons")
+}
+
+model SeasonResult {
+  id       String @id @default(uuid())
+  season   Season @relation(fields: [seasonId], references: [id])
+  seasonId String @map("season_id")
+  user     User   @relation(fields: [userId], references: [id])
+  userId   String @map("user_id")
+  rank     Int
+  score    BigInt
+
+  @@unique([seasonId, userId])
+  @@index([seasonId])
+  @@map("season_results")
 }

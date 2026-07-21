@@ -15,6 +15,8 @@ import { getWorldState, MODIFIER_TABLE } from '../simulation/worldClock.js';
 import { getActiveFronts, WEATHER_TABLE } from '../simulation/weatherService.js';
 import { getActiveVeins } from '../simulation/veinService.js';
 import { HAZARD_TABLE } from '../simulation/hazardService.js';
+import { getGoldRushState } from '../services/goldRushService.js';
+import { ENGAGEMENT_TABLE } from '../services/engagementConfig.js';
 
 const router = Router();
 
@@ -31,6 +33,10 @@ router.get('/', (_req: Request, res: Response) => {
     // odds, self-dig timer, rescue/repair costs, deep-yield bonus, wear params).
     veins: getActiveVeins(),
     hazardTable: HAZARD_TABLE,
+    // Phase D (Engagement) — current gold rush (or null) + the published
+    // engagement parameter table (contract/goldrush boosts, survey cooldown, etc).
+    goldrush: getGoldRushState(),
+    engagementTable: ENGAGEMENT_TABLE,
   });
 });
 

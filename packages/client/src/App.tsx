@@ -10,6 +10,7 @@ import { ControlsOverlay } from './components/layout/ControlsOverlay';
 import { PhaseClockContainer } from './components/layout/PhaseClockContainer';
 import { RelocationBanner } from './components/layout/RelocationBanner';
 import { useWorldClock } from './hooks/useWorldClock';
+import { useContracts } from './hooks/useContracts';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { useAdminCheck } from './admin/hooks/useAdminCheck';
 import { useMobile } from './hooks/useMobile';
@@ -26,7 +27,14 @@ function App() {
 
   // World Clock (System 1): seed from GET /api/world + subscribe to the public
   // world:update broadcast. Public/no-auth, so it runs for anonymous visitors.
+  // Also carries the System 4 Gold Rush broadcast (goldrush:update).
   useWorldClock();
+
+  // Engagement layer (System 4): daily contract + prospecting. Fetches
+  // /api/contracts + /api/surveys and subscribes contract:progress/completed
+  // once authenticated. Mounted once here (drives both desktop + mobile layouts,
+  // consistent with useWorldClock / the PhaseClockContainer HUD stack).
+  useContracts();
 
   // On mount: fetch the public server config (drives fake-SOL test mode) and
   // open the shared socket connection. The socket connects even for anonymous

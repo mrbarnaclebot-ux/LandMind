@@ -23,7 +23,12 @@ import {
   phaseAtCycleT,
 } from '../../stores/worldStore';
 import { PHASE_META } from '../../scene/worldPhases';
-import type { WorldPhase, WorldModifiers, HazardTable } from '../../lib/socketTypes';
+import type {
+  WorldPhase,
+  WorldModifiers,
+  HazardTable,
+  EngagementTable,
+} from '../../lib/socketTypes';
 import './phaseClock.css';
 
 /** Lamports → a compact SOL string (1 SOL = 1e9 lamports). */
@@ -77,6 +82,7 @@ export const PhaseClock: FC<PhaseClockProps> = ({ onEnterGoldenHour }) => {
   const nextPhaseAt = useWorldStore((s) => s.nextPhaseAt);
   const table = useWorldStore((s) => s.table);
   const hazardTable = useWorldStore((s) => s.hazardTable);
+  const engagementTable = useWorldStore((s) => s.engagementTable);
 
   const [open, setOpen] = useState(false);
   const [pulsing, setPulsing] = useState(false);
@@ -175,6 +181,7 @@ export const PhaseClock: FC<PhaseClockProps> = ({ onEnterGoldenHour }) => {
         <ModifierPopover
           table={table}
           hazardTable={hazardTable}
+          engagementTable={engagementTable}
           activePhase={phase}
           onClose={() => setOpen(false)}
         />
@@ -187,9 +194,10 @@ export const PhaseClock: FC<PhaseClockProps> = ({ onEnterGoldenHour }) => {
 const ModifierPopover: FC<{
   table: Record<string, unknown>;
   hazardTable: HazardTable;
+  engagementTable: EngagementTable;
   activePhase: WorldPhase;
   onClose: () => void;
-}> = ({ table, hazardTable, activePhase, onClose }) => {
+}> = ({ table, hazardTable, engagementTable, activePhase, onClose }) => {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', onKey);
@@ -230,6 +238,9 @@ const ModifierPopover: FC<{
 
       {/* HAZARDS section (System 3) — compact published odds, no drama. */}
       <HazardSection hazardTable={hazardTable} />
+
+      {/* ENGAGEMENT section (System 4) — contract/gold-rush boosts + cooldowns. */}
+      <EngagementSection engagementTable={engagementTable} />
 
       <div className="phase-clock__popover-foot">Published odds · server-authoritative</div>
     </div>
@@ -277,6 +288,44 @@ const HazardSection: FC<{ hazardTable: HazardTable }> = ({ hazardTable }) => {
           <tr>
             <td>Wear floor</td>
             <td>{floorPct}% over {w.fullWearMiningDays}d</td>
+          </tr>
+        </tbody>
+      </table>
+    </>
+  );
+};
+
+/** Compact engagement-odds table (System 4): boosts, cooldowns, season bonus. */
+const EngagementSection: FC<{ engagementTable: EngagementTable }> = ({ engagementTable }) => {
+  const e = engagementTable;
+  if (!e) return null;
+
+  const seasonPct = Math.round((e.seasonBonusPerSeason ?? 0) * 100);
+
+  return (
+    <>
+      <div className="phase-clock__popover-subtitle phase-clock__popover-subtitle--engage">
+        ENGAGEMENT
+      </div>
+      <table className="phase-clock__table">
+        <tbody>
+          <tr>
+            <td>Contract boost</td>
+            <td style={{ color: 'var(--amber)' }}>×{e.contractBoost}</td>
+          </tr>
+          <tr>
+            <td>Gold rush boost</td>
+            <td style={{ color: 'var(--amber)' }}>
+              ×{e.goldRushBoost} for {e.goldRushBoostHours}h
+            </td>
+          </tr>
+          <tr>
+            <td>Survey cooldown</td>
+            <td>{e.surveyCooldownMin}m</td>
+          </tr>
+          <tr>
+            <td>Season bonus</td>
+            <td style={{ color: 'var(--teal)' }}>+{seasonPct}%/season</td>
           </tr>
         </tbody>
       </table>

@@ -189,6 +189,12 @@
   margin: 10px 0 6px 0;
 }
 
+/* ENGAGEMENT section header — amber (rewards) rather than ember (danger). */
+.phase-clock__popover-subtitle--engage {
+  color: var(--amber);
+  text-shadow: 1px 1px 0 var(--amber-dark);
+}
+
 .phase-clock__popover-foot {
   margin-top: 6px;
   font-size: 10px;

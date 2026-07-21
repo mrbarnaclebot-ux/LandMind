@@ -1,0 +1,233 @@
+/**
+ * ContractCard + GoldRushStrip styling (System 4 — Engagement).
+ * Dusk tokens, flat fills + hard bevels only. Anti-slop: no gradients, no
+ * blur/glass, no gaussian shadows. Matches the PhaseClock / WeatherForecast
+ * panel treatment so the HUD stack reads as one column.
+ */
+
+/* ---- Daily Contract card -------------------------------------------------- */
+
+.contract-card {
+  width: 240px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--dusk-panel);
+  position: relative;
+  font-family: var(--font-body);
+  box-shadow:
+    inset 0 1px 0 0 var(--amber),
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--dusk-panel-lo);
+}
+
+/* Completed state — amber top edge strengthens into a full hard-stepped frame. */
+.contract-card--done {
+  box-shadow:
+    inset 0 2px 0 0 var(--amber),
+    inset 2px 2px 0 0 var(--amber-dark),
+    inset -2px -2px 0 0 var(--amber-dark),
+    0 0 0 2px var(--amber-dark);
+}
+
+.contract-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0 0 6px 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.contract-card__title {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--amber);
+  text-shadow: 1px 1px 0 var(--amber-dark);
+  flex: 1;
+  white-space: nowrap;
+}
+
+/* Streak flame counter (pixel flame glyph + count). */
+.contract-card__streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--amber-light);
+  white-space: nowrap;
+}
+
+.contract-card__flame {
+  font-size: 12px;
+  line-height: 1;
+  /* Matte hard 1px offset — no bloom. */
+  text-shadow: 1px 1px 0 var(--ember-dark);
+}
+
+.contract-card__desc {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--dusk-text);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Segmented progress bar — flat segments, active fill amber, hard dividers. */
+.contract-card__bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  background: var(--dusk-panel-lo);
+  box-shadow: inset 1px 1px 0 0 var(--dusk-panel-lo);
+}
+
+.contract-card__seg {
+  flex: 1;
+  height: 100%;
+  background: var(--dusk-panel-3);
+  box-shadow: inset 1px 1px 0 0 var(--dusk-panel-hi);
+}
+
+.contract-card__seg--filled {
+  background: var(--amber-dark);
+  box-shadow: inset 1px 1px 0 0 var(--amber);
+}
+
+.contract-card__seg--done {
+  background: var(--amber);
+  box-shadow: inset 1px 1px 0 0 var(--amber-light);
+}
+
+.contract-card__nums {
+  margin-top: 5px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dusk-text-dim);
+  white-space: nowrap;
+}
+
+.contract-card__nums-cur {
+  color: var(--amber);
+  font-weight: 700;
+}
+
+/* Completed banner — amber fill, hard bevel, matte. */
+.contract-card__complete {
+  margin-top: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--dusk-on-amber);
+  background: var(--amber);
+  box-shadow:
+    inset 1px 1px 0 0 var(--amber-light),
+    inset -1px -1px 0 0 var(--amber-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Gold Rush strip ------------------------------------------------------ */
+
+.goldrush-strip {
+  width: 240px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--dusk-panel);
+  position: relative;
+  font-family: var(--font-body);
+  /* Thick amber top edge — this is the loud "community event" surface. */
+  box-shadow:
+    inset 0 3px 0 0 var(--amber),
+    inset 2px 2px 0 0 var(--dusk-panel-hi),
+    inset -2px -2px 0 0 var(--dusk-panel-lo),
+    0 0 0 2px var(--amber-dark);
+}
+
+/* Boost-active variant — full amber hard-stepped frame (earned glow, no blur). */
+.goldrush-strip--boost {
+  box-shadow:
+    inset 0 3px 0 0 var(--amber-light),
+    inset 2px 2px 0 0 var(--amber-dark),
+    inset -2px -2px 0 0 var(--amber-dark),
+    0 0 0 2px var(--amber),
+    0 0 0 3px rgba(240, 166, 60, 0.4);
+}
+
+.goldrush-strip__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+}
+
+.goldrush-strip__title {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--amber);
+  text-shadow: 1px 1px 0 var(--amber-dark);
+  flex: 1;
+  white-space: nowrap;
+}
+
+.goldrush-strip__timer {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--amber-light);
+  white-space: nowrap;
+}
+
+.goldrush-strip__community {
+  font-size: 11px;
+  color: var(--dusk-text-dim);
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.goldrush-strip__community strong {
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Thick amber segmented progress bar. */
+.goldrush-strip__bar {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  background: var(--dusk-panel-lo);
+  box-shadow: inset 1px 1px 0 0 var(--dusk-panel-lo);
+}
+
+.goldrush-strip__seg {
+  flex: 1;
+  height: 100%;
+  background: var(--dusk-panel-3);
+  box-shadow: inset 1px 1px 0 0 var(--dusk-panel-hi);
+}
+
+.goldrush-strip__seg--filled {
+  background: var(--amber);
+  box-shadow: inset 1px 1px 0 0 var(--amber-light);
+}
+
+.goldrush-strip__boost {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--amber-light);
+  white-space: nowrap;
+}

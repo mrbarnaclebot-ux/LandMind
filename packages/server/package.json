@@ -12,7 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "init-vault": "tsx scripts/initVault.ts",
-    "sync-terrain": "tsx scripts/syncTerrain.ts"
+    "sync-terrain": "tsx scripts/syncTerrain.ts",
+    "close-season": "tsx scripts/closeSeason.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

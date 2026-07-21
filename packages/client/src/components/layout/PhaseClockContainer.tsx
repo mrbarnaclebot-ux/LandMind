@@ -10,6 +10,8 @@ import { FC, useCallback, useState } from 'react';
 import { PhaseClock } from './PhaseClock';
 import { WeatherForecast } from './WeatherForecast';
 import { VeinStrip } from './VeinStrip';
+import { GoldRushStrip } from './GoldRushStrip';
+import { ContractCard } from './ContractCard';
 
 const TOAST_MS = 3600;
 
@@ -30,6 +32,12 @@ export const PhaseClockContainer: FC = () => {
 
       {/* System 3: active rich-vein strikes with countdowns, stacked below. */}
       <VeinStrip />
+
+      {/* System 4: Gold Rush community event strip (only while active). */}
+      <GoldRushStrip />
+
+      {/* System 4: daily contract card (only when authed + contract loaded). */}
+      <ContractCard />
 
       {toast && (
         <div

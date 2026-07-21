@@ -31,6 +31,9 @@ import type {
   HazardTable,
   VeinSpawnedEvent,
   VeinExpiredEvent,
+  GoldRush,
+  EngagementTable,
+  GoldRushUpdateEvent,
 } from '../lib/socketTypes';
 
 // ---------------------------------------------------------------------------
@@ -113,6 +116,18 @@ const DEFAULT_HAZARD_TABLE: HazardTable = {
   },
 };
 
+/**
+ * Default published engagement odds (System 4). Matches the pinned server
+ * interface; replaced by whatever the server sends via GET /api/world.
+ */
+const DEFAULT_ENGAGEMENT_TABLE: EngagementTable = {
+  contractBoost: 1.1,
+  goldRushBoost: 1.15,
+  goldRushBoostHours: 2,
+  surveyCooldownMin: 5,
+  seasonBonusPerSeason: 0.02,
+};
+
 // ---------------------------------------------------------------------------
 // Local phase computation (from the anchor)
 // ---------------------------------------------------------------------------
@@ -172,6 +187,13 @@ interface WorldState {
   /** Published hazard odds table (for the PhaseClock HAZARDS section). */
   hazardTable: HazardTable;
 
+  // --- System 4 (engagement) — additive -------------------------------------
+  /** Live Gold Rush community event, or null when none is running. Seeded from
+   *  /api/world, then kept live via the goldrush:update broadcast. */
+  goldrush: GoldRush | null;
+  /** Published engagement odds table (for the PhaseClock ENGAGEMENT section). */
+  engagementTable: EngagementTable;
+
   /**
    * Reconciliation offset (ms). We add this to `Date.now()` before deriving the
    * local cycleT so the anchor-derived clock matches the server's reported
@@ -191,6 +213,8 @@ interface WorldState {
   applyVeinSpawned: (data: VeinSpawnedEvent) => void;
   /** Remove a rich vein (vein:expired broadcast). */
   applyVeinExpired: (data: VeinExpiredEvent) => void;
+  /** Apply a goldrush:update broadcast (System 4). */
+  applyGoldRushUpdate: (data: GoldRushUpdateEvent) => void;
   /** Fetch the initial snapshot from GET /api/world. */
   loadWorld: () => Promise<void>;
 
@@ -216,6 +240,8 @@ export const useWorldStore = create<WorldState>((set, get) => ({
   weatherTable: DEFAULT_WEATHER_TABLE,
   veins: [],
   hazardTable: DEFAULT_HAZARD_TABLE,
+  goldrush: null,
+  engagementTable: DEFAULT_ENGAGEMENT_TABLE,
   clockOffsetMs: 0,
   devOverride: null,
 
@@ -256,7 +282,19 @@ export const useWorldStore = create<WorldState>((set, get) => ({
         data.hazardTable && Object.keys(data.hazardTable).length > 0
           ? data.hazardTable
           : state.hazardTable,
+      // System 4 (additive): GET /api/world may also seed the Gold Rush event +
+      // engagementTable. Only overwrite when present so a socket-only
+      // world:update doesn't clobber goldrush delivered by goldrush:update.
+      goldrush: data.goldrush !== undefined ? data.goldrush : state.goldrush,
+      engagementTable:
+        data.engagementTable && Object.keys(data.engagementTable).length > 0
+          ? data.engagementTable
+          : state.engagementTable,
     }));
+  },
+
+  applyGoldRushUpdate: (data) => {
+    set({ goldrush: data });
   },
 
   applyWeatherUpdate: (data) => {

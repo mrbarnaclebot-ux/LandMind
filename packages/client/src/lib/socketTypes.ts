@@ -178,6 +178,13 @@ export interface WorldUpdateEvent {
    */
   veins?: Vein[];
   hazardTable?: HazardTable;
+  /**
+   * System 4 (additive): GET /api/world now also returns the live Gold Rush
+   * community event and the published engagement odds table. Both optional so an
+   * older server / the socket-only world:update payload is tolerated.
+   */
+  goldrush?: GoldRush;
+  engagementTable?: EngagementTable;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,6 +241,133 @@ export type WeatherTable = Partial<Record<WeatherFrontType, WeatherBiomeEffects>
 /** Broadcast every ~5s (public, no auth). Full replacement set of live fronts. */
 export interface WeatherUpdateEvent {
   fronts: WeatherFront[];
+}
+
+// ---------------------------------------------------------------------------
+// Engagement layer (System 4 — daily contracts, prospecting, gold rush)
+// ---------------------------------------------------------------------------
+
+/**
+ * The reward attached to a completed daily contract. `yieldBoost` is the active
+ * multiplier while the boost is live; `until` is the epoch ms at which it lapses
+ * (null = not yet earned / no active boost).
+ */
+export interface ContractReward {
+  /** Pinned default: 1.1 (×1.1 yield boost until 00:00 UTC). */
+  yieldBoost: number;
+  /** Epoch ms the boost expires, or null when there is no active boost. */
+  until: number | null;
+}
+
+/**
+ * The player's active daily contract. Returned by GET /api/contracts and kept
+ * live via `contract:progress` / `contract:completed` socket events (owner room).
+ *
+ * `progress` / `target` are decimal strings (BigInt-safe) so large resource
+ * numbers survive the wire without float rounding.
+ */
+export interface DailyContract {
+  id: string;
+  /** UTC date the contract belongs to (e.g. '2026-07-21'). */
+  dateUTC: string;
+  /** Human description (e.g. 'MINE 600 GOLD'). */
+  description: string;
+  /** Resource type the contract targets (e.g. 'GOLD'). */
+  resourceType: string;
+  /** Target amount as a decimal string. */
+  target: string;
+  /** Current progress as a decimal string. */
+  progress: string;
+  completed: boolean;
+  reward: ContractReward;
+}
+
+/** GET /api/contracts response: the active contract plus the resume-not-reset streak. */
+export interface ContractsResponse {
+  contract: DailyContract;
+  streak: number;
+}
+
+/** Owner-room broadcast: contract progress advanced. */
+export interface ContractProgressEvent {
+  /** Updated progress as a decimal string. */
+  progress: string;
+  /** Target as a decimal string (echoed for convenience). */
+  target: string;
+}
+
+/** Owner-room broadcast: the contract just completed (streak incremented, boost live). */
+export interface ContractCompletedEvent {
+  streak: number;
+  reward: ContractReward;
+}
+
+/**
+ * A surveyed hex's revealed data. Returned by POST /api/hexes/survey and
+ * GET /api/surveys. `resourceAmount` is a decimal string (BigInt-safe).
+ */
+export interface SurveyedHex {
+  q: number;
+  r: number;
+  biome: string;
+  isDeep: boolean;
+  elevation: number;
+  resourceType: string;
+  /** Remaining amount as a decimal string. */
+  resourceAmount: string;
+  agentCount: number;
+}
+
+/** POST /api/hexes/survey success response. */
+export interface SurveyResponse {
+  hex: SurveyedHex;
+}
+
+/** GET /api/surveys response: all hexes this player has surveyed. */
+export interface SurveysResponse {
+  surveys: SurveyedHex[];
+}
+
+/**
+ * Public broadcast: the state of the current Gold Rush community event.
+ * `progress` / `target` are decimal strings. When `achieved` flips true the
+ * community goal was met and `boostUntil` carries the ×1.15 boost expiry.
+ */
+export interface GoldRushUpdateEvent {
+  active: boolean;
+  /** Resource type the community is racing to mine (e.g. 'SILVER'). */
+  resourceType: string;
+  /** Community progress as a decimal string. */
+  progress: string;
+  /** Community target as a decimal string. */
+  target: string;
+  /** Epoch ms at which the event window closes. */
+  endsAt: number;
+  /** True once the community goal has been met. */
+  achieved: boolean;
+  /** Epoch ms the ×1.15 boost expires (present once achieved), or null. */
+  boostUntil: number | null;
+}
+
+/** The Gold Rush state as carried in GET /api/world `goldrush`. */
+export type GoldRush = GoldRushUpdateEvent;
+
+/**
+ * Published engagement odds/config. Returned by GET /api/world as
+ * `engagementTable`. Permissive shape — the HUD renders whatever is present,
+ * falling back to the pinned defaults.
+ */
+export interface EngagementTable {
+  /** Contract completion yield boost (pinned default: 1.1). */
+  contractBoost: number;
+  /** Gold rush achieved yield boost (pinned default: 1.15). */
+  goldRushBoost: number;
+  /** Gold rush boost duration in hours (pinned default: 2). */
+  goldRushBoostHours: number;
+  /** Survey action cooldown in minutes (pinned default: 5). */
+  surveyCooldownMin: number;
+  /** Season bonus accrued per season survived (pinned default: 0.02 = +2%). */
+  seasonBonusPerSeason: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -310,6 +444,14 @@ export interface ServerToClientEvents {
   'vein:spawned': (data: VeinSpawnedEvent) => void;
   /** Broadcast: a rich vein reverted. */
   'vein:expired': (data: VeinExpiredEvent) => void;
+
+  // Engagement (System 4)
+  /** Owner room: the player's daily contract progress advanced. */
+  'contract:progress': (data: ContractProgressEvent) => void;
+  /** Owner room: the player's daily contract completed (streak + boost). */
+  'contract:completed': (data: ContractCompletedEvent) => void;
+  /** Broadcast: the current Gold Rush community event state. */
+  'goldrush:update': (data: GoldRushUpdateEvent) => void;
 }
 
 /**

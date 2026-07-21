@@ -10,6 +10,7 @@ import { ClaimButton } from './ClaimButton';
 import { ClaimConfirmDialog } from './ClaimConfirmDialog';
 import { getExplorerUrl } from '../../lib/solana';
 import { ModifierChip } from '../layout/ModifierChip';
+import { GoldRushBoostChip } from '../layout/GoldRushBoostChip';
 import '../../styles/pixel-theme.css';
 
 interface EarningsDashboardProps {
@@ -277,9 +278,19 @@ export const EarningsDashboard: FC<EarningsDashboardProps> = ({
                     />
                     LIVE
                   </span>
-                  {/* Active World Clock yield modifier (only shows off-neutral) */}
-                  <span style={{ marginLeft: 'auto' }}>
+                  {/* Active World Clock yield modifier (only shows off-neutral)
+                      + the Gold Rush ×1.15 boost chip when a community event
+                      boost is live (System 4). */}
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
                     <ModifierChip />
+                    <GoldRushBoostChip />
                   </span>
                 </div>
                 <div

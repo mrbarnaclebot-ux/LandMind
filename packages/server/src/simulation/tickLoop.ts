@@ -33,11 +33,35 @@ import {
   SELF_DIG_MS,
   OFFLINE_GRACE_MS,
 } from './hazardService.js';
+import {
+  loadActiveContracts,
+  loadContractBoosts,
+  contractModFor,
+  accrueContractProgress,
+  flushContractProgress,
+  endOfUTCDay,
+  CONTRACT_YIELD_BOOST,
+  type ActiveContract,
+} from '../services/contractService.js';
+import {
+  tickGoldRush,
+  rehydrateGoldRush,
+  loadGoldRushBoosts,
+  goldRushModFor,
+  accrueGoldRush,
+  activeRushResource,
+  getGoldRushState,
+} from '../services/goldRushService.js';
 import { prisma } from '../lib/prisma.js';
+import type { ResourceType } from '@prisma/client';
 import type { AgentUpdate, EarningsUpdateData } from '../events/types.js';
 
 const TICK_INTERVAL = 5000; // 5 seconds
 const FLUSH_INTERVAL = 6; // Flush every 6 ticks (30 seconds)
+// Phase D: throttle contract:progress socket emits to every Nth tick (30s at 5s
+// ticks) — completions are exempt (emitted immediately). Keeps the owner room
+// from receiving a progress event on every 5s tick.
+const CONTRACT_PROGRESS_EMIT_EVERY = 6;
 
 let tickLoopId: NodeJS.Timeout | null = null;
 let currentTick = 0;
@@ -93,6 +117,16 @@ async function processTick(): Promise<void> {
       io.emit('vein:expired', { hexId: veinResult.hexId });
     }
 
+    // --- Gold Rush (System 4) ---------------------------------------------
+    // Deterministic 4h-boundary schedule. tickGoldRush opens a fresh rush at a
+    // boundary and finalizes (grants boosts) after one ends. Broadcast publicly
+    // while a rush is active or an achieved boost is still live so all clients
+    // stay synced. Progress accrues from ALL mining below.
+    const goldRush = await tickGoldRush(startTime);
+    if (goldRush) {
+      io.emit('goldrush:update', goldRush);
+    }
+
     const agents = await getAllAgents();
 
     if (agents.length === 0) {
@@ -120,39 +154,118 @@ async function processTick(): Promise<void> {
 
     // Phase C: load each owner's lastActiveAt once per tick for the offline-grace
     // rule (cave-ins only fire on agents whose owner was active within 60 min).
-    // One query for the distinct owners in this batch — cheap and avoids N reads.
+    // Phase D: the SAME single query also loads seasonBonusPct, so the per-owner
+    // season bonus joins the yield product WITHOUT any extra per-tick DB hit — it
+    // is memoized in `ownerSeasonBonus` for the whole tick (one findMany for the
+    // distinct owners in this batch).
     const ownerIds = Array.from(new Set(agents.map((a) => a.ownerId)));
     const ownerActiveAt = new Map<string, number | null>();
+    const ownerSeasonBonus = new Map<string, number>();
     if (ownerIds.length > 0) {
       const owners = await prisma.user.findMany({
         where: { id: { in: ownerIds } },
-        select: { id: true, lastActiveAt: true },
+        select: { id: true, lastActiveAt: true, seasonBonusPct: true },
       });
       for (const o of owners) {
         ownerActiveAt.set(o.id, o.lastActiveAt ? o.lastActiveAt.getTime() : null);
+        ownerSeasonBonus.set(o.id, o.seasonBonusPct ?? 0);
       }
     }
+
+    // Phase D: load the engagement boost maps + today's active contracts ONCE per
+    // tick (Redis HGETALL for the boost sets — O(boosted owners), no per-agent DB
+    // read; one DB findMany for today's incomplete contracts). The tick loop
+    // resolves each agent's contractMod / goldRushMod in memory against these.
+    const contractBoosts = await loadContractBoosts(startTime);
+    const goldRushBoosts = await loadGoldRushBoosts(startTime);
+    const activeContracts = await loadActiveContracts(startTime);
+    const rushResource = activeRushResource(startTime);
+
+    // Accumulators for this tick:
+    //  - contractProgressByKey: contract completions/progress to emit after the loop.
+    //  - rushMinedThisTick: total of the rush resource mined by ALL agents this tick.
+    const contractTouched = new Set<string>(); // `${ownerId}:${resourceType}` keys touched
+    const contractCompletions: Array<{
+      ownerId: string;
+      streak: number;
+      boostUntil: number;
+    }> = [];
+    const contractProgressEmits: Array<{
+      ownerId: string;
+      progress: bigint;
+      target: bigint;
+    }> = [];
+    let rushMinedThisTick = 0n;
 
     // Process each agent
     for (const agent of agents) {
       if (agent.status === 'MINING') {
-        await processMiningAgent(
+        const mined = await processMiningAgent(
           agent,
           currentPhase,
           startTime,
           ownerActiveAt.get(agent.ownerId) ?? null,
+          {
+            contractMod: contractModFor(agent.ownerId, contractBoosts, startTime),
+            goldRushMod: goldRushModFor(agent.ownerId, goldRushBoosts, startTime),
+            seasonBonusPct: ownerSeasonBonus.get(agent.ownerId) ?? 0,
+          },
           updates,
           userUpdates,
           hexDepletions,
           relocations,
           trapped
         );
+
+        // Phase D: accrue engagement progress from this agent's yield this tick.
+        if (mined && mined.amount > 0n) {
+          // Gold rush: sum ALL mining of the active rush's resource type.
+          if (rushResource && mined.resourceType === rushResource) {
+            rushMinedThisTick += mined.amount;
+          }
+          // Daily contract: if the owner has today's contract for this resource,
+          // accrue toward it. Detect first-time completion for the boost + streak.
+          const key = `${agent.ownerId}:${mined.resourceType}`;
+          const active = activeContracts.get(key);
+          if (active) {
+            contractTouched.add(key);
+            const result = await accrueContractProgress(active, mined.amount, startTime);
+            if (result.justCompleted) {
+              // Stop further accrual to this contract this tick + drop it from the
+              // active map so later agents don't re-accrue a completed contract.
+              activeContracts.delete(key);
+              contractCompletions.push({
+                ownerId: result.ownerId,
+                streak: result.newStreak ?? 0,
+                boostUntil: result.boostUntil ?? endOfUTCDay(startTime),
+              });
+            } else {
+              contractProgressEmits.push({
+                ownerId: result.ownerId,
+                progress: result.progress,
+                target: result.target,
+              });
+            }
+          }
+        }
       } else if (agent.status === 'RELOCATING') {
         await processRelocatingAgent(agent, updates, userUpdates, arrivals);
       } else if (agent.status === 'TRAPPED') {
         // Auto-rescue when the 4-hour self-dig timer has passed. Wear unchanged;
         // resources kept (never confiscatory). Back to MINING.
         await processTrappedAgent(agent, startTime, updates, rescued);
+      }
+    }
+
+    // Phase D: accrue the tick's total rush-resource mining toward the community
+    // goal. If the target was JUST reached, re-broadcast the fresh state so all
+    // clients flip to achieved immediately (boosts are granted after endsAt).
+    if (rushResource && rushMinedThisTick > 0n) {
+      const { justAchieved } = await accrueGoldRush(rushResource, rushMinedThisTick, startTime);
+      const freshRush = getGoldRushState(startTime);
+      if (freshRush) io.emit('goldrush:update', freshRush);
+      if (justAchieved) {
+        console.log(`[goldrush] community achieved rush for ${rushResource} this tick`);
       }
     }
 
@@ -229,9 +342,52 @@ async function processTick(): Promise<void> {
       }
     }
 
+    // 7. Engagement (System 4) — contract progress + completion, to owner rooms.
+    // Map ownerId -> wallet (for the room name) from the agent batch.
+    const ownerIdToWallet = new Map<string, string>();
+    for (const agent of agents) ownerIdToWallet.set(agent.ownerId, agent.ownerWallet);
+
+    // 7a. Completions ALWAYS emit immediately (streak + boost payload).
+    for (const c of contractCompletions) {
+      const wallet = ownerIdToWallet.get(c.ownerId);
+      if (wallet) {
+        io.to(`user:${wallet}`).emit('contract:completed', {
+          streak: c.streak,
+          reward: { yieldBoost: CONTRACT_YIELD_BOOST, until: c.boostUntil },
+        });
+      }
+    }
+
+    // 7b. Progress is THROTTLED: emit at most once per owner per tick, and only
+    // every few ticks (not on every 5s tick) to avoid chatty updates. Dedupe to
+    // the LATEST progress value per owner.
+    if (currentTick % CONTRACT_PROGRESS_EMIT_EVERY === 0 && contractProgressEmits.length > 0) {
+      const latestByOwner = new Map<string, { progress: bigint; target: bigint }>();
+      for (const p of contractProgressEmits) {
+        latestByOwner.set(p.ownerId, { progress: p.progress, target: p.target });
+      }
+      for (const [ownerId, p] of latestByOwner) {
+        const wallet = ownerIdToWallet.get(ownerId);
+        if (wallet) {
+          io.to(`user:${wallet}`).emit('contract:progress', {
+            progress: p.progress.toString(),
+            target: p.target.toString(),
+          });
+        }
+      }
+    }
+
     // Flush to PostgreSQL every FLUSH_INTERVAL ticks
     if (currentTick % FLUSH_INTERVAL === 0) {
       await flushToPostgres();
+      // Phase D: flush buffered contract progress for today's touched contracts so
+      // a restart resumes from a persisted value (completions already persisted).
+      const touchedContracts: ActiveContract[] = [];
+      for (const key of contractTouched) {
+        const active = activeContracts.get(key);
+        if (active) touchedContracts.push(active);
+      }
+      await flushContractProgress(touchedContracts);
     }
 
     const elapsed = Date.now() - startTime;
@@ -245,31 +401,48 @@ async function processTick(): Promise<void> {
   }
 }
 
+/** Phase D per-owner yield context, resolved in memory (no per-tick DB hit). */
+interface EngagementContext {
+  /** contractMod (1.1 while the owner's contract boost is active, else 1.0). */
+  contractMod: number;
+  /** goldRushMod (1.15 while the owner's gold-rush boost is active, else 1.0). */
+  goldRushMod: number;
+  /** Permanent per-season additive bonus; applied as (1 + seasonBonusPct). */
+  seasonBonusPct: number;
+}
+
 /**
  * Process a mining agent for one tick.
  *
- * Yield product (System 3): base × phaseMod × weatherMod × deepBonus ×
- * wearEfficiency × veinMod. Wear accrues one tick per active mine. Deep-hex
- * agents whose owner is active (< 60 min) also roll for a cave-in this tick.
+ * Yield product (final form, System 1-4):
+ *   base × phaseMod × weatherMod × deepBonus × wearEfficiency × veinMod ×
+ *   contractMod × goldRushMod × (1 + seasonBonusPct)
+ *
+ * Wear accrues one tick per active mine. Deep-hex agents whose owner is active
+ * (< 60 min) also roll for a cave-in this tick.
  *
  * @param ownerActiveAtMs owner's lastActiveAt (epoch ms) or null if never seen.
+ * @param engagement per-owner contract/goldRush/season multipliers (Phase D).
+ * @returns the mined yield this tick (amount 0n if none), so the caller can accrue
+ *   contract + gold-rush progress. Returns null if the hex was invalid.
  */
 async function processMiningAgent(
   agent: CachedAgent,
   currentPhase: WorldPhase,
   nowMs: number,
   ownerActiveAtMs: number | null,
+  engagement: EngagementContext,
   updates: Array<{ agentId: string; fields: Record<string, string> }>,
   userUpdates: Map<string, AgentUpdate[]>,
   hexDepletions: Array<{ hexId: number; q: number; r: number }>,
   relocations: Array<{ agentId: string; fromHexId: number; toHexId: number; arrivalTick: number }>,
   trapped: Array<{ agentId: string; hexId: number; hexQ: number; hexR: number; selfDigAt: number }>
-): Promise<void> {
+): Promise<{ amount: bigint; resourceType: ResourceType } | null> {
   // Get hex data (carries elevation + isDeep + biome from the terrain sync)
   const hex = await getHexById(agent.hexId);
   if (!hex) {
     console.warn(`Agent ${agent.agentId} has invalid hexId ${agent.hexId}`);
-    return;
+    return null;
   }
 
   // --- Cave-in roll (System 3) ------------------------------------------------
@@ -330,7 +503,7 @@ async function processMiningAgent(
       });
 
       // Trapped agents skip mining entirely this tick (and until freed).
-      return;
+      return null;
     }
   }
 
@@ -352,9 +525,19 @@ async function processMiningAgent(
   // Rich-vein modifier (System 3): ×3 when the active vein covers this hex.
   const veinMod = getVeinModifierAt(hex.q, hex.r, nowMs);
 
-  // Combined yield multiplier: base × phaseMod × weatherMod × deepBonus ×
-  // wearEfficiency × veinMod.
-  const modifier = phaseMod * weatherMod * deepBonus * wearEff * veinMod;
+  // Engagement modifiers (System 4, Phase D), resolved in memory for this owner:
+  //   contractMod  — 1.1 while the daily-contract completion boost is active
+  //   goldRushMod  — 1.15 while an achieved gold-rush boost is active
+  //   seasonBonus  — applied as (1 + seasonBonusPct), permanent additive
+  const contractMod = engagement.contractMod;
+  const goldRushMod = engagement.goldRushMod;
+  const seasonMod = 1 + engagement.seasonBonusPct;
+
+  // Combined yield multiplier (final form): base × phaseMod × weatherMod ×
+  // deepBonus × wearEfficiency × veinMod × contractMod × goldRushMod ×
+  // (1 + seasonBonusPct).
+  const modifier =
+    phaseMod * weatherMod * deepBonus * wearEff * veinMod * contractMod * goldRushMod * seasonMod;
 
   // Accrue one tick of equipment wear (only while actively mining — never idle).
   const newWear = accrueWear(currentWear);
@@ -435,6 +618,9 @@ async function processMiningAgent(
         });
       }
     }
+
+    // Report the mined yield so the caller can accrue contract + gold-rush progress.
+    return { amount: yield_.amount, resourceType: yield_.resourceType };
   } else {
     // No yield this tick (e.g. hex momentarily empty), but the agent is still
     // actively MINING — persist the accrued wear so it isn't lost.
@@ -442,6 +628,7 @@ async function processMiningAgent(
       agentId: agent.agentId,
       fields: { wear: String(newWear), lastTick: String(currentTick) },
     });
+    return { amount: 0n, resourceType: yield_.resourceType };
   }
 }
 
@@ -588,6 +775,10 @@ export async function startTickLoop(): Promise<void> {
 
   // Rehydrate the active rich vein from Redis (System 3) so a restart preserves it.
   await rehydrateVeins();
+
+  // Rehydrate the gold rush window from Redis (System 4) so a restart mid-rush
+  // resumes progress + the achieved boost rather than hard-resetting it.
+  await rehydrateGoldRush();
 
   // Start processing
   console.log(`Tick loop started (interval: ${TICK_INTERVAL}ms)`);

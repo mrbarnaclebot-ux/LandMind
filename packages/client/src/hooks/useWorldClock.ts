@@ -19,6 +19,7 @@ import type {
   WeatherUpdateEvent,
   VeinSpawnedEvent,
   VeinExpiredEvent,
+  GoldRushUpdateEvent,
 } from '../lib/socketTypes';
 
 /** Human resource name from the resourceType code (fallback: as-given, lowercased). */
@@ -42,8 +43,18 @@ function fmtRemaining(ms: number): string {
 
 export function useWorldClock(): void {
   useEffect(() => {
-    const { loadWorld, applyUpdate, applyWeatherUpdate, applyVeinSpawned, applyVeinExpired } =
-      useWorldStore.getState();
+    const {
+      loadWorld,
+      applyUpdate,
+      applyWeatherUpdate,
+      applyVeinSpawned,
+      applyVeinExpired,
+      applyGoldRushUpdate,
+    } = useWorldStore.getState();
+
+    // Track the prior goldrush.achieved so we only celebrate the moment it flips
+    // true (the broadcast repeats every ~5s while achieved).
+    let prevAchieved = useWorldStore.getState().goldrush?.achieved ?? false;
 
     // Initial snapshot (world clock + seed weather fronts/table + veins/hazard
     // table from /api/world).
@@ -68,18 +79,39 @@ export function useWorldClock(): void {
     };
     const onVeinExpired = (data: VeinExpiredEvent) => applyVeinExpired(data);
 
+    // System 4: Gold Rush community event (public broadcast). Store the state
+    // and, on the achieved edge, fire a one-shot celebration toast.
+    const onGoldRush = (data: GoldRushUpdateEvent) => {
+      applyGoldRushUpdate(data);
+      if (data.achieved && !prevAchieved) {
+        const hoursText = data.boostUntil
+          ? `${Math.max(1, Math.round((data.boostUntil - Date.now()) / 3_600_000))}h`
+          : '2h';
+        useTransactionStore.getState().addToast({
+          type: 'success',
+          title: 'GOLD RUSH ACHIEVED',
+          message: `Community goal met — ×1.15 for ${hoursText}`,
+          autoHide: 6000,
+        });
+      }
+      prevAchieved = data.achieved;
+    };
+
     sock.on('world:update', onUpdate);
     // Weather fronts (System 2) arrive on their own ~5s public broadcast.
     sock.on('weather:update', onWeather);
     // Rich veins (System 3) — public broadcasts.
     sock.on('vein:spawned', onVeinSpawned);
     sock.on('vein:expired', onVeinExpired);
+    // Gold Rush (System 4) — public broadcast.
+    sock.on('goldrush:update', onGoldRush);
 
     return () => {
       sock.off('world:update', onUpdate);
       sock.off('weather:update', onWeather);
       sock.off('vein:spawned', onVeinSpawned);
       sock.off('vein:expired', onVeinExpired);
+      sock.off('goldrush:update', onGoldRush);
     };
   }, []);
 }
