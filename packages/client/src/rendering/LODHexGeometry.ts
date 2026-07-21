@@ -29,11 +29,22 @@ const AO_SKIRT: [number, number, number] = [0.55, 0.6, 0.74];
 
 /**
  * Create all 3 LOD geometries for hex tiles.
+ *
+ * IMPORTANT (seamless tiling): `size` is the hex OUTER radius (centre→corner)
+ * and MUST equal the grid pitch parameter HEX_SIZE (1.0) — any shrink factor
+ * (e.g. the old 0.95) leaves a visible gap between neighbouring columns because
+ * flat-top hexes only share an edge when radius == HEX_SIZE.
+ *
+ * `skirtDepth` is how far the side skirt extends BELOW each column's own base
+ * (local y=0 sits at the column's elevation*STEP). To guarantee that stepped
+ * elevation differences never reveal a see-through slit, the caller passes a
+ * skirt deep enough to reach global bedrock (below the lowest tier) from the
+ * TALLEST column — see ChunkedHexWorld's BEDROCK_SKIRT_DEPTH.
  */
 export function createLODGeometries(
-  size = 0.95,
+  size = 1.0,
   height = 0.35,
-  skirtDepth = 0.3
+  skirtDepth = 2.4
 ): [THREE.BufferGeometry, THREE.BufferGeometry, THREE.BufferGeometry] {
   return [
     createHighDetailGeometry(size, height, skirtDepth),

@@ -2,6 +2,7 @@
  * Agent API functions
  */
 import { API_URL } from './config';
+import { apiFetch } from './apiFetch';
 
 export interface Agent {
   id: string;
@@ -53,9 +54,7 @@ export interface ConfirmResponse {
  * Fetch user's agents from server
  */
 export async function fetchUserAgents(): Promise<Agent[]> {
-  const response = await fetch(`${API_URL}/api/agents`, {
-    credentials: 'include',
-  });
+  const response = await apiFetch(`${API_URL}/api/agents`);
 
   if (!response.ok) {
     console.error('[fetchUserAgents] API error:', response.status, response.statusText);
@@ -94,9 +93,8 @@ export async function fetchUserAgents(): Promise<Agent[]> {
  * Request deployment transaction from server
  */
 export async function requestDeployTransaction(): Promise<DeployTransactionResponse> {
-  const response = await fetch(`${API_URL}/api/agents/deploy`, {
+  const response = await apiFetch(`${API_URL}/api/agents/deploy`, {
     method: 'POST',
-    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
   });
 
@@ -112,9 +110,8 @@ export async function requestDeployTransaction(): Promise<DeployTransactionRespo
  * Confirm deployment after transaction sent
  */
 export async function confirmDeployment(signature: string): Promise<ConfirmResponse> {
-  const response = await fetch(`${API_URL}/api/agents/confirm`, {
+  const response = await apiFetch(`${API_URL}/api/agents/confirm`, {
     method: 'POST',
-    credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ signature }),
   });

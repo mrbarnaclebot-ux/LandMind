@@ -16,18 +16,18 @@
 import * as THREE from 'three';
 
 export interface HexGeometryOptions {
-  /** Hex outer radius (default: 0.95) */
+  /** Hex outer radius (default: 1.0 == HEX_SIZE grid pitch → seamless tiling) */
   size?: number;
   /** Height of the hex tile above y=0 (default: 0.35) */
   height?: number;
-  /** Skirt depth below y=0 to close gaps between elevations (default: 0.3) */
+  /** Skirt depth below y=0 to close gaps between elevations (default: 2.4) */
   skirtDepth?: number;
 }
 
 const DEFAULT_OPTIONS: Required<HexGeometryOptions> = {
-  size: 0.95, // Slightly smaller than 1.0 to create visible gaps between hexes
+  size: 1.0, // MUST equal HEX_SIZE grid pitch; any shrink leaves visible gaps
   height: 0.35, // Thick tile, not tall column
-  skirtDepth: 0.3, // Covers elevation differences
+  skirtDepth: 2.4, // Deep enough to reach bedrock under 7-tier relief (no slits)
 };
 
 /**

@@ -6,6 +6,14 @@ import { API_BASE_URL } from '../lib/solana';
 import { reconnectSocket } from '../lib/socket';
 
 /**
+ * Module-level guard so the restore-time reconcile runs exactly once per page
+ * load. `useWalletSession` is mounted by several components (ConnectButton,
+ * Header/TestModeControls), and without this each mount would fire its own probe
+ * and racing clearSession/reconnect calls.
+ */
+let restoreReconcileStarted = false;
+
+/**
  * Hook for managing wallet session authentication.
  * Handles SIWS flow, session persistence, and wallet change detection.
  */
@@ -16,8 +24,10 @@ export function useWalletSession() {
     walletAddress,
     isAuthenticating,
     authError,
+    sessionExpiredNotice,
     setSession,
     clearSession,
+    clearSessionExpiredNotice,
     setAuthenticating,
     setAuthError,
     isSessionValid
@@ -235,13 +245,64 @@ export function useWalletSession() {
     }
   }, [connected, publicKey, walletAddress, clearSession]);
 
-  // Effect: Check session validity on mount
+  // Effect: Reconcile a RESTORED session against the server on mount.
+  //
+  // The wallet store rehydrates `isAuthenticated: true` from localStorage on
+  // page load, but the actual credential (the JWT) lives in an httpOnly cookie
+  // we cannot read. A returning visitor may have a persisted "authenticated"
+  // flag while the cookie is missing/expired — or was set with an older
+  // SameSite=Strict that the browser now drops cross-site. Trusting the
+  // persisted flag alone shows authenticated-only UI (DEPLOY enabled) while
+  // every API call 401s with "Authentication required".
+  //
+  // So on mount, whenever we restored an authenticated flag, run the SAME
+  // reconcile probe used post-login BEFORE trusting the state:
+  //   - Fast client-side expiry check first (cheap, offline-safe).
+  //   - Then GET /auth/session with credentials. If the cookie is valid the
+  //     server echoes { authenticated: true } and we keep the session +
+  //     reconnect the socket so its handshake carries the cookie.
+  //   - On 401/expired/failure we clear silently (no scary error — this is a
+  //     restore, not a fresh login attempt) so the logged-out UI
+  //     (CONNECT / PLAY TEST MODE) is shown honestly.
+  //
+  // Runs once on mount; the restored flag is read from the store at that time.
   useEffect(() => {
-    if (isAuthenticated && !isSessionValid()) {
-      // Session expired - clear it
+    let cancelled = false;
+
+    // Run once per page load even though multiple components mount this hook.
+    if (restoreReconcileStarted) return;
+    restoreReconcileStarted = true;
+
+    // Only the restore path needs a probe. A fresh login sets state via
+    // authenticate()/startTestSession() which already reconcile inline.
+    if (!useWalletStore.getState().isAuthenticated) return;
+
+    // Cheap client-side expiry gate first — avoids a network round-trip when we
+    // already know the persisted session is stale.
+    if (!isSessionValid()) {
       clearSession();
+      return;
     }
-  }, [isAuthenticated, isSessionValid, clearSession]);
+
+    void (async () => {
+      const ok = await reconcileSession();
+      if (cancelled) return;
+      if (ok) {
+        // Cookie is valid. Reconnect so the shared socket (opened anonymously
+        // on mount) re-handshakes with the cookie and authenticates.
+        reconnectSocket();
+      } else {
+        // Cookie missing/expired/dropped — the restored flag was lying. Clear
+        // silently; the user simply sees the logged-out state on load.
+        clearSession();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     // State
@@ -249,6 +310,7 @@ export function useWalletSession() {
     isAuthenticating,
     authError,
     walletAddress,
+    sessionExpiredNotice,
 
     // Wallet adapter state
     connected,
@@ -259,6 +321,7 @@ export function useWalletSession() {
     startTestSession,
     logout,
     checkSession,
+    clearSessionExpiredNotice,
 
     // Helpers
     isSessionValid

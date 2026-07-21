@@ -40,6 +40,17 @@ Chosen by user from 3 researched directions (alternatives archived below researc
 - Amber glow in UI = a real 4px pixel-bloom sprite, not CSS blur.
 - Re-palette all CSS box-shadow pixel icons to amber/teal/ember; kill `linear-gradient` fills in `.pixel-btn-3d` → flat + bevel.
 
+## Terrain addendum — "Sunken Ember Hollows" (added 2026-07-21, orchestrator design decision)
+
+Dramatic relief + underground character, staying inside the dusk palette and bloom discipline.
+
+- **Seamless tiling (bug fix)**: hex columns must tile with ZERO visible gaps — geometry radius must exactly match the grid pitch (no shrink factor), and every column's side skirt extends down to at least the lowest adjacent hex top (or bedrock −1 tier) so elevation steps never show through to the sky/fog behind.
+- **Relief amplification**: height range widens to ~7 tiers. Add a ridged-noise channel (abs-value fBm) blended with the base fBm for ridgelines and mesas; quantize highland tops into plateau steps. A second very-low-frequency noise carves winding valley lines; valley floors below the waterline become water/marsh.
+- **Pits**: deterministic sinkholes on ~1.5% of land hexes (clusters of 1–3), floor dropped 2–3 tiers below the surrounding rim. Walls use the cool shadow ramp with strengthened AO (down to 0.45 multiplier); floors get sparse amber ember speckles — emissive #F0A63C at intensity ≤0.3, `toneMapped` normal, deliberately BELOW the 0.9 bloom threshold (warm glimmer, no glow halo).
+- **Caves**: where adjacent hexes differ by ≥2 tiers, ~10% of those cliff faces (deterministic hash) get a cave mouth — a dark inset opening (near-black indigo #0C0E16 interior) with a faint warm gradient deep inside (amber emissive ≤0.25, non-blooming) suggesting ember light from the deep. Purely visual set dressing; no gameplay collision changes.
+- **Bloom rule amendment**: the agent amber core remains the ONLY blooming element. Pit embers and cave interiors may use sub-threshold amber emissive (≤0.3) — glimmer, never halo.
+- **Perf**: all new features are deterministic from (q,r) hash, instanced/batched, chunk-owned, and disabled or simplified at low quality tier. Budgets: ≤80 cave mouths, ≤60 pit clusters visible.
+
 ## Implementation order
 1. `terrain/biomes.ts` → ramps + `getBiomeRamp(biome)`; wire per-instance color jitter + sun-facing value pick in HexWorld/ChunkedHexWorld.
 2. `scene/ThreeScene.tsx` → tonemap/exposure, dusk Sky params, fog, warm sun + cool ambient + shadows, EffectComposer chain.

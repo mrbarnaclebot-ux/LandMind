@@ -5,6 +5,7 @@ import { useEffect, useCallback } from 'react';
 import { useWalletStore } from '../stores/walletStore';
 import { useEarningsStore } from '../stores/earningsStore';
 import { API_URL } from '../lib/config';
+import { apiFetch } from '../lib/apiFetch';
 import { getSocket } from '../lib/socket';
 
 export interface EarningsResponse {
@@ -23,9 +24,7 @@ export interface EarningsResponse {
  * Fetch earnings from API
  */
 export async function fetchEarnings(): Promise<EarningsResponse> {
-  const response = await fetch(`${API_URL}/api/earnings`, {
-    credentials: 'include',
-  });
+  const response = await apiFetch(`${API_URL}/api/earnings`);
 
   if (!response.ok) {
     const error = await response.json();
@@ -44,9 +43,7 @@ export async function fetchLeaderboard(): Promise<{
   userRank: { rank: number; score: number } | null;
   userPercentile: number | null;
 }> {
-  const response = await fetch(`${API_URL}/api/leaderboard`, {
-    credentials: 'include',
-  });
+  const response = await apiFetch(`${API_URL}/api/leaderboard`);
 
   if (!response.ok) {
     throw new Error('Failed to fetch leaderboard');

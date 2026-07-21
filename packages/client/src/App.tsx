@@ -3,6 +3,7 @@ import { ThreeScene } from './scene/ThreeScene';
 import { AgentDashboard } from './components/agents/AgentDashboard';
 import { Leaderboard } from './components/earnings/Leaderboard';
 import { TransactionToastContainer } from './components/ui/TransactionStatus';
+import { SessionExpiredToast } from './components/ui/SessionExpiredToast';
 import { MobileLayout } from './components/mobile/MobileLayout';
 import { Header } from './components/layout/Header';
 import { ControlsOverlay } from './components/layout/ControlsOverlay';
@@ -56,6 +57,7 @@ function App() {
           <ThreeScene heatMapVisible={heatMapVisible} />
         </MobileLayout>
         <TransactionToastContainer />
+        <SessionExpiredToast />
       </>
     );
   }
@@ -98,6 +100,8 @@ function App() {
       )}
       {/* Transaction status toasts */}
       <TransactionToastContainer />
+      {/* Global "session expired — reconnect" toast (fires on any authed 401) */}
+      <SessionExpiredToast />
     </div>
   );
 }
