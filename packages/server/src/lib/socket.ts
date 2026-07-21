@@ -122,11 +122,29 @@ export function setupSocket(httpServer: HttpServer): TypedServer {
     // Client subscribes to receive their user-specific updates.
     // We IGNORE any client-supplied wallet and join only the authenticated
     // wallet's room. Unauthenticated sockets cannot join user rooms.
+    //
+    // The ack is a structured object `{ ok, reason? }`. It is intentionally
+    // ALSO backwards-compatible with the old boolean-style ack: the object is
+    // truthy, so a legacy client doing `if (ok)` still works, and a legacy
+    // client that strictly compared `ok === true` would simply retry (harmless).
+    // New clients read `ack.ok` / `ack.reason`.
+    //
+    // NOTE ON RE-AUTH: cookies only travel on the handshake, so a socket that
+    // connected anonymously (e.g. on the landing page, pre-login) can never be
+    // re-authenticated in place. The client MUST reconnect after login so the
+    // handshake carries the fresh session cookie; the middleware above then
+    // populates socket.data on the new connection. `reason: 'unauthenticated'`
+    // is the signal the client uses to know a reconnect is required.
     socket.on('subscribe', (_walletPubkey, callback) => {
+      const ack = (ok: boolean, reason?: string) => {
+        if (typeof callback === 'function') {
+          callback({ ok, ...(reason ? { reason } : {}) } as never);
+        }
+      };
       const wallet = socket.data.walletPubkey;
       if (!wallet) {
         console.warn(`Socket ${socket.id} attempted subscribe without auth`);
-        if (typeof callback === 'function') callback(false);
+        ack(false, 'unauthenticated');
         return;
       }
       // If the client supplied a wallet, it must match the authenticated one.
@@ -135,12 +153,12 @@ export function setupSocket(httpServer: HttpServer): TypedServer {
           `Socket ${socket.id} subscribe wallet mismatch ` +
             `(claimed ${_walletPubkey}, authed ${wallet})`
         );
-        if (typeof callback === 'function') callback(false);
+        ack(false, 'wallet_mismatch');
         return;
       }
       socket.join(`user:${wallet}`);
       console.log(`Socket ${socket.id} subscribed to user:${wallet}`);
-      if (typeof callback === 'function') callback(true);
+      ack(true);
     });
 
     // Admin subscribes to metrics updates. Requires the same admin check as

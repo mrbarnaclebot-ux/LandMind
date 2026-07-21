@@ -129,12 +129,26 @@ export function useEarnings() {
 
     const sock = getSocket();
 
-    // Subscribe to user's room
-    sock.emit('subscribe', walletAddress, (ok: boolean) => {
-      if (!ok) {
-        console.error('[useEarnings] Failed to subscribe to updates');
-      }
-    });
+    // (Re)subscribe to the user's room. Runs on mount if already connected and
+    // again on every socket 'connect' — critical because the socket is opened
+    // anonymously pre-login and only authenticates after a reconnect carries the
+    // session cookie.
+    const subscribe = () => {
+      sock.emit('subscribe', walletAddress, (ack) => {
+        const ok = typeof ack === 'boolean' ? ack : ack?.ok;
+        if (!ok) {
+          const reason =
+            ack && typeof ack === 'object' && 'reason' in ack ? ack.reason : undefined;
+          console.error('[useEarnings] Failed to subscribe to updates', reason ?? '');
+        } else {
+          // Reconcile any earnings changes missed while disconnected.
+          loadEarnings();
+        }
+      });
+    };
+
+    if (sock.connected) subscribe();
+    sock.on('connect', subscribe);
 
     // Handle earnings updates
     sock.on('earnings:update', (data) => {
@@ -158,6 +172,7 @@ export function useEarnings() {
     });
 
     return () => {
+      sock.off('connect', subscribe);
       sock.off('earnings:update');
       sock.off('claim:success');
       sock.off('claim:error');

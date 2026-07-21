@@ -40,12 +40,30 @@ export function useUserAgents() {
 
     const sock = getSocket();
 
-    // Subscribe to user's room
-    sock.emit('subscribe', walletAddress, (ok: boolean) => {
-      if (!ok) {
-        console.error('Failed to subscribe to updates');
-      }
-    });
+    // Subscribe to the user's room. Factored out so we can (re)run it on every
+    // socket 'connect' — after a login-triggered reconnect the handshake carries
+    // the fresh cookie, so this is the point at which the server will actually
+    // let us join our room.
+    const subscribe = () => {
+      sock.emit('subscribe', walletAddress, (ack) => {
+        // Backwards/forwards compatible: old server sent a boolean, new server
+        // sends { ok, reason }.
+        const ok = typeof ack === 'boolean' ? ack : ack?.ok;
+        if (!ok) {
+          const reason =
+            ack && typeof ack === 'object' && 'reason' in ack ? ack.reason : undefined;
+          console.error('Failed to subscribe to updates', reason ?? '');
+        } else {
+          // Refetch on (re)subscribe to reconcile any updates missed while the
+          // socket was disconnected / unauthenticated.
+          loadAgents();
+        }
+      });
+    };
+
+    // Subscribe immediately if already connected, and again on every reconnect.
+    if (sock.connected) subscribe();
+    sock.on('connect', subscribe);
 
     // Handle mining updates
     sock.on('mining:update', (data) => {
@@ -114,13 +132,14 @@ export function useUserAgents() {
     });
 
     return () => {
+      sock.off('connect', subscribe);
       sock.off('mining:update');
       sock.off('agent:relocating');
       sock.off('agent:arrived');
       sock.off('agent:deployed');
       sock.off('agent:placed');
     };
-  }, [isAuthenticated, walletAddress, updateAgent, addAgent]);
+  }, [isAuthenticated, walletAddress, updateAgent, addAgent, loadAgents]);
 
   return {
     agents,

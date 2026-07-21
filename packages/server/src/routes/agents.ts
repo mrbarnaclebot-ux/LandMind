@@ -109,6 +109,7 @@ async function createFakeAgent(
   | { agent: Record<string, unknown> }
   | { capReached: true }
   | { sigReused: true }
+  | { placementFailed: true }
 > {
   let agent;
   try {
@@ -150,43 +151,59 @@ async function createFakeAgent(
 
   const agentIndex = agent.agentIndex!;
 
-  // Place the agent on a hex (random placement, MINING status + mining state).
+  // Place the agent on a hex. placeAgentOnHex sets agent.status = MINING and
+  // creates the MiningState row (the same DB parity a seeded/real agent gets).
   const placement = await placeAgentOnHex(agent.id);
 
-  // Register in the Redis cache exactly like real/seeded agents so the tick loop
-  // picks it up and mining:update / earnings:update events flow for it.
-  if (placement) {
-    await cacheAgent({
-      agentId: agent.id,
-      ownerId: userId,
-      ownerWallet: walletPubkey,
-      hexId: placement.hexId,
-      hexQ: placement.q,
-      hexR: placement.r,
-      gold: '0',
-      silver: '0',
-      copper: '0',
-      iron: '0',
-      status: 'MINING',
-      lastTick: getCurrentTick(),
+  // Placement returns null only when there are NO available hexes (e.g. hexes
+  // were never seeded in this environment). If we swallowed that, the agent
+  // would be left with the create-default status IDLE, no MiningState, and no
+  // Redis cache entry — so GET /api/agents shows { status: "IDLE",
+  // miningState: null }, the tick loop never mines it, and the leaderboard
+  // stays empty. That is precisely the failure we are fixing. Fail loudly and
+  // roll back the half-created agent so it doesn't consume a cap slot or block
+  // a signature retry.
+  if (!placement) {
+    await prisma.agent.delete({ where: { id: agent.id } }).catch(() => {
+      /* best-effort cleanup */
     });
-
-    getIO().to(`user:${walletPubkey}`).emit('agent:placed', {
-      agentId: agent.id,
-      hexId: placement.hexId,
-      hexQ: placement.q,
-      hexR: placement.r,
-    });
+    return { placementFailed: true };
   }
+
+  // Register in the Redis cache exactly like real/seeded agents so the tick loop
+  // picks it up and mining:update / earnings:update events flow for it. The tick
+  // loop keys off the Redis cache (getAllAgents), so this is what makes the fake
+  // agent indistinguishable from a seeded one downstream.
+  await cacheAgent({
+    agentId: agent.id,
+    ownerId: userId,
+    ownerWallet: walletPubkey,
+    hexId: placement.hexId,
+    hexQ: placement.q,
+    hexR: placement.r,
+    gold: '0',
+    silver: '0',
+    copper: '0',
+    iron: '0',
+    status: 'MINING',
+    lastTick: getCurrentTick(),
+  });
+
+  getIO().to(`user:${walletPubkey}`).emit('agent:placed', {
+    agentId: agent.id,
+    hexId: placement.hexId,
+    hexQ: placement.q,
+    hexR: placement.r,
+  });
 
   return {
     agent: {
       id: agent.id,
       agentIndex,
       mintAddress: agent.mintAddress,
-      hexId: placement?.hexId ?? null,
-      hexQ: placement?.q ?? null,
-      hexR: placement?.r ?? null,
+      hexId: placement.hexId,
+      hexQ: placement.q,
+      hexR: placement.r,
     },
   };
 }
@@ -388,6 +405,13 @@ agentRouter.post('/confirm', requireAuth, async (req: AuthenticatedRequest, res:
         return res.status(409).json({
           error: 'Transaction already used',
           message: 'This deployment transaction has already been redeemed for an agent.',
+        });
+      }
+      if ('placementFailed' in result) {
+        return res.status(503).json({
+          error: 'No available hexes',
+          message:
+            'The world has no available hexes to place your agent. Please try again shortly.',
         });
       }
       return res.json({ success: true, fake: true, agent: result.agent });

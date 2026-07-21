@@ -3,6 +3,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import bs58 from 'bs58';
 import { useWalletStore } from '../stores/walletStore';
 import { API_BASE_URL } from '../lib/solana';
+import { reconnectSocket } from '../lib/socket';
 
 /**
  * Hook for managing wallet session authentication.
@@ -119,6 +120,12 @@ export function useWalletSession() {
         return false;
       }
 
+      // The shared socket was opened anonymously on app mount, so its handshake
+      // carried no session cookie and the server never attached our identity.
+      // Reconnect now that the cookie is set so the fresh handshake authenticates
+      // the socket; the data hooks re-subscribe on the 'connect' event.
+      reconnectSocket();
+
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Authentication failed';
@@ -158,6 +165,11 @@ export function useWalletSession() {
         setAuthError('Session could not be established. Please try again.');
         return false;
       }
+
+      // Reconnect the shared socket so its handshake carries the new test-session
+      // cookie and the server authenticates it; hooks re-subscribe on 'connect'.
+      reconnectSocket();
+
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Test session failed';
@@ -181,6 +193,10 @@ export function useWalletSession() {
 
     clearSession();
     await disconnect();
+
+    // Reconnect the socket so its handshake no longer carries a session cookie —
+    // this drops the server-side identity and removes us from our user room.
+    reconnectSocket();
   }, [clearSession, disconnect]);
 
   /**

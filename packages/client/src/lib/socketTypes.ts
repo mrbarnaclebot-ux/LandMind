@@ -95,13 +95,22 @@ export interface ServerToClientEvents {
   'admin:metrics': (data: PlatformMetrics) => void;
 }
 
+/**
+ * Structured ack for `subscribe`. Backwards-compatible with the old boolean
+ * ack: the object is always truthy on success. New clients read `ok`/`reason`.
+ */
+export interface SubscribeAck {
+  ok: boolean;
+  reason?: 'unauthenticated' | 'wallet_mismatch';
+}
+
 export interface ClientToServerEvents {
   /**
    * Subscribe to the authenticated user's room. The server now derives the
    * wallet from the authenticated handshake; the wallet argument is kept for
-   * backwards compatibility.
+   * backwards compatibility. The ack is a structured object — see SubscribeAck.
    */
-  subscribe: (walletPubkey: string, callback: (ok: boolean) => void) => void;
+  subscribe: (walletPubkey: string, callback: (ack: SubscribeAck) => void) => void;
 
   // Admin
   'admin:subscribe': () => void;

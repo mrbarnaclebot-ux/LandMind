@@ -64,9 +64,17 @@ export interface ServerToClientEvents {
   'claim:error': (data: ClaimErrorData) => void;
 }
 
+// Structured ack for the `subscribe` event. Backwards-compatible with the old
+// boolean-style ack: the object is always truthy, so legacy `if (ok)` checks
+// still pass on success. New clients read `ok`/`reason` explicitly.
+export interface SubscribeAck {
+  ok: boolean;
+  reason?: 'unauthenticated' | 'wallet_mismatch';
+}
+
 // Client -> Server events
 export interface ClientToServerEvents {
-  'subscribe': (walletPubkey: string | undefined, callback: (ok: boolean) => void) => void;
+  'subscribe': (walletPubkey: string | undefined, callback: (ack: SubscribeAck) => void) => void;
   'admin:subscribe': () => void;
   'admin:unsubscribe': () => void;
 }

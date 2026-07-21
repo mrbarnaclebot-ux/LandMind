@@ -108,10 +108,21 @@ export async function flushToPostgres(): Promise<void> {
   // Use a transaction for consistency
   await prisma.$transaction(async (tx) => {
     for (const agent of agents) {
-      // Update mining state
-      await tx.miningState.update({
+      // Upsert mining state. Upsert (not update) so a cached agent that somehow
+      // lacks its MiningState row can't throw and abort the entire flush
+      // transaction — which would silently starve earnings snapshots and the
+      // leaderboard for every user in this batch.
+      await tx.miningState.upsert({
         where: { agentId: agent.agentId },
-        data: {
+        create: {
+          agentId: agent.agentId,
+          gold: BigInt(agent.gold),
+          silver: BigInt(agent.silver),
+          copper: BigInt(agent.copper),
+          iron: BigInt(agent.iron),
+          lastUpdate: new Date(),
+        },
+        update: {
           gold: BigInt(agent.gold),
           silver: BigInt(agent.silver),
           copper: BigInt(agent.copper),
